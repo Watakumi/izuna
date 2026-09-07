@@ -46,7 +46,7 @@ const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   config: { path: '/x/app.ini', rootUrl: 'http://localhost:4649/', httpPort: 4649,
     httpAddr: '127.0.0.1', installLocked: true, actionsEnabled: false },
   reachable: true,
-  tokenScopes: ['read:user', 'write:repository'],
+  tokenScopes: ['write:user', 'write:repository'],
   tokenWorks: true,
   runners: null,
   ...over
@@ -117,12 +117,21 @@ describe('runner から届くか', () => {
 
 describe('スコープ', () => {
   it('足りないものを名指しする', () => {
-    expect(missingScopes(['write:repository'])).toEqual(['read:user'])
-    expect(missingScopes(['read:user', 'write:repository', 'write:issue'])).toEqual([])
+    // 実測: `POST /user/repos` は write:user と write:repository の両方を要求する
+    expect(missingScopes(['write:repository'])).toEqual(['write:user'])
+    expect(missingScopes(['write:user', 'write:repository', 'write:issue'])).toEqual([])
+  })
+
+  it('権限が分からないものを「足りない」と言わない', () => {
+    // 古い版で発行したトークンは記録を持たない。**分からないことは分からないと言う**
+    const c = find(facts({ tokenScopes: [] }), 'token')
+    expect(c.level).toBe('warn')
+    expect(c.detail).toContain('分かりません')
+    expect(c.fix).not.toBeNull()
   })
 
   it('未設定は全部足りない', () => {
-    expect(missingScopes(null)).toEqual(['read:user', 'write:repository'])
+    expect(missingScopes(null)).toEqual(['write:user', 'write:repository'])
   })
 })
 
@@ -147,7 +156,7 @@ describe('診断', () => {
     // 実際に 403 tokenRequiresScopes を踏んだので、原因が読めることを門にする
     const c = find(facts({ tokenScopes: ['write:repository'] }), 'token')
     expect(c.level).toBe('ng')
-    expect(c.detail).toContain('read:user')
+    expect(c.detail).toContain('write:user')
   })
 
   it('トークンが拒否されたら作り直しを促す', () => {

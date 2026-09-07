@@ -2,9 +2,9 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
+import { GRANTED_SCOPES, parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
-import { loadToken, saveToken } from './store'
+import { loadScopes, loadToken, saveToken } from './store'
 import { resolved } from '../config'
 
 const exec = promisify(execFile)
@@ -73,17 +73,6 @@ async function probe(rootUrl: string | null): Promise<boolean> {
 }
 
 /** トークンが通るか、どのスコープを持つかを本人に聞く */
-/**
- * リポジトリを作るのに要る権限（実測）。
- *
- * | 与えたもの | `POST /user/repos` |
- * | --- | --- |
- * | `write:repository` だけ | 403「`write:user` が要る」 |
- * | `write:user` だけ | 403「`write:repository` が要る」 |
- * | **両方** | **201** |
- */
-export const REQUIRED_SCOPES = ['write:user', 'write:repository', 'write:issue'] as const
-
 async function inspectToken(
   rootUrl: string | null,
   token: string | null
@@ -96,9 +85,10 @@ async function inspectToken(
       signal: AbortSignal.timeout(4000)
     })
     if (!res.ok) return { scopes: [], works: false }
-    // Forgejo はスコープをヘッダに返さないので、通った事実から要るものを持つと見なす。
-    // 足りなければ個別の呼び出しが 403 になり、そこで作り直しに誘導される
-    return { scopes: [...REQUIRED_SCOPES], works: true }
+    // **Forgejo はスコープを返さない。** 分からないものを分かったふりで
+    // 埋めていたので、作り直しても判定が変わらなかった。
+    // 発行したときに記録した権限を見る（古い形式なら null ＝ 分からない）
+    return { scopes: await loadScopes(), works: true }
   } catch {
     return { scopes: [], works: false }
   }
@@ -161,12 +151,12 @@ export async function applyFix(id: FixId): Promise<string> {
         // **`write:user` が要る。** `POST /user/repos` は `write:repository`
         // だけでは 403 になる（2026-09-08 に実測。片方ずつ試して確かめた）。
         // 「ユーザーの下に作る」ので、どちらの権限も要求される。
-        '--scopes', 'write:user,write:repository,write:issue',
+        '--scopes', GRANTED_SCOPES.join(','),
         '--work-path', workPath
       ])
       const value = token.split('\n').pop()?.trim()
       if (!value) throw new Error('トークンを受け取れませんでした')
-      await saveToken(value)
+      await saveToken(value, GRANTED_SCOPES)
       return `${user} のトークン「${name}」を作り、暗号化して保管しました`
     }
 

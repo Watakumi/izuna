@@ -62,10 +62,24 @@ export function reachableFromContainer(addr: string | null): boolean {
   return !['127.0.0.1', 'localhost', '::1'].includes(addr.trim())
 }
 
-/** Izuna が要るスコープ。足りないものを見せるために持つ */
-export const REQUIRED_SCOPES = ['read:user', 'write:repository'] as const
+/**
+ * Izuna が要るスコープ。**ここが唯一の定義**（2026-09-08 に一本化）。
+ *
+ * 同じ名前の定数を `main/forge/setup.ts` にも作ってしまい、
+ * **判定はその 2 つのハードコードを比べているだけ**になっていた。
+ * トークンを作り直しても「スコープが足りません」が消えず、
+ * 実際のトークンは一度も見ていなかった。
+ *
+ * 中身は実測（CLAUDE.md §7）。`POST /user/repos` は
+ * `write:user` と `write:repository` の**両方**を要求する。
+ * `write:user` は `read:user` を含むので、後者は書かない。
+ */
+export const REQUIRED_SCOPES = ['write:user', 'write:repository'] as const
 /** PR にコメントを付けるなら要る。無くても段5 は動く */
 export const OPTIONAL_SCOPES = ['write:issue'] as const
+
+/** 発行時に付けるもの（要るもの＋任意） */
+export const GRANTED_SCOPES = [...REQUIRED_SCOPES, ...OPTIONAL_SCOPES] as const
 
 /** `HTTP_PORT = 4649` の形を読む。節は見ない（キーが一意なので足りる） */
 export function parseAppIni(text: string): Omit<ForgeConfig, 'path'> {
@@ -128,6 +142,12 @@ export function diagnose(facts: ForgeFacts): Check[] {
       ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
           detail: '未設定です',
           fix: { label: 'トークンを発行する', warning: 'Forgejo に izuna という名前のトークンを作ります' } }
+      : facts.tokenScopes.length === 0
+        ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'warn',
+            // **分からないことを「足りない」と言わない。** 古い版で発行した
+            // トークンは権限の記録を持たないので、判定のしようがない
+            detail: '古い版で発行されたため、権限が分かりません',
+            fix: { label: '発行し直す', warning: '確実に必要な権限を付けて作り直します' } }
       : lacking.length > 0
         ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
             detail: `スコープが足りません: ${lacking.join(', ')}`,

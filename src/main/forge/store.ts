@@ -10,21 +10,42 @@ import { dirname, join } from 'node:path'
  */
 const file = (): string => join(app.getPath('userData'), 'forge-token.bin')
 
-export async function saveToken(token: string): Promise<void> {
+/**
+ * **何の権限で作ったかも一緒に覚える。**
+ *
+ * Forgejo は `/api/v1/user` の応答にスコープを返さないので、
+ * トークンを見ても権限は分からない。分からないものを分かったふりで
+ * 判定していたのが、作り直しても直らない原因だった。
+ * 作った時点の記録を残せば、**古い権限のまま残っていること**が判る。
+ */
+export async function saveToken(token: string, scopes?: readonly string[]): Promise<void> {
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error('この環境では暗号化して保管できません。トークンは保存しません')
   }
   const path = file()
   await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, safeStorage.encryptString(token))
+  await writeFile(path, safeStorage.encryptString(JSON.stringify({ token, scopes: scopes ?? null })))
+}
+
+/** 記録した権限。**古い形式（文字列だけ）なら null**（＝分からない） */
+export async function loadScopes(): Promise<string[] | null> {
+  const raw = await readStored()
+  return raw && typeof raw === 'object' && Array.isArray(raw.scopes) ? raw.scopes : null
+}
+
+async function readStored(): Promise<{ token: string; scopes: unknown } | null> {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null
+    const text = safeStorage.decryptString(await readFile(file()))
+    // 古い形式は生の文字列。権限は分からないものとして扱う
+    if (!text.startsWith('{')) return { token: text, scopes: null }
+    return JSON.parse(text) as { token: string; scopes: unknown }
+  } catch {
+    return null
+  }
 }
 
 export async function loadToken(): Promise<string | null> {
-  try {
-    if (!safeStorage.isEncryptionAvailable()) return null
-    return safeStorage.decryptString(await readFile(file()))
-  } catch {
-    // 未保存・鍵が変わった・壊れた —— どれも「無い」として扱う
-    return null
-  }
+  // 未保存・鍵が変わった・壊れた —— どれも「無い」として扱う
+  return (await readStored())?.token ?? null
 }
