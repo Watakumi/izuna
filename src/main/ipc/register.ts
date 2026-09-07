@@ -3,7 +3,15 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import { ClaudeSession } from '../claude/session'
-import { CH, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
+import {
+  createWorktree,
+  listWorktrees,
+  removeWorktree,
+  repoName,
+  repoRoot,
+  worktreeStatus
+} from '../git/worktree'
+import { CH, type PermissionAnswer, type RepoInfo, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
 
 /**
  * ClaudeSession を renderer に橋渡しする。
@@ -25,6 +33,17 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     const win = getWindow()
     if (win && !win.isDestroyed()) win.webContents.send(CH.event, event)
   }
+
+  ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {
+    const [root, name, worktrees] = await Promise.all([
+      repoRoot(cwd), repoName(cwd), listWorktrees(cwd)
+    ])
+    return { root, name, worktrees }
+  })
+  ipcMain.handle(CH.createWorktree, (_e, cwd: string, branch: string) => createWorktree(cwd, branch))
+  ipcMain.handle(CH.removeWorktree, (_e, cwd: string, path: string, force?: boolean) =>
+    removeWorktree(cwd, path, force))
+  ipcMain.handle(CH.worktreeStatus, (_e, path: string) => worktreeStatus(path))
 
   ipcMain.handle(CH.start, async (_e, input: StartSessionInput): Promise<SessionId> => {
     const id = randomUUID()

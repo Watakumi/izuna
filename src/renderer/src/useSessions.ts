@@ -1,0 +1,105 @@
+import { useCallback, useEffect, useState } from 'react'
+import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
+import type { PermissionRequest } from '../../main/claude/session'
+import type { SessionId, StartSessionInput } from '../../shared/ipc'
+import { applyMessage, emptyTranscript, type Transcript } from '../../shared/transcript'
+
+/**
+ * 複数セッションの状態（段3）。
+ *
+ * セッションごとに worktree が分かれるので、**状態も完全に分ける**。
+ * 取り違えると、片方の承認をもう片方に返すような事故になる。
+ * 届いたイベントは必ず `event.id` で宛先を決め、「いま開いている方」には送らない。
+ */
+
+export interface Panel {
+  id: SessionId
+  /** 一覧に出す名前。ブランチ名、無ければディレクトリ名 */
+  label: string
+  cwd: string
+  branch: string | null
+  transcript: Transcript
+  pending: PermissionRequest | null
+  /** 入力欄はセッションごとに保つ。切り替えで書きかけが消えない */
+  prompt: string
+  commands: SlashCommand[]
+  /** 終了したセッション。畳むまで一覧には残す */
+  ended: boolean
+}
+
+export interface Sessions {
+  panels: Panel[]
+  activeId: SessionId | null
+  active: Panel | null
+  setActive: (id: SessionId) => void
+  open: (input: StartSessionInput & { label: string; branch: string | null }) => Promise<SessionId>
+  close: (id: SessionId) => Promise<void>
+  update: (id: SessionId, change: (panel: Panel) => Panel) => void
+  /** 承認待ちを抱えているもの。並列で一番埋もれやすいので数えて出す */
+  waiting: Panel[]
+}
+
+export function useSessions(): Sessions {
+  const [panels, setPanels] = useState<Panel[]>([])
+  const [activeId, setActiveId] = useState<SessionId | null>(null)
+
+  const update = useCallback((id: SessionId, change: (panel: Panel) => Panel) => {
+    setPanels((prev) => prev.map((p) => (p.id === id ? change(p) : p)))
+  }, [])
+
+  useEffect(() => window.izuna.onEvent((event) => {
+    // 宛先は必ず event.id で決める。active に流し込むと取り違える
+    setPanels((prev) => prev.map((p) => {
+      if (p.id !== event.id) return p
+      switch (event.kind) {
+        case 'message':
+          return { ...p, transcript: applyMessage(p.transcript, event.message) }
+        case 'permission':
+          return { ...p, pending: event.request }
+        case 'error':
+          return {
+            ...p,
+            transcript: {
+              ...p.transcript,
+              running: false,
+              items: [...p.transcript.items,
+                { kind: 'notice', id: `e${p.transcript.items.length}`, tone: 'bad', text: event.message }]
+            }
+          }
+        case 'exit':
+          return { ...p, ended: true, pending: null }
+        default:
+          return p
+      }
+    }))
+  }), [])
+
+  const open = useCallback(async (
+    input: StartSessionInput & { label: string; branch: string | null }
+  ): Promise<SessionId> => {
+    const id = await window.izuna.start({
+      cwd: input.cwd, model: input.model, permissionMode: input.permissionMode, resume: input.resume
+    })
+    const commands = await window.izuna.slashCommands(id)
+    setPanels((prev) => [...prev, {
+      id, label: input.label, cwd: input.cwd, branch: input.branch,
+      transcript: emptyTranscript(), pending: null, prompt: '', commands, ended: false
+    }])
+    setActiveId(id)
+    return id
+  }, [])
+
+  const close = useCallback(async (id: SessionId): Promise<void> => {
+    setPanels((prev) => {
+      const next = prev.filter((p) => p.id !== id)
+      setActiveId((current) => (current === id ? (next.at(-1)?.id ?? null) : current))
+      return next
+    })
+    await window.izuna.stop(id).catch(() => undefined)
+  }, [])
+
+  const active = panels.find((p) => p.id === activeId) ?? null
+  const waiting = panels.filter((p) => p.pending !== null)
+
+  return { panels, activeId, active, setActive: setActiveId, open, close, update, waiting }
+}

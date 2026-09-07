@@ -7,6 +7,11 @@ import { CH, type IzunaApi, type PermissionAnswer, type SessionEvent, type Sessi
  * `require` は渡さない。`shared/ipc.ts` の `IzunaApi` に無いものは出さない。
  */
 const izuna: IzunaApi = {
+  repo: (cwd: string) => ipcRenderer.invoke(CH.repo, cwd),
+  createWorktree: (cwd: string, branch: string) => ipcRenderer.invoke(CH.createWorktree, cwd, branch),
+  removeWorktree: (cwd: string, path: string, force?: boolean) =>
+    ipcRenderer.invoke(CH.removeWorktree, cwd, path, force),
+  worktreeStatus: (path: string) => ipcRenderer.invoke(CH.worktreeStatus, path),
   start: (input: StartSessionInput) => ipcRenderer.invoke(CH.start, input),
   send: (id: SessionId, text: string) => ipcRenderer.invoke(CH.send, id, text),
   respondPermission: (answer: PermissionAnswer) => ipcRenderer.invoke(CH.respondPermission, answer),

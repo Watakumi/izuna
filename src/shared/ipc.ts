@@ -1,5 +1,7 @@
 import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../main/claude/session'
+import type { Worktree } from './worktree'
+import type { WorktreeStatus } from '../main/git/worktree'
 
 /**
  * renderer と main のあいだの唯一の口。
@@ -27,8 +29,19 @@ export interface PermissionAnswer {
   result: PermissionResult
 }
 
+export interface RepoInfo {
+  root: string
+  name: string
+  worktrees: Worktree[]
+}
+
 /** renderer が呼ぶもの。すべて invoke（応答を待つ） */
 export interface IzunaApi {
+  /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
+  repo(cwd: string): Promise<RepoInfo>
+  createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
+  removeWorktree(cwd: string, path: string, force?: boolean): Promise<void>
+  worktreeStatus(path: string): Promise<WorktreeStatus>
   start(input: StartSessionInput): Promise<SessionId>
   send(id: SessionId, text: string): Promise<void>
   respondPermission(answer: PermissionAnswer): Promise<void>
@@ -50,6 +63,10 @@ export type SessionEvent =
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
+  repo: 'izuna:repo',
+  createWorktree: 'izuna:worktree:create',
+  removeWorktree: 'izuna:worktree:remove',
+  worktreeStatus: 'izuna:worktree:status',
   start: 'izuna:session:start',
   send: 'izuna:session:send',
   respondPermission: 'izuna:session:respond-permission',
