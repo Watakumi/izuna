@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Izuna harness</title>
+    <!-- 製品と同じ CSP。ここを緩めると、CSP 由来の不具合を見逃す -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' data: ws:"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/harness.tsx"></script>
+  </body>
+</html>

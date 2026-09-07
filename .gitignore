@@ -8,3 +8,4 @@ out
 # 実セッションの全記録。hook がプラグイン経由で過去セッションの要約を注入するため
 # 版管理に入れない(CLAUDE.md §11)。パーサの門は session-safe.ndjson が担う。
 test/fixtures/session-full.ndjson
+shots/
