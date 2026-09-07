@@ -1,0 +1,232 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #e8a33d; } a:hover { color: #f5bd68; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #14161b; color: #e6e8ee; font-size: 13px; overflow: hidden;">
+
+  <div style="height: 38px; flex-shrink: 0; display: flex; align-items: center; gap: 13px; padding: 0 14px; background: #101216; border-bottom: 1px solid #242832;">
+    <div style="display: flex; gap: 8px;">
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+    </div>
+    <div style="margin-left: 6px; display: flex; align-items: center; gap: 8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b7ce8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 00-4 4v1a3 3 0 000 6v3a3 3 0 006 0v-3a3 3 0 000-6V7a4 4 0 00-2-4z"/><path d="M9 9h6"/></svg>
+      <span style="font-weight: 600;">ブレイン</span>
+    </div>
+    <span class="mono" style="font-size: 11px; color: #7d8598;">#12 · / パレットの補完</span>
+    <div style="flex-grow: 1;"></div>
+    <span style="font-size: 11.5px; color: #8b93a6;">実行役 2 · 承認待ち <span style="color: #e8a33d;">1</span></span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- 分解した作業 -->
+    <div style="width: 380px; flex-shrink: 0; border-right: 1px solid #242832; display: flex; flex-direction: column;">
+      <div style="padding: 15px 18px 11px; font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">分解した作業</div>
+
+      <div style="display: flex; flex-direction: column; gap: 9px; padding: 0 14px;">
+
+        <div style="border: 1px solid #3d3527; border-radius: 9px; padding: 12px 13px; background: #1a1710; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="mono" style="font-size: 11px; color: #6c7488;">①</span>
+            <span style="font-weight: 500; font-size: 12.5px;">一覧を仮想化する</span>
+            <div style="flex-grow: 1;"></div>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #e8a33d;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="mono" style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 A</span>
+            <span class="mono" style="font-size: 11px; color: #7d8598;">feat/palette</span>
+          </div>
+          <span style="font-size: 11.5px; color: #e8a33d;">人間の承認を待っています</span>
+        </div>
+
+        <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 12px 13px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="mono" style="font-size: 11px; color: #6c7488;">②</span>
+            <span style="font-weight: 500; font-size: 12.5px; color: #c8cddb;">あいまい検索の重み付け</span>
+            <div style="flex-grow: 1;"></div>
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #4fc4b0;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="mono" style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 B</span>
+            <span class="mono" style="font-size: 11px; color: #7d8598;">feat/score</span>
+          </div>
+          <span style="font-size: 11.5px; color: #7d8598;">テストを書いています</span>
+        </div>
+
+        <div style="border: 1px dashed #2c3140; border-radius: 9px; padding: 12px 13px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span class="mono" style="font-size: 11px; color: #4a5164;">③</span>
+            <span style="font-size: 12.5px; color: #8b93a6;">引数ヒントの描画</span>
+            <div style="flex-grow: 1;"></div>
+            <span style="width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #3d424f;"></span>
+          </div>
+          <span style="font-size: 11.5px; color: #636b7e;">① が固まってから着手</span>
+        </div>
+
+      </div>
+
+      <div style="flex-grow: 1;"></div>
+
+      <div style="margin: 14px; padding: 12px 13px; border-radius: 9px; background: #131620; border: 1px solid #242832; display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#e8a33d" stroke-width="1.9" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+          <span style="font-size: 11.5px; font-weight: 500; color: #c8cddb;">承認はブレインに渡さない</span>
+        </div>
+        <span style="font-size: 11px; color: #7d8598; line-height: 1.65;">実行役が許可を求めたら、必ず人間に上がります。並列で一番壊れる箇所を無人にしないため。</span>
+      </div>
+    </div>
+
+    <!-- やりとり -->
+    <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+      <div style="height: 42px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 20px; border-bottom: 1px solid #242832;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">やりとり</span>
+        <div style="flex-grow: 1;"></div>
+        <span class="mono" style="font-size: 10.5px; color: #4a5164;">crossSessionInbound: accept</span>
+      </div>
+
+      <div style="flex-grow: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 15px; overflow: hidden;">
+
+        <div style="display: flex; gap: 12px;">
+          <span class="mono" style="font-size: 10.5px; color: #4a5164; width: 40px; flex-shrink: 0; padding-top: 3px;">15:02</span>
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 11.5px; color: #8b7ce8; font-weight: 500;">ブレイン</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4a5164" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <span class="mono" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 A</span>
+            </div>
+            <div style="font-size: 12.5px; color: #c8cddb; line-height: 1.7;">316 件を素で描くと入力が詰まる。行の高さを固定して仮想化して。スコアリングは B が触るので、そこには入らないで。</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <span class="mono" style="font-size: 10.5px; color: #4a5164; width: 40px; flex-shrink: 0; padding-top: 3px;">15:14</span>
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="mono" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 A</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4a5164" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <span style="font-size: 11.5px; color: #8b7ce8; font-weight: 500;">ブレイン</span>
+              <span class="mono" style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #1c2029; color: #636b7e;">TeammateIdle</span>
+            </div>
+            <div style="font-size: 12.5px; color: #c8cddb; line-height: 1.7;">仮想化しました。ただし行の高さを 38px 固定にしたので、説明が長いものが切れます。</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <span class="mono" style="font-size: 10.5px; color: #4a5164; width: 40px; flex-shrink: 0; padding-top: 3px;">15:15</span>
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0; flex-grow: 1;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 11.5px; color: #8b7ce8; font-weight: 500;">ブレイン</span>
+              <span style="font-size: 10.5px; color: #636b7e;">差分を読んでいます</span>
+            </div>
+            <div style="border-left: 2px solid #3a3560; padding: 2px 0 2px 13px; font-size: 12.5px; color: #9aa2b4; line-height: 1.7;">切れるのは受け入れてよい。パレットは名前で選ぶもので、説明は補助情報だから。ただし省略記号は要る。それより <span class="mono" style="color: #c8cddb;">argumentHint</span> が右端で押し出されているのが問題。</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <span class="mono" style="font-size: 10.5px; color: #4a5164; width: 40px; flex-shrink: 0; padding-top: 3px;">15:16</span>
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 11.5px; color: #8b7ce8; font-weight: 500;">ブレイン</span>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4a5164" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              <span class="mono" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 A</span>
+            </div>
+            <div style="font-size: 12.5px; color: #c8cddb; line-height: 1.7;">説明の省略は許容。<span class="mono">text-overflow: ellipsis</span> を足して、<span class="mono">argumentHint</span> を <span class="mono">flex-shrink: 0</span> にして。</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; opacity: 0.55;">
+          <span class="mono" style="font-size: 10.5px; color: #4a5164; width: 40px; flex-shrink: 0; padding-top: 3px;">15:22</span>
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="mono" style="font-size: 10.5px; padding: 1px 6px; border-radius: 4px; background: #232936; color: #a8b0c2;">実行役 A</span>
+              <span style="font-size: 11.5px; color: #e8a33d;">Edit の承認を求めています</span>
+            </div>
+            <div style="font-size: 12px; color: #7d8598; line-height: 1.7;">→ ブレインは介在しません。人間に上がります</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="flex-shrink: 0; padding: 13px 22px 17px; border-top: 1px solid #242832;">
+        <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; background: #171a21;">
+          <span style="color: #636b7e; font-size: 12.5px;">ブレインに指示する（実行役には直接届きません）</span>
+          <div style="flex-grow: 1;"></div>
+          <span class="mono" style="font-size: 11px; color: #4a5164;">⌘↵</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 実行役の状態 -->
+    <div style="width: 268px; flex-shrink: 0; background: #101216; border-left: 1px solid #242832; display: flex; flex-direction: column;">
+      <div style="padding: 15px 16px 11px; font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">実行役</div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 0 14px;">
+        <div style="border: 1px solid #3d3527; border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #1a1710;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #e8a33d;"></span>
+            <span class="mono" style="font-size: 11.5px; color: #e6e8ee;">A@izuna</span>
+          </div>
+          <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/wt/izuna-palette</span>
+          <div style="display: flex; gap: 11px; font-size: 11px;">
+            <span style="color: #4fc4b0;">+34</span><span style="color: #e06c75;">−8</span><span class="mono" style="color: #4a5164;">18.4k</span>
+          </div>
+          <div style="height: 3px; background: #232936; border-radius: 2px;"><div style="width: 12%; height: 3px; background: #4fc4b0; border-radius: 2px;"></div></div>
+        </div>
+
+        <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background: #4fc4b0;"></span>
+            <span class="mono" style="font-size: 11.5px; color: #c8cddb;">B@izuna</span>
+          </div>
+          <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/wt/izuna-score</span>
+          <div style="display: flex; gap: 11px; font-size: 11px;">
+            <span style="color: #4fc4b0;">+61</span><span style="color: #e06c75;">−3</span><span class="mono" style="color: #4a5164;">52.7k</span>
+          </div>
+          <div style="height: 3px; background: #232936; border-radius: 2px;"><div style="width: 34%; height: 3px; background: #4fc4b0; border-radius: 2px;"></div></div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; border: 1px dashed #333947; color: #9aa2b4; font-size: 12px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          実行役を足す
+        </div>
+      </div>
+
+      <div style="flex-grow: 1;"></div>
+
+      <div style="padding: 14px 16px; border-top: 1px solid #242832; display: flex; flex-direction: column; gap: 9px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6c7488" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">共有フォルダ</span>
+        </div>
+        <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/.izuna/teams/izuna-12/</span>
+        <div class="mono" style="font-size: 10.5px; line-height: 1.95; color: #8b93a6;">
+          <div><span style="color: #4a5164;">├</span> brief.md</div>
+          <div><span style="color: #4a5164;">├</span> tasks/<span style="color: #636b7e;"> 3</span></div>
+          <div><span style="color: #4a5164;">├</span> summaries/<span style="color: #636b7e;"> 2</span></div>
+          <div><span style="color: #4a5164;">├</span> decisions.md <span style="color: #e8a33d;">追記のみ</span></div>
+          <div><span style="color: #4a5164;">└</span> log.md <span style="color: #e8a33d;">追記のみ</span></div>
+        </div>
+        <div style="font-size: 11px; color: #4a5164; line-height: 1.65; padding-top: 2px;">コンテキストの窓は共有しない。<b style="color: #7d8598; font-weight: 500;">圧縮を跨いで残るのはここだけ。</b></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
