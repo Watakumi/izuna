@@ -17,7 +17,7 @@ export function NewSession({
 }: {
   initialCwd: string
   onCancel: () => void
-  onStart: (input: { cwd: string; label: string; branch: string | null }) => Promise<void>
+  onStart: (input: { cwd: string; label: string; branch: string | null; team: string }) => Promise<void>
 }): React.JSX.Element {
   const [cwd, setCwd] = useState(initialCwd)
   const [repo, setRepo] = useState<RepoInfo | null>(null)
@@ -56,10 +56,10 @@ export function NewSession({
     try {
       if (useWorktree) {
         const created = await window.izuna.createWorktree(repo.root, branch.trim())
-        await onStart({ cwd: created.path, label: created.branch, branch: created.branch })
+        await onStart({ cwd: created.path, label: created.branch, branch: created.branch, team: created.branch })
       } else {
         const here = repo.worktrees.find((w) => w.path === repo.root)
-        await onStart({ cwd: repo.root, label: repo.name, branch: here?.branch ?? null })
+        await onStart({ cwd: repo.root, label: repo.name, branch: here?.branch ?? null, team: repo.name })
       }
     } catch (e) {
       setFailure(String(e).replace(/^Error:\s*/, ''))

@@ -21,6 +21,8 @@ export interface StartSessionInput {
   model?: string
   permissionMode?: PermissionMode
   resume?: string
+  /** 共有フォルダの名前。省略すると default */
+  team?: string
 }
 
 export interface PermissionAnswer {

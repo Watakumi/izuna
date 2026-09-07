@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
+import { ensureTeam, teamInstructions } from '../team'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -47,6 +48,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
   ipcMain.handle(CH.start, async (_e, input: StartSessionInput): Promise<SessionId> => {
     const id = randomUUID()
+    // 共有フォルダを先に用意する。場所を教えるだけでは使われないので、
+    // 規律ごと申し送りに書いて渡す（§12）
+    const team = await ensureTeam(input.team ?? 'default')
     const session = new ClaudeSession({
       cwd: input.cwd,
       model: input.model,
@@ -54,7 +58,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
       resume: input.resume,
       // 利用者の端末のプラグイン hook を引き継がない（CLAUDE.md §7）。
       // 'project' は残す —— 外すとプロジェクトの CLAUDE.md が読まれなくなる。
-      settingSources: ['project', 'local']
+      settingSources: ['project', 'local'],
+      additionalDirectories: [team],
+      appendSystemPrompt: teamInstructions(team)
     })
 
     session.on('message', (message) => emit({ kind: 'message', id, message }))

@@ -9,6 +9,7 @@ import { NewSession } from './components/NewSession'
 import { Palette } from './components/Palette'
 import { PermissionBar } from './components/PermissionBar'
 import { Sidebar } from './components/Sidebar'
+import { TaskPanel } from './components/TaskPanel'
 import { useSessions } from './useSessions'
 
 /**
@@ -129,6 +130,7 @@ function App(): React.JSX.Element {
           <>
             <div style={S.body} ref={scroller}>
               <Conversation items={active.transcript.items} draft={active.transcript.draft} />
+              <TaskPanel tasks={active.transcript.tasks} />
               {active.pending && (
                 <div style={{ padding: '0 24px 22px' }}>
                   <PermissionBar

@@ -78,7 +78,8 @@ export function useSessions(): Sessions {
     input: StartSessionInput & { label: string; branch: string | null }
   ): Promise<SessionId> => {
     const id = await window.izuna.start({
-      cwd: input.cwd, model: input.model, permissionMode: input.permissionMode, resume: input.resume
+      cwd: input.cwd, model: input.model, permissionMode: input.permissionMode,
+      resume: input.resume, team: input.team
     })
     const commands = await window.izuna.slashCommands(id)
     setPanels((prev) => [...prev, {

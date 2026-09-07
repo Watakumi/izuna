@@ -27,6 +27,13 @@ export function PermissionBar({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5, flexGrow: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <b style={{ fontSize: 13 }}>{request.toolName}</b>
+            {request.agentId && (
+              // 実行役の要求でも人間に上げる。誰の要求かは見せる
+              <span style={{ font: `10.5px ${MONO}`, color: C.dim2, padding: '2px 7px',
+                border: `1px solid ${C.amberLine}`, borderRadius: 4 }}>
+                実行役 {request.agentId.slice(0, 6)}
+              </span>
+            )}
             <span style={{ font: `11.5px ${MONO}`, color: C.ink2, overflow: 'hidden',
               textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {describeToolInput(request.toolName, request.input)}

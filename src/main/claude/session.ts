@@ -66,6 +66,10 @@ export interface SessionOptions {
    * ただし `'project'` を外すと CLAUDE.md も読まれなくなる点に注意。
    */
   settingSources?: SettingSource[]
+  /** 作業ディレクトリの外で読み書きさせたい場所。共有フォルダ（§12）を渡す */
+  additionalDirectories?: string[]
+  /** 既定のシステムプロンプトに足す申し送り */
+  appendSystemPrompt?: string
 }
 
 type Events = {
@@ -156,7 +160,12 @@ export class ClaudeSession extends EventEmitter<Events> {
         // 作業ディレクトリも auto-memory も git status も振る舞いの指示も
         // 無い状態になり、エージェントは自分がどこにいるか知らないまま
         // それらしいパスを作り話する（実測 2026-09-07）。
-        systemPrompt: { type: 'preset', preset: 'claude_code' },
+        systemPrompt: {
+          type: 'preset',
+          preset: 'claude_code',
+          ...(this.options.appendSystemPrompt ? { append: this.options.appendSystemPrompt } : {})
+        },
+        additionalDirectories: this.options.additionalDirectories,
         includePartialMessages: true,
         // 実行役の発話も流す。既定では tool_use / tool_result しか来ないので、
         // 何を考えて何をしたのかが見えない（段4）
