@@ -112,6 +112,9 @@ export async function removeWorktree(cwd: string, path: string, force = false): 
 export interface WorktreeStatus {
   /** 変更のあるファイル数 */
   changed: number
+  /** 増えた行 / 減った行。モックの `+34 −8` にあたる */
+  added: number
+  removed: number
   ahead: number
   behind: number
   branch: string | null
@@ -139,5 +142,16 @@ export async function worktreeStatus(path: string): Promise<WorktreeStatus> {
       changed++
     }
   }
-  return { changed, ahead, behind, branch }
+  // 行数は別に聞く。status では取れない
+  let added = 0
+  let removed = 0
+  try {
+    const stat = await git(path, ['diff', '--shortstat', 'HEAD'])
+    added = Number(/(\d+) insertion/.exec(stat)?.[1] ?? 0)
+    removed = Number(/(\d+) deletion/.exec(stat)?.[1] ?? 0)
+  } catch {
+    // コミットが 1 つも無いと HEAD が無い。0 のままでよい
+  }
+
+  return { changed, added, removed, ahead, behind, branch }
 }

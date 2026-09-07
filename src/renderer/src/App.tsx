@@ -28,10 +28,9 @@ function App(): React.JSX.Element {
   const sessions = useSessions()
   const { active } = sessions
   const [showNew, setShowNew] = useState(false)
-  const [showForge, setShowForge] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
-  const [showTrees, setShowTrees] = useState(false)
+  const [tab, setTab] = useState<'info' | 'pr' | 'branch'>('info')
   const [stale, setStale] = useState(false)
 
   // main は HMR で入れ替わらない。食い違ったまま動くと、原因を指さない
@@ -139,6 +138,11 @@ function App(): React.JSX.Element {
             </>
           )}
           <div style={{ flexGrow: 1 }} />
+          {sessions.panels.filter((p) => p.transcript.state === 'running').length > 0 && (
+            <span style={{ ...S.note, color: C.teal }}>
+              {sessions.panels.filter((p) => p.transcript.state === 'running').length} 実行中
+            </span>
+          )}
           {sessions.waiting.length > 0 && (
             <span style={{ ...S.note, color: C.amber }}>承認待ち {sessions.waiting.length}</span>
           )}
@@ -153,14 +157,27 @@ function App(): React.JSX.Element {
           {active && (
             <button style={S.ghostSmall} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
           )}
+          {/* 破壊的な操作。ほかと同じ形にしない。実行中だけ出す */}
+          {active?.transcript.state === 'running' && (
+            <button style={S.danger} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
+          )}
           {active && (
-            <button style={S.ghostSmall} onClick={() => setShowTerm((v) => !v)}>
-              {showTerm ? 'ターミナルを閉じる' : 'ターミナル'}
+            <button
+              style={{ ...S.ghostSmall, borderColor: showTerm ? C.line2 : 'transparent',
+                color: showTerm ? C.ink2 : C.dim2 }}
+              onClick={() => setShowTerm((v) => !v)}
+              title="worktree のシェルを開く"
+            >
+              ターミナル
             </button>
           )}
-          {active && <button style={S.ghostSmall} onClick={() => setShowTrees(true)}>worktree</button>}
-          {active && <button style={S.ghostSmall} onClick={() => setShowForge(true)}>Forge</button>}
-          <button style={S.ghostSmall} onClick={() => setShowSetup(true)}>設定</button>
+          <button
+            style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+            onClick={() => setShowSetup(true)}
+            title="Forgejo と設定の準備"
+          >
+            準備
+          </button>
         </div>
 
         {!active ? (
@@ -234,23 +251,35 @@ function App(): React.JSX.Element {
               </div>
             </div>
             </div>
-            <Inspector panel={active} />
+            <div style={{ width: tab === 'info' ? 288 : 360, flexShrink: 0, background: C.panel,
+              borderLeft: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
+                {(['info', 'pr', 'branch'] as const).map((t) => (
+                  <div key={t} onClick={() => setTab(t)} style={{
+                    flexGrow: 1, textAlign: 'center', padding: '9px 0', cursor: 'pointer',
+                    fontSize: 11.5, color: tab === t ? C.ink : C.dim2,
+                    borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
+                  }}>
+                    {t === 'info' ? '情報' : t === 'pr' ? 'PR' : 'ブランチ'}
+                  </div>
+                ))}
+              </div>
+              <div style={{ flexGrow: 1, minHeight: 0 }}>
+                {tab === 'info' && <Inspector panel={active} onOpenForge={() => setTab('pr')} />}
+                {tab === 'pr' && <Forge cwd={active.cwd} onDone={() => setTab('info')} />}
+                {tab === 'branch' && (
+                  <Worktrees cwd={active.cwd} panels={sessions.panels}
+                    onOpen={(w) => void sessions.open({
+                      cwd: w.path, label: w.branch ?? w.path, branch: w.branch, team: w.branch ?? 'default'
+                    })} />
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {showSetup && <ForgeSetup onClose={() => setShowSetup(false)} />}
-      {showForge && active && <Forge cwd={active.cwd} onClose={() => setShowForge(false)} />}
-      {showTrees && active && (
-        <Worktrees
-          cwd={active.cwd}
-          panels={sessions.panels}
-          onClose={() => setShowTrees(false)}
-          onOpen={(w) => void sessions.open({
-            cwd: w.path, label: w.branch ?? w.path, branch: w.branch, team: w.branch ?? 'default'
-          })}
-        />
-      )}
 
       {showNew && (
         <NewSession
@@ -284,6 +313,9 @@ const S: Record<string, React.CSSProperties> = {
     color: C.amberInk, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' },
   ghostSmall: { padding: '5px 13px', borderRadius: 6, border: `1px solid ${C.line2}`,
     background: 'transparent', color: C.ink2, fontSize: 11.5, cursor: 'pointer' },
+  /** 破壊的な操作。ほかのボタンと同じ形にしない */
+  danger: { padding: '5px 13px', borderRadius: 6, border: `1px solid ${C.red}`,
+    background: 'transparent', color: C.red, fontSize: 11.5, cursor: 'pointer' },
   empty: { flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: 16 },
   body: { flexGrow: 1, minHeight: 0, overflowY: 'auto' },

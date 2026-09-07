@@ -126,7 +126,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 7
+export const IPC_VERSION = 8
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {

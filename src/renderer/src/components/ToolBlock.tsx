@@ -18,6 +18,10 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
   // 差分のあるものは開いて出す。承認したものを畳んで隠さない
   const [open, setOpen] = useState(diff !== null)
   const s = STATE[block.state]
+  // Bash の終了コードは結果本文にしか出ない。拾えたら出す（モックの `exit 0`）
+  const exitCode = block.name === 'Bash' && block.result !== null
+    ? /(?:^|\n)\s*(?:exit code|Exit code)[: ]+(\d+)/.exec(block.result)?.[1] ?? null
+    : null
 
   return (
     <div style={{ border: `1px solid ${C.line2}`, borderRadius: 9, overflow: 'hidden', background: C.surface }}>
@@ -29,6 +33,11 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {describeToolInput(block.name, block.input)}
         </span>
+        {exitCode !== null && (
+          <span style={{ font: `11px ${MONO}`, color: exitCode === '0' ? C.teal : C.red, flexShrink: 0 }}>
+            exit {exitCode}
+          </span>
+        )}
         <span style={{ fontSize: 11, color: s.color, flexShrink: 0 }}>{s.label}</span>
       </div>
 

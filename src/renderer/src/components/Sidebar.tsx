@@ -23,6 +23,20 @@ function label(panel: Panel): string {
   return '待機'
 }
 
+/** cwd の親ディレクトリ名でリポジトリを推測して束ねる */
+function group(panels: Panel[]): Array<[string, Panel[]]> {
+  const byRepo = new Map<string, Panel[]>()
+  for (const p of panels) {
+    // worktree は ~/.izuna/worktrees/<repo>/<branch> なので親の親、
+    // それ以外は cwd の名前そのもの
+    const parts = p.cwd.split('/').filter(Boolean)
+    const at = parts.indexOf('worktrees')
+    const repo = at !== -1 && parts[at + 1] ? parts[at + 1] : (parts.at(-1) ?? '?')
+    byRepo.set(repo, [...(byRepo.get(repo) ?? []), p])
+  }
+  return [...byRepo].sort(([a], [b]) => a.localeCompare(b))
+}
+
 export function Sidebar({
   panels,
   activeId,
@@ -53,7 +67,16 @@ export function Sidebar({
             まだありません。<br />下の「新しいセッション」から。
           </div>
         )}
-        {panels.map((p) => {
+        {group(panels).map(([repo, group]) => (
+          <div key={repo} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {/* リポジトリで束ねる。並列で走らせると、どのリポジトリの話か分からなくなる */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 6px 3px' }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.faint}
+                strokeWidth="1.9"><path d="M4 4h11l5 5v11H4z" /></svg>
+              <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>{repo}</span>
+              <span style={{ fontSize: 10.5, color: C.faint }}>{group.length}</span>
+            </div>
+            {group.map((p) => {
           const d = dot(p)
           const on = p.id === activeId
           return (
@@ -86,7 +109,9 @@ export function Sidebar({
               >×</span>
             </div>
           )
-        })}
+            })}
+          </div>
+        ))}
       </div>
 
       <div style={{ padding: 10, borderTop: `1px solid ${C.line}` }}>
