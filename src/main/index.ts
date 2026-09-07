@@ -10,6 +10,7 @@ let mainWindow: BrowserWindow | null = null
 function createWindow(): void {
   // Create the browser window.
   const win = new BrowserWindow({
+    title: 'Izuna',
     width: 1280,
     height: 860,
     show: false,
@@ -46,7 +47,7 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('dev.watakumi.izuna')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

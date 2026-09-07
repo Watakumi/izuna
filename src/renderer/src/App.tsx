@@ -113,9 +113,12 @@ function App(): React.JSX.Element {
           {sessions.waiting.length > 0 && (
             <span style={{ ...S.note, color: C.amber }}>承認待ち {sessions.waiting.length}</span>
           )}
-          {active?.transcript.costUsd != null && (
-            <span style={S.note} title="定価換算の目安です。Pro プランの枠で動いているため、この額が請求されるわけではありません">
-              目安 ${active.transcript.costUsd.toFixed(4)}
+          {active?.transcript.limits && (
+            // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
+            // 実際の制約はサブスクリプションの枠のほう
+            <span style={S.note} title="Pro プランの枠の使用率。ターミナルの Claude Code と同じ窓を共有します">
+              枠 {Math.round(active.transcript.limits.fiveHour * 100)}%
+              <span style={{ color: C.faint }}> / 5時間</span>
             </span>
           )}
           {active && (

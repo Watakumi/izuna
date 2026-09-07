@@ -172,6 +172,26 @@ describe('拒否の判定', () => {
   })
 })
 
+describe('枠の使用率', () => {
+  it('rate_limit_event から拾う', () => {
+    // 金額（costBasis: "list"）は請求額ではないので画面に出さない。
+    // 実際の制約はこちらで、ターミナルの Claude Code と同じ窓を共有する
+    expect(t.limits).not.toBeNull()
+    expect(t.limits!.fiveHour).toBeGreaterThanOrEqual(0)
+    expect(t.limits!.fiveHour).toBeLessThanOrEqual(1)
+    expect(t.limits!.sevenDay).toBeGreaterThanOrEqual(0)
+  })
+
+  it('片方しか来なくても前の値を保つ', () => {
+    const seeded = { ...emptyTranscript(), limits: { fiveHour: 0.3, sevenDay: 0.5 } }
+    const next = applyMessage(seeded, {
+      type: 'rate_limit_event',
+      rate_limit_info: { unifiedWindows: { five_hour: { utilization: 0.4 } } }
+    } as unknown as SDKMessage)
+    expect(next.limits).toEqual({ fiveHour: 0.4, sevenDay: 0.5 })
+  })
+})
+
 describe('権限モードと稼働状態', () => {
   it('init のモードを起点にする', () => {
     expect(t.permissionMode).toBe('default')

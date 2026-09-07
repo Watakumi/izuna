@@ -86,7 +86,17 @@ export interface Transcript {
   tasks: TaskRun[]
   /** turn が走っているか。result で false になる */
   running: boolean
+  /**
+   * 定価換算の目安。**請求額ではない**（costBasis: "list"）。
+   * 画面には出さない —— 課金されない額を出すと誤解される（CLAUDE.md §14）。
+   * 記録として持つだけ。
+   */
   costUsd: number | null
+  /**
+   * サブスクリプションの枠の使用率（0..1）。**こちらが実際の制約**。
+   * ターミナルの Claude Code と同じ窓を共有するので、並列で走らせると効く。
+   */
+  limits: { fiveHour: number; sevenDay: number } | null
   /** message_start で覚えた直近の id。draft を紐づけるためだけに持つ */
   streamingMessageId: string | null
   /**
@@ -103,7 +113,7 @@ export function emptyTranscript(): Transcript {
   return {
     items: [], draft: null, sessionId: null, model: null,
     slashCommands: [], permissionMode: 'default', state: 'idle', tasks: [],
-    running: false, costUsd: null, streamingMessageId: null, deniedToolUseIds: []
+    running: false, costUsd: null, limits: null, streamingMessageId: null, deniedToolUseIds: []
   }
 }
 
@@ -171,6 +181,19 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
         }
       }
       return { ...t, items: attachResults(t.items, m.message.content, t.deniedToolUseIds) }
+
+    case 'rate_limit_event': {
+      const w = (m as unknown as { rate_limit_info?: { unifiedWindows?: Record<string, { utilization?: number }> } })
+        .rate_limit_info?.unifiedWindows
+      if (!w) return t
+      return {
+        ...t,
+        limits: {
+          fiveHour: w.five_hour?.utilization ?? t.limits?.fiveHour ?? 0,
+          sevenDay: w.seven_day?.utilization ?? t.limits?.sevenDay ?? 0
+        }
+      }
+    }
 
     case 'result':
       return {
