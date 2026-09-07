@@ -10,7 +10,8 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
-- 現状: セッション層（Agent SDK 経由）+ 権限承認の握手 + 検証の土台まで。UI は未着手
+- 現状: MVP は会話・パレット・承認・差分・worktree・Forge・ターミナルまで実装済み。
+  **残っているのはセッションの一覧と resume（§18）**
 - **`pnpm verify` は緑**（186件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
@@ -357,11 +358,11 @@ type PermissionResult =
 ### MVP でやる
 
 - [x] stream-json 双方向セッション（`ClaudeSession`）
-- [ ] 会話ビュー: text / thinking / tool_use / tool_result の逐次描画
-- [ ] **`/` パレット**（差別化の本体）: 走査 + init マージ、あいまい検索、引数ヒント
-- [ ] 権限承認 UI（§6 の解決が前提）
-- [ ] 差分ビュー（ツール入力から生成）
-- [ ] セッション resume と履歴
+- [x] 会話ビュー: text / thinking / tool_use / tool_result の逐次描画
+- [x] **`/` パレット**（差別化の本体）: `supportedCommands()` + あいまい検索・引数ヒント
+- [x] 権限承認 UI（§6）
+- [x] 差分ビュー（ツール入力から生成）。**1 件ずつの accept/reject は未実装**
+- [ ] **セッション resume と履歴** ← 次はここ（§18）
 
 ### やらない（当面）
 
@@ -903,3 +904,90 @@ attention / active）・`Label`・`Faint`・`Tag`・`Dot`・`Meter`・`ellipsis`
 結果は 27 通り・使う数字は 2 / 4 / 6 / 8 / 12 / 16 / 24 と 64 のみ。
 モーダルの上げ底が 80 と 64 で食い違っていたのも、ここで見つかって揃えた
 （意図した差ではなかった）。
+
+---
+
+## 18. セッションの保存は自作しない（2026-09-07 実測）
+
+### 気づいていなかったこと
+
+「セッション保存の機能が無い」と思っていた。**間違いで、既に保存されている。**
+`claude` は 1 セッション 1 ファイルで JSONL を書いている。
+
+```
+~/.claude/projects/<cwd のスラッグ>/<session-id>.jsonl
+```
+
+**Izuna が起こしたセッションも既に落ちていた**（`-private-tmp-izuna-probe`、
+`…-T-izuna-cwd-*` など 7 本）。Izuna が知らなかっただけである。
+
+この会話（19MB・6,000 行超）の実測:
+
+| 種別 | 件数 | 使い道 |
+| --- | --- | --- |
+| `assistant` / `user` | 963 / 463 | 会話の復元 |
+| `ai-title` | 366 | **CLI が付けた題名**。一覧のラベルが只で手に入る |
+| `slug` | — | `happy-jingling-cherny` 形式のコードネーム（2.1.x） |
+| `mode` / `permission-mode` | 各 367 | 復元時のモード |
+| `file-history-snapshot` | 49 | ファイル編集のスナップショット |
+| `attachment` | 2,540 | 途中で足された文脈（ツール追加・スキル一覧） |
+| `last-prompt` / `queue-operation` | 367 / 40 | 直近プロンプトの栞・投入キュー |
+
+サイドカーが 2 種類ある（このマシンには未出現・**未検証**）。
+
+```
+<sessionId>/subagents/agent-<id>.jsonl   実行役の記録
+<sessionId>/tool-results/                外に出したツール結果
+```
+
+**`subagents/` が存在するなら、§12 の「まだ測っていないこと」の一部は
+ファイルを読むだけで解ける。** 実行役を 1 本走らせて確かめること。
+
+### 決めたこと
+
+**保存層を自作しない。走査する。** 理由は 3 つ。
+
+1. 二重に持つと必ずずれる（§16 と同じ間違いになる）
+2. ターミナルの `claude` で起こしたセッションも Izuna から見える
+3. `ai-title` と `slug` があるので、題名を自前で生成しなくてよい
+
+Nimbalyst も同じことをしている（`ClaudeCodeSessionScanner.ts`。コメントに
+"discovers sessions created by the Claude Code CLI **or other tools**"）。
+
+走査とパースは `shared/` の純粋関数に置く（§4 の原則）。**実 API が要らないので
+門が作れる。** fixture は自分の `~/.claude/projects` から 1 本切り出す ——
+ただし §11 と同じ理由で、**素の記録は私的な内容を含むので commit しない**。
+
+### なぜこれを先にやるか
+
+Izuna で Izuna を作ると、**直したものを見るのに必ず一度アプリを落とす**
+（renderer は HMR、main は入れ替わらない。§7）。セッションが復元できないと
+落とすたびに全部消えるので、dogfood の前提が成立しない。
+
+---
+
+## 19. Nimbalyst 再調査（2026-09-07）
+
+TS/TSX 約 5 万行、`packages/electron` だけで 3,066 ファイル。
+**機能で追う相手ではない**（§2 の結論は変わらない）。取捨を明示しておく。
+
+| 機能 | Izuna |
+| --- | --- |
+| セッション一覧・resume・検索・Kanban | **取る**（§18） |
+| セッション ↔ ファイルの相互リンク | 取る |
+| 赤緑の差分を **1 件ずつ** accept/reject | 取る（いまの差分ビューは表示のみ） |
+| AI によるコミット文の下書き | 取る |
+| MCP の結果を JSON でなく widget で描く | 保留 |
+| **15 の agent provider 抽象**（Codex / Copilot / Cursor / Gemini …） | **取らない**。Claude Code 専用は §15 の意図的な決定 |
+| 視覚エディタ 7 種（Mermaid / Excalidraw / データモデル …） | **取らない**。別の製品 |
+| 拡張 SDK とマーケットプレイス | **取らない**。利用者は作者ひとり |
+| iOS companion・push 通知 | **取らない**（GOAL.md） |
+| リアルタイム共同編集・セッション共有 | **取らない** |
+
+参考になった実装:
+
+```
+packages/electron/src/main/services/ClaudeCodeSessionScanner.ts   JSONL 走査
+packages/electron/src/main/services/ClaudeCodeSessionSync.ts      索引との同期
+packages/runtime/src/ai/server/providers/TeammateManager.ts       §12 で既出
+```
