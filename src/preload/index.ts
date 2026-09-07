@@ -24,6 +24,7 @@ const izuna: IzunaApi = {
   isPushed: (cwd, r, b) => ipcRenderer.invoke(CH.isPushed, cwd, r, b),
   push: (cwd, r, b) => ipcRenderer.invoke(CH.push, cwd, r, b),
   commitsSince: (cwd, base) => ipcRenderer.invoke(CH.commitsSince, cwd, base),
+  ghosttySkin: () => ipcRenderer.invoke(CH.ghosttySkin),
   listSessions: () => ipcRenderer.invoke(CH.listSessions),
   replaySession: (sessionId) => ipcRenderer.invoke(CH.replaySession, sessionId),
   openTerminal: (input) => ipcRenderer.invoke(CH.openTerminal, input),

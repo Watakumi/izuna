@@ -9,6 +9,7 @@ import type { RemoteRef } from './remote'
 import type { FoundRepo } from '../main/repos'
 import type { WorktreeStatus } from '../main/git/worktree'
 import type { SessionSummary } from './sessions'
+import type { GhosttySkin } from '../main/ghostty'
 import type { Transcript } from './transcript'
 
 /**
@@ -108,6 +109,12 @@ export interface IzunaApi {
    * `~/.claude/projects/` を走査するので、ターミナルの `claude` で
    * 起こしたセッションもここに出る。
    */
+  /**
+   * 利用者の Ghostty のテーマ。**無ければ null**（既定の色で出る）。
+   * ターミナルが既に ghostty なのに、アプリの色だけ別なのは筋が通らない。
+   */
+  ghosttySkin(): Promise<GhosttySkin | null>
+
   listSessions(): Promise<SessionSummary[]>
   /**
    * 記録から会話を組み立て直す。**組み立ては main でやる** ——
@@ -139,7 +146,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 12
+export const IPC_VERSION = 13
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -166,6 +173,7 @@ export const CH = {
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
   configInfo: 'izuna:config:info',
+  ghosttySkin: 'izuna:ghostty:skin',
   listSessions: 'izuna:sessions:list',
   replaySession: 'izuna:sessions:replay',
   findRepos: 'izuna:repos:find',

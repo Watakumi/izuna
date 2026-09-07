@@ -1,3 +1,5 @@
+import type { Skin, TokenName } from '../../shared/ghostty'
+
 /**
  * 見た目の土台。**ここに無い値を直接書かない。**
  *
@@ -6,8 +8,15 @@
  * `test/design-system.test.ts` が、スケール外の値が入ったら落とす。
  */
 
-/** 色。design/ の判断（アンバーは人間の判断待ちだけ）を引き継ぐ */
-export const C = {
+/**
+ * 色。design/ の判断（アンバーは人間の判断待ちだけ）を引き継ぐ。
+ *
+ * **値は CSS 変数を経由する。** 利用者の Ghostty のテーマを反映できるように
+ * するためで（`shared/ghostty.ts`）、`var(--c-x, 既定)` の形にしておけば
+ * **使う側 294 箇所を 1 つも書き換えずに**差し替えられる。
+ * 変数が設定されていなければ、ここに書いた既定が出る。
+ */
+const BASE = {
   bg: '#14161b',
   panel: '#101216',
   surface: '#171a21',
@@ -31,7 +40,26 @@ export const C = {
   delBg: '#2a1518',
   delInk: '#e0a0a6',
   code: '#0d0f13'
-} as const
+} as const satisfies Record<TokenName, string>
+
+export const C = Object.fromEntries(
+  Object.entries(BASE).map(([k, v]) => [k, `var(--c-${k}, ${v})`])
+) as Record<keyof typeof BASE, string>
+
+/**
+ * Ghostty から作った配色を当てる。**外したいときは null。**
+ *
+ * `:root` に変数を置くだけなので、React の再描画は要らない。
+ */
+export function applySkin(skin: Skin | null, fontMono?: string): void {
+  const root = document.documentElement
+  for (const k of Object.keys(BASE)) root.style.removeProperty(`--c-${k}`)
+  root.style.removeProperty('--font-mono')
+  if (!skin) return
+  for (const [k, v] of Object.entries(skin)) root.style.setProperty(`--c-${k}`, v)
+  // Ghostty で使っている等幅フォントも借りる。無ければ既定のまま
+  if (fontMono) root.style.setProperty('--font-mono', `'${fontMono}', ${MONO_BASE}`)
+}
 
 /**
  * 文字。**5 段だけ。** 10.5 や 12.5 のような半端はやめた。
@@ -69,7 +97,8 @@ export const S = {
   xxl: 24
 } as const
 
-export const MONO = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+const MONO_BASE = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+export const MONO = `var(--font-mono, ${MONO_BASE})`
 export const SANS = "'IBM Plex Sans', system-ui, -apple-system, sans-serif"
 
 /** `font` 一括指定を組む。文字サイズをスケールから外させない */

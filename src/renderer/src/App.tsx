@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PermissionMode, PermissionResult, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
 import { appendUserText, markDenied, setPermissionMode } from '../../shared/transcript'
-import { C, MONO, SANS } from './theme'
+import { applySkin, C, MONO, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { ModeSwitch } from './components/ModeSwitch'
 import { NewSession } from './components/NewSession'
@@ -33,6 +33,13 @@ function App(): React.JSX.Element {
   const [showTerm, setShowTerm] = useState(false)
   const [tab, setTab] = useState<'info' | 'pr' | 'branch'>('info')
   const [stale, setStale] = useState(false)
+
+  // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
+  useEffect(() => {
+    void window.izuna.ghosttySkin()
+      .then((g) => applySkin(g?.skin ?? null, g?.fontFamily[0]))
+      .catch(() => applySkin(null))
+  }, [])
 
   // main は HMR で入れ替わらない。食い違ったまま動くと、原因を指さない
   // 「No handler registered」に化ける（実際に 5 時間古い main で踏んだ）
