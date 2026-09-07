@@ -28,6 +28,32 @@ export type Block =
   | { kind: 'thinking'; text: string }
   | { kind: 'tool'; id: string; name: string; input: unknown; state: ToolState; result: string | null }
 
+export type TaskStatus = 'running' | 'completed' | 'failed' | 'stopped'
+
+/**
+ * 実行役 1 人ぶん（段4）。
+ *
+ * ブレインの `Agent` ツール呼び出しと、次の 3 つが同じ id で繋がる（実測）:
+ * `task_started.tool_use_id` = 実行役メッセージの `parent_tool_use_id`
+ * = ブレインの tool_use の id。承認の `agentId` は `task_id` に一致する。
+ */
+export interface TaskRun {
+  taskId: string
+  /** ブレインのどの tool_use から生えたか */
+  toolUseId: string | null
+  description: string
+  subagentType: string | null
+  prompt: string | null
+  status: TaskStatus
+  summary: string | null
+  /** いま何のツールを使っているか（task_progress） */
+  lastTool: string | null
+  backgrounded: boolean
+  usage: { totalTokens: number; toolUses: number; durationMs: number } | null
+  /** 実行役が出したもの。**ブレインの会話には混ぜない** */
+  blocks: Block[]
+}
+
 export type Item =
   | { kind: 'user'; id: string; text: string }
   | { kind: 'assistant'; id: string; blocks: Block[] }
@@ -56,6 +82,8 @@ export interface Transcript {
   permissionMode: PermissionMode
   /** CLI が言う稼働状態。result からの推測より正確 */
   state: 'idle' | 'running' | 'requires_action'
+  /** 実行役。ブレインの会話とは別に持つ */
+  tasks: TaskRun[]
   /** turn が走っているか。result で false になる */
   running: boolean
   costUsd: number | null
@@ -74,7 +102,7 @@ export interface Transcript {
 export function emptyTranscript(): Transcript {
   return {
     items: [], draft: null, sessionId: null, model: null,
-    slashCommands: [], permissionMode: 'default', state: 'idle',
+    slashCommands: [], permissionMode: 'default', state: 'idle', tasks: [],
     running: false, costUsd: null, streamingMessageId: null, deniedToolUseIds: []
   }
 }
@@ -112,15 +140,36 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
       if (m.subtype === 'session_state_changed') {
         return { ...t, state: m.state }
       }
+      if (String(m.subtype).startsWith('task_')) {
+        return { ...t, tasks: applyTask(t.tasks, m as unknown as TaskFrame) }
+      }
       return t
 
     case 'stream_event':
+      // 実行役の逐次差分でブレインの途中経過を上書きしない
+      if (m.parent_tool_use_id) return t
       return applyStreamEvent(t, m.event as StreamEvent)
 
-    case 'assistant':
+    case 'assistant': {
+      const blocks = (m.message.content as RawBlock[]).map(toBlock).filter((b): b is Block => b !== null)
+      // 実行役の発話はブレインの会話に混ぜない。混ぜると誰が言ったのか分からなくなる
+      if (m.parent_tool_use_id) {
+        return { ...t, tasks: appendToTask(t.tasks, m.parent_tool_use_id, blocks) }
+      }
       return { ...t, items: appendBlocks(t.items, m.message.id, m.message.content as RawBlock[]) }
+    }
 
     case 'user':
+      if (m.parent_tool_use_id) {
+        return {
+          ...t,
+          tasks: t.tasks.map((task) =>
+            task.toolUseId === m.parent_tool_use_id
+              ? { ...task, blocks: resultsInto(task.blocks, m.message.content, t.deniedToolUseIds) }
+              : task
+          )
+        }
+      }
       return { ...t, items: attachResults(t.items, m.message.content, t.deniedToolUseIds) }
 
     case 'result':
@@ -184,6 +233,73 @@ function applyStreamEvent(t: Transcript, e: StreamEvent): Transcript {
     default:
       return t
   }
+}
+
+// ── 実行役 ──────────────────────────────────────────────────
+
+type TaskFrame = {
+  subtype: string
+  task_id?: string
+  tool_use_id?: string
+  description?: string
+  subagent_type?: string
+  prompt?: string
+  status?: string
+  summary?: string
+  last_tool_name?: string
+  is_backgrounded?: boolean
+  usage?: { total_tokens?: number; tool_uses?: number; duration_ms?: number }
+  patch?: { status?: string }
+}
+
+const TASK_STATUSES: TaskStatus[] = ['running', 'completed', 'failed', 'stopped']
+const asStatus = (v: unknown): TaskStatus | null =>
+  typeof v === 'string' && (TASK_STATUSES as string[]).includes(v) ? (v as TaskStatus) : null
+
+function applyTask(tasks: TaskRun[], frame: TaskFrame): TaskRun[] {
+  const id = frame.task_id
+  if (!id) return tasks
+
+  if (frame.subtype === 'task_started') {
+    if (tasks.some((t) => t.taskId === id)) return tasks
+    return [...tasks, {
+      taskId: id,
+      toolUseId: frame.tool_use_id ?? null,
+      description: frame.description ?? '',
+      subagentType: frame.subagent_type ?? null,
+      prompt: frame.prompt ?? null,
+      status: 'running',
+      summary: null,
+      lastTool: null,
+      backgrounded: frame.is_backgrounded === true,
+      usage: null,
+      blocks: []
+    }]
+  }
+
+  return tasks.map((task) => {
+    if (task.taskId !== id) return task
+    const usage = frame.usage
+      ? {
+          totalTokens: frame.usage.total_tokens ?? 0,
+          toolUses: frame.usage.tool_uses ?? 0,
+          durationMs: frame.usage.duration_ms ?? 0
+        }
+      : task.usage
+    return {
+      ...task,
+      description: frame.description ?? task.description,
+      lastTool: frame.last_tool_name ?? task.lastTool,
+      summary: frame.summary ?? task.summary,
+      status: asStatus(frame.patch?.status) ?? asStatus(frame.status) ?? task.status,
+      usage
+    }
+  })
+}
+
+function appendToTask(tasks: TaskRun[], toolUseId: string, blocks: Block[]): TaskRun[] {
+  if (blocks.length === 0) return tasks
+  return tasks.map((t) => (t.toolUseId === toolUseId ? { ...t, blocks: [...t.blocks, ...blocks] } : t))
 }
 
 // ── 確定 ────────────────────────────────────────────────────
@@ -250,29 +366,31 @@ function textOf(content: unknown): string {
   return ''
 }
 
+/** tool_result をブロック列に畳み込む。ブレインにも実行役にも同じ規則を使う */
+export function resultsInto(blocks: Block[], content: unknown, denied: string[]): Block[] {
+  if (!Array.isArray(content)) return blocks
+  const results = (content as ResultBlock[]).filter((c) => c.type === 'tool_result')
+  if (results.length === 0) return blocks
+
+  return blocks.map((b) => {
+    if (b.kind !== 'tool') return b
+    const r = results.find((x) => x.tool_use_id === b.id)
+    if (!r) return b
+    return {
+      ...b,
+      state: denied.includes(b.id) ? 'denied' : r.is_error ? 'error' : 'done',
+      result: textOf(r.content)
+    } as Block
+  })
+}
+
 /** tool_result を、対応する tool ブロックに畳み込む */
 function attachResults(items: Item[], content: unknown, denied: string[]): Item[] {
   if (!Array.isArray(content)) return items
-  const results = (content as ResultBlock[]).filter((c) => c.type === 'tool_result')
-  if (results.length === 0) return items
-
   return items.map((item) => {
     if (item.kind !== 'assistant') return item
-    let touched = false
-    const blocks = item.blocks.map((b) => {
-      if (b.kind !== 'tool') return b
-      const r = results.find((x) => x.tool_use_id === b.id)
-      if (!r) return b
-      touched = true
-      const text = textOf(r.content)
-      const wasDenied = denied.includes(b.id)
-      return {
-        ...b,
-        state: wasDenied ? 'denied' : r.is_error ? 'error' : 'done',
-        result: text
-      } as Block
-    })
-    return touched ? { ...item, blocks } : item
+    const blocks = resultsInto(item.blocks, content, denied)
+    return blocks === item.blocks ? item : { ...item, blocks }
   })
 }
 
