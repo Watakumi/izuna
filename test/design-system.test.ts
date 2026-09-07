@@ -124,6 +124,28 @@ describe('フォーム要素を素で書かない', () => {
   })
 })
 
+describe('読み終わるまで断定しない', () => {
+  /**
+   * 取ってくる一覧の初期値を `[]` にすると、**開いた瞬間だけ嘘が出る**。
+   * 「Forgejo の remote がありません」「差分がありません」「sandbox 未設定」が
+   * 一瞬表示されて消えていた。**一瞬でも嘘を出すと、利用者は設定を疑って
+   * 触りに行く。**
+   *
+   * `null` を「まだ読んでいない」にして、そのあいだは何も断定しない。
+   * （`useSessions` の `panels` は取得ではなく「まだ起こしていない」なので対象外）
+   */
+  it('components の一覧は null から始める', () => {
+    const bad: string[] = []
+    for (const { path, text } of files) {
+      if (!path.includes('/components/')) continue
+      for (const m of text.matchAll(/useState<[^>]*\[\]>\(\[\]\)/g)) {
+        bad.push(`${path}:${text.slice(0, m.index).split('\n').length} ${m[0]}`)
+      }
+    }
+    expect(bad).toEqual([])
+  })
+})
+
 describe('CSS の外に色を渡すときは解いてから渡す', () => {
   /**
    * `theme.ts` の `C` は `var(--c-bg, #14161b)` の形をしている。

@@ -23,7 +23,8 @@ export function Inspector({
   onOpenForge: () => void
 }): React.JSX.Element {
   const [status, setStatus] = useState<WorktreeStatus | null>(null)
-  const [remotes, setRemotes] = useState<RemoteRef[]>([])
+  // 「まだ読んでいない」を `null` で表す（`[]` だと『無い』と嘘をつく）
+  const [remotes, setRemotes] = useState<RemoteRef[] | null>(null)
   const [issues, setIssues] = useState<GitHubIssue[] | null>(null)
   const [pushed, setPushed] = useState<boolean | null>(null)
   const [team, setTeam] = useState<string | null>(null)
@@ -54,7 +55,7 @@ export function Inspector({
     return () => { alive = false }
   }, [panel.cwd, panel.team, panel.transcript.state])
 
-  const { sandbox, upstream } = rolesIn(remotes)
+  const { sandbox, upstream } = rolesIn(remotes ?? [])
   const limits = panel.transcript.limits
 
   return (
@@ -95,7 +96,10 @@ export function Inspector({
             background: pushed ? C.teal : 'transparent',
             border: pushed ? 'none' : `1.5px solid ${C.faint}` }} />
           <span style={{ fontSize: F.small, color: C.dim2 }}>
-            {!sandbox ? 'sandbox 未設定' : pushed ? 'sandbox に push 済み' : 'push していません'}
+            {/* 読み終わるまで断定しない。`[]` を「無い」と読むと一瞬だけ嘘が出る */}
+            {remotes === null
+              ? '確認しています…'
+              : !sandbox ? 'sandbox 未設定' : pushed ? 'sandbox に push 済み' : 'push していません'}
           </span>
         </div>
 
@@ -103,7 +107,7 @@ export function Inspector({
           padding: '8px 0', borderRadius: 7, border: `1px solid ${C.line2}`,
           background: 'transparent', color: C.ink2, fontSize: F.body, cursor: 'pointer'
         }}>
-          {upstream ? 'PR を作る' : 'remote を用意する'}
+          {remotes === null ? '…' : upstream ? 'PR を作る' : 'remote を用意する'}
         </button>
       </Block>
 

@@ -16,13 +16,20 @@ import { Button, Card, Faint } from './ui'
  * 横に並べて見られる必要がある。狭い縦の柱なので上下に積む。
  */
 export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): React.JSX.Element {
-  const [remotes, setRemotes] = useState<RemoteRef[]>([])
+  /**
+   * **「まだ読んでいない」と「読んだ結果、無い」を区別する。**
+   *
+   * 初期値を `[]` にしていたので、開いた瞬間だけ
+   * 「Forgejo の remote がありません」が出て、すぐ消えていた。
+   * 一瞬でも嘘を出すと、利用者は設定を疑って触りに行く。
+   */
+  const [remotes, setRemotes] = useState<RemoteRef[] | null>(null)
   const [branch, setBranch] = useState<string | null>(null)
   const [pushed, setPushed] = useState(false)
-  const [pulls, setPulls] = useState<ForgejoPull[]>([])
-  const [issues, setIssues] = useState<GitHubIssue[]>([])
+  const [pulls, setPulls] = useState<ForgejoPull[] | null>(null)
+  const [issues, setIssues] = useState<GitHubIssue[] | null>(null)
   const [gh, setGh] = useState<{ ok: boolean; detail: string } | null>(null)
-  const [commits, setCommits] = useState<string[]>([])
+  const [commits, setCommits] = useState<string[] | null>(null)
   const [bases, setBases] = useState<{ sandbox: string | null; upstream: string | null }>(
     { sandbox: null, upstream: null }
   )
@@ -73,8 +80,17 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
     }
   }
 
-  const { sandbox, upstream } = rolesIn(remotes)
-  const stage = stageOf({ remotes, pushedToSandbox: pushed })
+  const { sandbox, upstream } = rolesIn(remotes ?? [])
+  const stage = stageOf({ remotes: remotes ?? [], pushedToSandbox: pushed })
+
+  // 読み終わるまでは**何も断定しない**
+  if (remotes === null) {
+    return (
+      <div style={{ padding: S.lg }}>
+        <Faint>読んでいます…</Faint>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
@@ -107,7 +123,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               </>
             )}
 
-            {pulls.map((p) => (
+            {(pulls ?? []).map((p) => (
               <Card key={p.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
@@ -117,13 +133,13 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               </Card>
             ))}
 
-            {pulls.length === 0 && pushed && branch && (
+            {pulls?.length === 0 && pushed && branch && (
               <Button disabled={busy !== null} kind="primary"
                 onClick={() => void act('pr', async () => {
                   const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
                     title: branch, head: branch,
                     base: bases.sandbox ?? bases.upstream ?? 'main',
-                    body: commits.map((c) => `- ${c}`).join('\n')
+                    body: (commits ?? []).map((c) => `- ${c}`).join('\n')
                   })
                   return `sandbox に PR !${pr.number} を作りました`
                 })}>
@@ -156,7 +172,8 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               {branch} → {bases.upstream ?? '(既定ブランチ不明)'}
             </span>
             <span style={{ fontSize: F.small, color: C.dim2 }}>
-              {commits.length ? `${commits.length} コミット` : '差分がありません'}
+              {/* 読み終わるまで「差分がありません」と言わない */}
+              {commits === null ? '…' : commits.length ? `${commits.length} コミット` : '差分がありません'}
             </span>
             <Button disabled={busy !== null || stage !== 'readyForUpstream'}
               kind="primary"
@@ -164,7 +181,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                 const url = await window.izuna.ghCreatePull(cwd, {
                   title: branch, head: branch,
                   ...(bases.upstream ? { base: bases.upstream } : {}),
-                  body: commits.map((c) => `- ${c}`).join('\n') || '（本文なし）'
+                  body: (commits ?? []).map((c) => `- ${c}`).join('\n') || '（本文なし）'
                 })
                 onDone()
                 return url
@@ -179,7 +196,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
           </Card>
         )}
 
-        {gh?.ok && issues.length > 0 && (
+        {gh?.ok && issues && issues.length > 0 && (
           <>
             <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>元になる Issue</span>
             {issues.slice(0, 4).map((i) => (
