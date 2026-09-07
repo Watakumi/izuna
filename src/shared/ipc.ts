@@ -62,7 +62,7 @@ export interface IzunaApi {
   ghCreatePull(cwd: string, input: { title: string; body: string; head: string; base?: string; draft?: boolean }): Promise<string>
   /** remote と push */
   remotes(cwd: string): Promise<RemoteRef[]>
-  ensureWorkshopRemote(cwd: string, owner: string, repo: string): Promise<string>
+  ensureSandboxRemote(cwd: string, owner: string, repo: string): Promise<string>
   currentBranch(cwd: string): Promise<string | null>
   isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
   push(cwd: string, remote: string, branch: string): Promise<string>
@@ -104,7 +104,7 @@ export const CH = {
   ghPulls: 'izuna:gh:pulls',
   ghCreatePull: 'izuna:gh:create-pull',
   remotes: 'izuna:git:remotes',
-  ensureWorkshopRemote: 'izuna:git:ensure-workshop',
+  ensureSandboxRemote: 'izuna:git:ensure-sandbox',
   currentBranch: 'izuna:git:branch',
   isPushed: 'izuna:git:is-pushed',
   push: 'izuna:git:push',

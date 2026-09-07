@@ -44,7 +44,7 @@
       "w": 1440,
       "h": 900,
       "page": "page-1",
-      "title": "Forgejo"
+      "title": "Sandbox → Upstream"
     },
     {
       "file": "Worktrees.dc.html",
@@ -131,7 +131,7 @@
       "y": -196,
       "w": 560,
       "page": "page-1",
-      "text": "2026-09-07 更新: 段1〜5 の実装で分かったことを反映した\n・実行役は別セッションではなく Agent ツールのサブエージェント\n・worktree は Claude Code の agent isolation が配る\n・金額は出さない（請求額ではないため）。枠の使用率に置換\n・権限モードの切り替えと Forgejo の準備画面を追加\n・承認は専用画面ではなく会話内インライン"
+      "text": "2026-09-07 更新: 段1〜5 の実装で分かったことを反映した\n・実行役は別セッションではなく Agent ツールのサブエージェント\n・worktree は Claude Code の agent isolation が配る\n・金額は出さない（請求額ではないため）。枠の使用率に置換\n・権限モードの切り替えと Forgejo の準備画面を追加\n・承認は専用画面ではなく会話内インライン\n・作業場 / 出口 → Sandbox / Upstream に改称（比喩が二重だったため）"
     }
   ],
   "launch": {

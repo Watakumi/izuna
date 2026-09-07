@@ -36,11 +36,11 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
     setBranch(br)
     setGh(status)
 
-    const { workshop } = rolesIn(rs)
-    if (workshop && br) {
-      setPushed(await window.izuna.isPushed(cwd, workshop.name, br).catch(() => false))
-      if (workshop.owner && workshop.repo) {
-        setPulls(await window.izuna.forgePulls(workshop.owner, workshop.repo).catch(() => []))
+    const { sandbox } = rolesIn(rs)
+    if (sandbox && br) {
+      setPushed(await window.izuna.isPushed(cwd, sandbox.name, br).catch(() => false))
+      if (sandbox.owner && sandbox.repo) {
+        setPulls(await window.izuna.forgePulls(sandbox.owner, sandbox.repo).catch(() => []))
       }
     }
     if (status.ok) {
@@ -64,8 +64,8 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
     }
   }
 
-  const { workshop, exit } = rolesIn(remotes)
-  const stage = stageOf({ remotes, pushedToWorkshop: pushed })
+  const { sandbox, upstream } = rolesIn(remotes)
+  const stage = stageOf({ remotes, pushedToSandbox: pushed })
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.62)',
@@ -78,7 +78,7 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
           display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 600 }}>Forge</span>
           <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>{branch ?? '(detached)'}</span>
-          <span style={{ fontSize: 11.5, color: C.faint }}>作業場 → 出口</span>
+          <span style={{ fontSize: 11.5, color: C.faint }}>Sandbox → Upstream</span>
           <div style={{ flexGrow: 1 }} />
           <button onClick={() => void load()} style={GHOST}>読み直す</button>
           <button onClick={onClose} style={GHOST}>閉じる</button>
@@ -88,30 +88,30 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
           {/* 作業場 */}
           <div style={{ flexGrow: 1, minWidth: 0, borderRight: `1px solid ${C.line}`,
             display: 'flex', flexDirection: 'column' }}>
-            <Head dot={workshop ? C.teal : C.faint} title="作業場"
-              sub={workshop?.host ?? '未設定'} note="荒れてよい・壊れたら作り直す" />
+            <Head dot={sandbox ? C.teal : C.faint} title="Sandbox"
+              sub={sandbox?.host ?? '未設定'} note="荒れてよい・壊れたら作り直す" />
 
             <div style={PANE}>
-              {!workshop ? (
-                <Empty text="Forgejo の remote がありません。ここを作業場にすると、作業ブランチが GitHub に漏れなくなります">
+              {!sandbox ? (
+                <Empty text="Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが GitHub に漏れなくなります">
                   <button disabled={busy !== null} style={BTN}
                     onClick={() => void act('remote', async () => {
-                      const name = exit?.repo ?? cwd.split('/').pop() ?? 'repo'
+                      const name = upstream?.repo ?? cwd.split('/').pop() ?? 'repo'
                       const repo = await window.izuna.forgeEnsureRepo(name)
-                      return window.izuna.ensureWorkshopRemote(cwd, repo.owner, repo.name)
+                      return window.izuna.ensureSandboxRemote(cwd, repo.owner, repo.name)
                     })}>
-                    {busy === 'remote' ? '用意しています…' : '作業場を用意する'}
+                    {busy === 'remote' ? '用意しています…' : 'sandbox を用意する'}
                   </button>
                 </Empty>
               ) : (
                 <>
                   {!pushed && branch && (
                     <Row>
-                      <span style={{ fontSize: 12.5, color: C.dim }}>{branch} はまだ作業場にありません</span>
+                      <span style={{ fontSize: 12.5, color: C.dim }}>{branch} はまだ sandbox にありません</span>
                       <div style={{ flexGrow: 1 }} />
                       <button disabled={busy !== null} style={BTN}
-                        onClick={() => void act('push', () => window.izuna.push(cwd, workshop.name, branch))}>
-                        {busy === 'push' ? 'push 中…' : `${workshop.name} に push`}
+                        onClick={() => void act('push', () => window.izuna.push(cwd, sandbox.name, branch))}>
+                        {busy === 'push' ? 'push 中…' : `${sandbox.name} に push`}
                       </button>
                     </Row>
                   )}
@@ -122,13 +122,13 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
                       <div style={{ flexGrow: 1 }} />
                       <button disabled={busy !== null} style={BTN}
                         onClick={() => void act('pr', async () => {
-                          const pr = await window.izuna.forgeCreatePull(workshop.owner!, workshop.repo!, {
+                          const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
                             title: branch, head: branch, base: 'main',
                             body: commits.length ? commits.map((c) => `- ${c}`).join('\n') : ''
                           })
-                          return `作業場に PR !${pr.number} を作りました`
+                          return `sandbox に PR !${pr.number} を作りました`
                         })}>
-                        {busy === 'pr' ? '作成中…' : '作業場で PR を作る'}
+                        {busy === 'pr' ? '作成中…' : 'sandbox で PR を作る'}
                       </button>
                     </Row>
                   )}
@@ -154,7 +154,7 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
           <div style={{ width: 54, flexShrink: 0, background: C.panel, display: 'flex',
             flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke={stage === 'readyForExit' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
+              stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
               <path d="M5 12h14M13 6l6 6-6 6" />
             </svg>
             <span style={{ fontSize: 10, color: C.faint, writingMode: 'vertical-rl', letterSpacing: '0.12em' }}>
@@ -164,7 +164,7 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
 
           {/* 出口 */}
           <div style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-            <Head dot={gh?.ok ? C.teal : C.red} title="出口"
+            <Head dot={gh?.ok ? C.teal : C.red} title="Upstream"
               sub={gh?.ok ? gh.detail : 'gh が使えません'} note="仕上がったものだけ" />
 
             <div style={PANE}>
@@ -177,17 +177,17 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
                       <span style={{ fontSize: 11.5, color: C.dim2 }}>
                         {commits.length ? `${commits.length} コミット` : '差分の取得に失敗しました'}
                       </span>
-                      <button disabled={busy !== null || stage !== 'readyForExit'} style={{ ...BTN,
-                        opacity: stage === 'readyForExit' ? 1 : 0.45 }}
+                      <button disabled={busy !== null || stage !== 'readyForUpstream'} style={{ ...BTN,
+                        opacity: stage === 'readyForUpstream' ? 1 : 0.45 }}
                         onClick={() => void act('gh', () => window.izuna.ghCreatePull(cwd, {
                           title: branch, head: branch,
                           body: commits.map((c) => `- ${c}`).join('\n') || '（本文なし）'
                         }))}>
                         {busy === 'gh' ? '作成中…' : 'GitHub に PR を作る'}
                       </button>
-                      {stage !== 'readyForExit' && (
+                      {stage !== 'readyForUpstream' && (
                         <span style={{ fontSize: 11, color: C.faint }}>
-                          先に作業場で見てください（{stage === 'needsWorkshop' ? '作業場が未設定' : 'push が未了'}）
+                          先に sandbox で見てください（{stage === 'needsSandbox' ? 'sandbox が未設定' : 'push が未了'}）
                         </span>
                       )}
                     </div>

@@ -2,15 +2,21 @@
  * git remote の解釈（段5）。
  *
  * 純粋関数。二段の PR（docs/GOAL.md 柱2）を成り立たせる要で、
- * **どの remote が作業場でどれが出口か**をここで決める。
+ * **どの remote が sandbox でどれが upstream か**をここで決める。
  *
  * ```
- * forgejo  http://localhost:4649/watakumi/gh-radar.git   作業場
- * origin   git@github.com:Watakumi/gh-radar.git          出口
+ * forgejo  http://localhost:4649/watakumi/gh-radar.git   sandbox
+ * origin   git@github.com:Watakumi/gh-radar.git          upstream
  * ```
  */
 
-export type RemoteRole = 'workshop' | 'exit' | 'other'
+/**
+ * remote の役割。
+ *
+ * `sandbox`  Forgejo。エージェントが荒らす場。壊れたら作り直す
+ * `upstream` GitHub。仕上がったものを送る先。既存の資産がある
+ */
+export type RemoteRole = 'sandbox' | 'upstream' | 'other'
 
 export interface RemoteRef {
   name: string
@@ -56,8 +62,8 @@ const GITHUB_HOSTS = ['github.com', 'www.github.com']
  */
 export function roleOf(host: string | null, forgeHost: string | null): RemoteRole {
   if (!host) return 'other'
-  if (GITHUB_HOSTS.includes(host.toLowerCase())) return 'exit'
-  if (forgeHost && host.toLowerCase() === forgeHost.toLowerCase()) return 'workshop'
+  if (GITHUB_HOSTS.includes(host.toLowerCase())) return 'upstream'
+  if (forgeHost && host.toLowerCase() === forgeHost.toLowerCase()) return 'sandbox'
   return 'other'
 }
 
@@ -93,32 +99,32 @@ export function hostOf(url: string | null): string | null {
   }
 }
 
-/** 作業場と出口を取り出す。無ければ null */
-export function rolesIn(remotes: RemoteRef[]): { workshop: RemoteRef | null; exit: RemoteRef | null } {
+/** sandbox と upstream を取り出す。無ければ null */
+export function rolesIn(remotes: RemoteRef[]): { sandbox: RemoteRef | null; upstream: RemoteRef | null } {
   return {
-    workshop: remotes.find((r) => r.role === 'workshop') ?? null,
-    exit: remotes.find((r) => r.role === 'exit') ?? null
+    sandbox: remotes.find((r) => r.role === 'sandbox') ?? null,
+    upstream: remotes.find((r) => r.role === 'upstream') ?? null
   }
 }
 
-/** 作業場の remote をこれから足すときの URL */
-export function workshopRemoteUrl(forgeRootUrl: string, owner: string, repo: string): string {
+/** sandbox の remote をこれから足すときの URL */
+export function sandboxRemoteUrl(forgeRootUrl: string, owner: string, repo: string): string {
   return `${forgeRootUrl.replace(/\/$/, '')}/${owner}/${repo}.git`
 }
 
 /**
  * 二段の PR のどの段にいるか。画面の出し分けに使う。
  *
- * - `needsWorkshop` 作業場の remote が無い。まず用意する
- * - `needsPush`     作業場に push していない
- * - `readyForExit`  作業場では見た。GitHub に出せる
+ * - `needsSandbox`  sandbox の remote が無い。まず用意する
+ * - `needsPush`     sandbox に push していない
+ * - `readyForUpstream` sandbox では見た。GitHub に出せる
  */
 export function stageOf(input: {
   remotes: RemoteRef[]
-  pushedToWorkshop: boolean
-}): 'needsWorkshop' | 'needsPush' | 'readyForExit' {
-  const { workshop } = rolesIn(input.remotes)
-  if (!workshop) return 'needsWorkshop'
-  if (!input.pushedToWorkshop) return 'needsPush'
-  return 'readyForExit'
+  pushedToSandbox: boolean
+}): 'needsSandbox' | 'needsPush' | 'readyForUpstream' {
+  const { sandbox } = rolesIn(input.remotes)
+  if (!sandbox) return 'needsSandbox'
+  if (!input.pushedToSandbox) return 'needsPush'
+  return 'readyForUpstream'
 }

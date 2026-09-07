@@ -61,8 +61,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
   ipcMain.handle(CH.remotes, async (_e, cwd: string) =>
     remote.listRemotes(cwd, (await gatherFacts()).config?.rootUrl ?? null))
-  ipcMain.handle(CH.ensureWorkshopRemote, async (_e, cwd: string, owner: string, repo: string) =>
-    remote.ensureWorkshopRemote(cwd, await forgeRoot(), owner, repo))
+  ipcMain.handle(CH.ensureSandboxRemote, async (_e, cwd: string, owner: string, repo: string) =>
+    remote.ensureSandboxRemote(cwd, await forgeRoot(), owner, repo))
   ipcMain.handle(CH.currentBranch, (_e, cwd: string) => remote.currentBranch(cwd))
   ipcMain.handle(CH.isPushed, (_e, cwd: string, r: string, b: string) => remote.isPushed(cwd, r, b))
   ipcMain.handle(CH.push, (_e, cwd: string, r: string, b: string) => remote.push(cwd, r, b))

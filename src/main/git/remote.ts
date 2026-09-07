@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { parseRemotes, workshopRemoteUrl, type RemoteRef } from '../../shared/remote'
+import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
 import { loginShellEnv } from '../claude/locate'
 
 const exec = promisify(execFile)
@@ -22,15 +22,15 @@ export async function listRemotes(cwd: string, forgeRootUrl: string | null): Pro
   return parseRemotes(await git(cwd, ['remote', '-v']), forgeRootUrl)
 }
 
-/** 作業場の remote を用意する。既にあれば URL を合わせるだけ */
-export async function ensureWorkshopRemote(
+/** sandbox の remote を用意する。既にあれば URL を合わせるだけ */
+export async function ensureSandboxRemote(
   cwd: string,
   forgeRootUrl: string,
   owner: string,
   repo: string,
   name = 'forgejo'
 ): Promise<string> {
-  const url = workshopRemoteUrl(forgeRootUrl, owner, repo)
+  const url = sandboxRemoteUrl(forgeRootUrl, owner, repo)
   const existing = await listRemotes(cwd, forgeRootUrl)
   if (existing.some((r) => r.name === name)) {
     await git(cwd, ['remote', 'set-url', name, url])

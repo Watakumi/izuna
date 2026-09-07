@@ -6,7 +6,7 @@ import {
   roleOf,
   rolesIn,
   stageOf,
-  workshopRemoteUrl
+  sandboxRemoteUrl
 } from '../src/shared/remote'
 
 /**
@@ -55,11 +55,11 @@ describe('URL を読む', () => {
 
 describe('役割はホストで決める', () => {
   it('GitHub は出口', () => {
-    expect(roleOf('github.com', 'localhost:4649')).toBe('exit')
+    expect(roleOf('github.com', 'localhost:4649')).toBe('upstream')
   })
 
   it('Forgejo のホストは作業場', () => {
-    expect(roleOf('localhost:4649', 'localhost:4649')).toBe('workshop')
+    expect(roleOf('localhost:4649', 'localhost:4649')).toBe('sandbox')
   })
 
   it('remote の名前では決めない', () => {
@@ -68,8 +68,8 @@ describe('役割はホストで決める', () => {
       'origin\thttp://localhost:4649/w/r.git (fetch)\nupstream\tgit@github.com:W/r.git (fetch)',
       FORGE
     )
-    expect(flipped.find((r) => r.name === 'origin')?.role).toBe('workshop')
-    expect(flipped.find((r) => r.name === 'upstream')?.role).toBe('exit')
+    expect(flipped.find((r) => r.name === 'origin')?.role).toBe('sandbox')
+    expect(flipped.find((r) => r.name === 'upstream')?.role).toBe('upstream')
   })
 
   it('知らないホストは other', () => {
@@ -86,11 +86,11 @@ describe('gh-radar の実物', () => {
   })
 
   it('作業場と出口が揃っている', () => {
-    const { workshop, exit } = rolesIn(remotes)
-    expect(workshop?.name).toBe('forgejo')
-    expect(workshop?.owner).toBe('watakumi')
-    expect(exit?.name).toBe('origin')
-    expect(exit?.owner).toBe('Watakumi')
+    const { sandbox, upstream } = rolesIn(remotes)
+    expect(sandbox?.name).toBe('forgejo')
+    expect(sandbox?.owner).toBe('watakumi')
+    expect(upstream?.name).toBe('origin')
+    expect(upstream?.owner).toBe('Watakumi')
   })
 })
 
@@ -99,21 +99,21 @@ describe('段の判定', () => {
 
   it('作業場が無ければ、まず用意する', () => {
     const onlyGitHub = parseRemotes('origin\tgit@github.com:W/r.git (fetch)', FORGE)
-    expect(stageOf({ remotes: onlyGitHub, pushedToWorkshop: false })).toBe('needsWorkshop')
+    expect(stageOf({ remotes: onlyGitHub, pushedToSandbox: false })).toBe('needsSandbox')
   })
 
   it('push していなければ push', () => {
-    expect(stageOf({ remotes, pushedToWorkshop: false })).toBe('needsPush')
+    expect(stageOf({ remotes, pushedToSandbox: false })).toBe('needsPush')
   })
 
   it('作業場で見たら出口へ', () => {
-    expect(stageOf({ remotes, pushedToWorkshop: true })).toBe('readyForExit')
+    expect(stageOf({ remotes, pushedToSandbox: true })).toBe('readyForUpstream')
   })
 })
 
 describe('作業場の URL を組む', () => {
   it('末尾のスラッシュを重ねない', () => {
-    expect(workshopRemoteUrl('http://localhost:4649/', 'watakumi', 'izuna'))
+    expect(sandboxRemoteUrl('http://localhost:4649/', 'watakumi', 'izuna'))
       .toBe('http://localhost:4649/watakumi/izuna.git')
   })
 
