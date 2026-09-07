@@ -224,30 +224,40 @@ function App(): React.JSX.Element {
                   />
                 </div>
               )}
+              {/* 入力欄と送信を 1 つの枠に入れる。別々に置くと箱の高さが違って揃わない */}
               <div style={S.footer}>
-                <textarea
-                  ref={box}
-                  style={S.textarea}
-                  value={active.prompt}
-                  rows={2}
-                  placeholder={active.ended ? 'このセッションは終了しています' : '依頼を書く（/ でコマンド、⌘↵ で送信）'}
-                  disabled={active.ended}
-                  onChange={(e) => {
-                    setPrompt(e.target.value)
-                    setPicked(0)
-                    if (e.target.value.startsWith('/')) setDismissed(false)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); return }
-                    if (!paletteOpen || results.length === 0) return
-                    const at = Math.min(picked, results.length - 1)
-                    if (e.key === 'ArrowDown') { e.preventDefault(); setPicked((at + 1) % results.length) }
-                    else if (e.key === 'ArrowUp') { e.preventDefault(); setPicked((at - 1 + results.length) % results.length) }
-                    else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); complete(results[at].command) }
-                    else if (e.key === 'Escape') { e.preventDefault(); setDismissed(true) }
-                  }}
-                />
-                <button style={S.btn} disabled={active.ended || !active.prompt.trim()} onClick={send}>送信</button>
+                <div style={S.inputBox}>
+                  <textarea
+                    ref={box}
+                    style={S.textarea}
+                    value={active.prompt}
+                    rows={2}
+                    placeholder={active.ended ? 'このセッションは終了しています' : '依頼を書く'}
+                    disabled={active.ended}
+                    onChange={(e) => {
+                      setPrompt(e.target.value)
+                      setPicked(0)
+                      if (e.target.value.startsWith('/')) setDismissed(false)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); return }
+                      if (!paletteOpen || results.length === 0) return
+                      const at = Math.min(picked, results.length - 1)
+                      if (e.key === 'ArrowDown') { e.preventDefault(); setPicked((at + 1) % results.length) }
+                      else if (e.key === 'ArrowUp') { e.preventDefault(); setPicked((at - 1 + results.length) % results.length) }
+                      else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); complete(results[at].command) }
+                      else if (e.key === 'Escape') { e.preventDefault(); setDismissed(true) }
+                    }}
+                  />
+                  <div style={S.inputFoot}>
+                    <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>/ コマンド</span>
+                    <div style={{ flexGrow: 1 }} />
+                    <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>⌘↵</span>
+                    <button style={S.send} disabled={active.ended || !active.prompt.trim()} onClick={send}>
+                      送信
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             </div>
@@ -319,11 +329,14 @@ const S: Record<string, React.CSSProperties> = {
   empty: { flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: 16 },
   body: { flexGrow: 1, minHeight: 0, overflowY: 'auto' },
-  footer: { display: 'flex', gap: 8, alignItems: 'flex-end', padding: '12px 16px 16px',
-    borderTop: `1px solid ${C.line}`, flexShrink: 0 },
-  textarea: { flexGrow: 1, minWidth: 0, padding: '10px 13px', borderRadius: 9,
-    border: `1px solid ${C.line2}`, background: C.surface, color: C.ink,
-    font: `13px/1.6 ${SANS}`, outline: 'none', resize: 'none' }
+  footer: { padding: '12px 16px 16px', borderTop: `1px solid ${C.line}`, flexShrink: 0 },
+  inputBox: { border: `1px solid ${C.line2}`, borderRadius: 9, background: C.surface,
+    display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  textarea: { border: 'none', background: 'transparent', color: C.ink, outline: 'none',
+    resize: 'none', padding: '11px 13px 6px', font: `13px/1.6 ${SANS}` },
+  inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 13px' },
+  send: { padding: '6px 16px', borderRadius: 6, border: 'none', background: C.amber,
+    color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
 }
 
 export default App

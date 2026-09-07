@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../../main/claude/session'
 import type { SessionId, StartSessionInput } from '../../shared/ipc'
-import { applyMessage, emptyTranscript, type Transcript } from '../../shared/transcript'
+import { appendUserText, applyMessage, emptyTranscript, type Transcript } from '../../shared/transcript'
 
 /**
  * 複数セッションの状態（段3）。
@@ -34,7 +34,13 @@ export interface Sessions {
   activeId: SessionId | null
   active: Panel | null
   setActive: (id: SessionId) => void
-  open: (input: StartSessionInput & { label: string; branch: string | null; team: string }) => Promise<SessionId>
+  open: (
+    input: StartSessionInput & {
+      label: string; branch: string | null; team: string
+      /** 起こしたあとに最初に送る依頼。空なら送らない */
+      initialPrompt?: string
+    }
+  ) => Promise<SessionId>
   close: (id: SessionId) => Promise<void>
   update: (id: SessionId, change: (panel: Panel) => Panel) => void
   /** 承認待ちを抱えているもの。並列で一番埋もれやすいので数えて出す */
@@ -77,7 +83,7 @@ export function useSessions(): Sessions {
   }), [])
 
   const open = useCallback(async (
-    input: StartSessionInput & { label: string; branch: string | null; team: string }
+    input: StartSessionInput & { label: string; branch: string | null; team: string; initialPrompt?: string }
   ): Promise<SessionId> => {
     const id = await window.izuna.start({
       cwd: input.cwd, model: input.model, permissionMode: input.permissionMode,
@@ -89,6 +95,15 @@ export function useSessions(): Sessions {
       transcript: emptyTranscript(), pending: null, prompt: '', commands, ended: false
     }])
     setActiveId(id)
+
+    // 起こす理由がそのまま最初の依頼になる。人に打ち直させない
+    const first = input.initialPrompt?.trim()
+    if (first) {
+      setPanels((prev) => prev.map((p) => (p.id === id
+        ? { ...p, transcript: appendUserText(p.transcript, first, 'u0') }
+        : p)))
+      void window.izuna.send(id, first)
+    }
     return id
   }, [])
 
