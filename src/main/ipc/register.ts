@@ -8,6 +8,7 @@ import { createPull, ensureRepo, listPulls, listRepos } from '../forge/client'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
 import * as term from '../terminal'
+import { findRepos, pickDirectory } from '../repos'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -76,6 +77,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.closeTerminal, (_e, id: string) => term.closeTerminal(id))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
+  ipcMain.handle(CH.findRepos, () => findRepos())
+  ipcMain.handle(CH.pickDirectory, () => pickDirectory(getWindow()))
   ipcMain.handle(CH.ipcVersion, () => IPC_VERSION)
   ipcMain.handle(CH.teamPath, (_e, name: string) => teamPathFor(name))
 

@@ -6,6 +6,7 @@ import type { FixId } from '../main/forge/setup'
 import type { ForgejoPull, ForgejoRepo } from '../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../main/forge/github'
 import type { RemoteRef } from './remote'
+import type { FoundRepo } from '../main/repos'
 import type { WorktreeStatus } from '../main/git/worktree'
 
 /**
@@ -76,6 +77,10 @@ export interface IzunaApi {
   closeTerminal(id: string): Promise<void>
   /** PTY からの出力。返り値を呼ぶと購読をやめる */
   onTerminal(handler: (event: TerminalEvent) => void): () => void
+  /** よくある置き場から git リポジトリを探す */
+  findRepos(): Promise<FoundRepo[]>
+  /** ネイティブのフォルダ選択。探索に出てこない場所のため */
+  pickDirectory(): Promise<string | null>
   /** main 側の IPC 版。renderer 側と食い違っていたら再起動が要る */
   ipcVersion(): Promise<number>
   /** 共有フォルダの場所。renderer は homedir を知らない */
@@ -117,7 +122,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 4
+export const IPC_VERSION = 5
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -142,6 +147,8 @@ export const CH = {
   resizeTerminal: 'izuna:term:resize',
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
+  findRepos: 'izuna:repos:find',
+  pickDirectory: 'izuna:repos:pick',
   ipcVersion: 'izuna:ipc-version',
   teamPath: 'izuna:team:path',
   repo: 'izuna:repo',

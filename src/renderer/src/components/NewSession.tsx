@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { RepoInfo } from '../../../shared/ipc'
+import type { FoundRepo } from '../../../main/repos'
 import { slugifyBranch, validateNewWorktree, worktreePathFor } from '../../../shared/worktree'
 import { C, MONO } from '../theme'
 
@@ -26,6 +27,17 @@ export function NewSession({
   const [branch, setBranch] = useState('')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
+  const [found, setFound] = useState<FoundRepo[] | null>(null)
+  const [query, setQuery] = useState('')
+  const [picking, setPicking] = useState(false)
+
+  // 探索は開いたときに 1 回。直打ちは大変なので、既定でこちらを出す
+  useEffect(() => { void window.izuna.findRepos().then(setFound).catch(() => setFound([])) }, [])
+
+  const matches = (found ?? []).filter((r) => {
+    const q = query.trim().toLowerCase()
+    return q === '' || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q)
+  })
 
   // 打ち終わってからリポジトリを引く。1 文字ごとに git を叩かない
   useEffect(() => {
@@ -96,9 +108,52 @@ export function NewSession({
 
         <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            <span style={LABEL}>リポジトリ</span>
-            <input autoFocus value={cwd} spellCheck={false} placeholder="リポジトリの絶対パス"
-              onChange={(e) => setCwd(e.target.value)} style={INPUT} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={LABEL}>リポジトリ</span>
+              <div style={{ flexGrow: 1 }} />
+              <button style={{ ...GHOST, padding: '4px 11px', fontSize: 11.5 }} disabled={picking}
+                onClick={() => {
+                  setPicking(true)
+                  void window.izuna.pickDirectory()
+                    .then((p) => { if (p) { setCwd(p); setQuery('') } })
+                    .finally(() => setPicking(false))
+                }}>
+                フォルダを選ぶ…
+              </button>
+            </div>
+
+            {found === null && <span style={{ fontSize: 11.5, color: C.faint }}>探しています…</span>}
+
+            {found !== null && found.length > 0 && (
+              <>
+                <input autoFocus value={query} spellCheck={false}
+                  placeholder={`${found.length} 本から絞り込む`}
+                  onChange={(e) => setQuery(e.target.value)} style={INPUT} />
+                <div style={{ maxHeight: 190, overflowY: 'auto', border: `1px solid ${C.line}`,
+                  borderRadius: 7, display: 'flex', flexDirection: 'column' }}>
+                  {matches.length === 0 && (
+                    <span style={{ padding: '11px 12px', fontSize: 11.5, color: C.faint }}>
+                      当たるものがありません。「フォルダを選ぶ…」から指定できます
+                    </span>
+                  )}
+                  {matches.slice(0, 60).map((r) => (
+                    <div key={r.path} onClick={() => setCwd(r.path)}
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '8px 12px',
+                        cursor: 'pointer', borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
+                        background: r.path === cwd ? C.raised : 'transparent' }}>
+                      <span style={{ fontSize: 12.5, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
+                      <span style={{ font: `10.5px ${MONO}`, color: C.faint, flexGrow: 1, minWidth: 0,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                        {r.group}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <input value={cwd} spellCheck={false} placeholder="または絶対パスを直接"
+              onChange={(e) => setCwd(e.target.value)} style={{ ...INPUT, fontSize: 11 }} />
             {repoError && (
               <span style={{ fontSize: 11.5, color: /git リポジトリではありません/.test(repoError) ? C.amber : C.red,
                 lineHeight: 1.6 }}>

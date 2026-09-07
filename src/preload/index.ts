@@ -32,6 +32,8 @@ const izuna: IzunaApi = {
     ipcRenderer.on(CH.terminalEvent, listener)
     return () => { ipcRenderer.off(CH.terminalEvent, listener) }
   },
+  findRepos: () => ipcRenderer.invoke(CH.findRepos),
+  pickDirectory: () => ipcRenderer.invoke(CH.pickDirectory),
   ipcVersion: () => ipcRenderer.invoke(CH.ipcVersion),
   teamPath: (name: string) => ipcRenderer.invoke(CH.teamPath, name),
   repo: (cwd: string) => ipcRenderer.invoke(CH.repo, cwd),
