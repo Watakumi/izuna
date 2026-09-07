@@ -340,6 +340,14 @@ type PermissionResult =
   対処: `shared/ipc.ts` の `IPC_VERSION` を、**口を足したら上げる**。
   renderer が起動時に main へ問い合わせ、食い違っていたら赤い帯を出す。
   詰まったら `pkill -f 'izuna/node_modules/.pnpm/electron'` して `pnpm dev`。
+- **CSP が WASM のコンパイルを止める**（2026-09-07 に踏んだ）。electron-vite の
+  雛形は `script-src 'self'` で、`ghostty-web` が
+  `WebAssembly.compile(): ... violates the following Content Security policy` で落ちる。
+
+  **`'unsafe-eval'` を足さないこと。** あれは JS 文字列の `eval` まで許す。
+  `'wasm-unsafe-eval'` は WASM のコンパイルだけを許す狭い許可で、こちらを使う。
+  WASM は base64 の `data:` URL として埋め込まれているので、`connect-src` にも
+  `data:` が要る（fetch がそこを読む）。
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)

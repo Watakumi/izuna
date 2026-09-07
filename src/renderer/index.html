@@ -4,9 +4,17 @@
     <meta charset="UTF-8" />
     <title>Izuna</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <!--
+      ghostty-web は libghostty-vt を WASM で動かす。WebAssembly.compile には
+      script-src の許可が要る。**'unsafe-eval' は使わない** —— あれは JS 文字列の
+      eval まで許す。'wasm-unsafe-eval' は WASM のコンパイルだけを許す。
+
+      WASM は base64 の data: URL として埋め込まれているので、connect-src にも
+      data: が要る（fetch がそこを読む）。
+    -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' data:"
     />
   </head>
 
