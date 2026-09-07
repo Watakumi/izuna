@@ -8,7 +8,8 @@ import {
   type PermissionResult,
   type PermissionMode,
   type PermissionUpdate,
-  type SlashCommand
+  type SlashCommand,
+  type SettingSource
 } from '@anthropic-ai/claude-agent-sdk'
 import { locateClaude, loginShellEnv } from './locate'
 
@@ -49,6 +50,14 @@ export interface SessionOptions {
   resume?: string
   /** resume しつつ別セッションとして枝分かれさせる */
   forkSession?: boolean
+  /**
+   * 読み込む設定の出どころ。省略すると CLI と同じで全部読む。
+   *
+   * `[]` は SDK の隔離モード。`~/.claude/settings.json` を読まなくなるので、
+   * そこに書かれた `enabledPlugins` 経由の hook も落ちる（§7 の罠の対処）。
+   * ただし `'project'` を外すと CLAUDE.md も読まれなくなる点に注意。
+   */
+  settingSources?: SettingSource[]
 }
 
 type Events = {
@@ -136,6 +145,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         resume: this.options.resume,
         forkSession: this.options.forkSession,
         includePartialMessages: true,
+        settingSources: this.options.settingSources,
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
         canUseTool: (toolName, input, opts) => this.#ask(toolName, input, opts)
