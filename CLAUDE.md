@@ -6,7 +6,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 エージェントがこれだけ読んで作業を継続できることを目指す。事実と、その根拠に
 なった実測を残す。推測は「未検証」と明記する。
 
-- リポジトリ: `~/work/personal/izuna`
+- リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （**private**・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
@@ -1029,3 +1029,38 @@ packages/electron/src/main/services/ClaudeCodeSessionScanner.ts   JSONL 走査
 packages/electron/src/main/services/ClaudeCodeSessionSync.ts      索引との同期
 packages/runtime/src/ai/server/providers/TeammateManager.ts       §12 で既出
 ```
+
+---
+
+## 20. リポジトリと公開範囲（2026-09-08）
+
+upstream は **private** の `Watakumi/izuna`（remote 名も `upstream`）。
+`shared/remote.ts` はホストで役を決めるので、`github.com` は自動で upstream になる。
+sandbox（Forgejo）はまだ無く、`stageOf` は `needsSandbox` を返す。
+
+### 公開前に監査した結果（全リビジョン対象）
+
+| 見たもの | 結果 |
+| --- | --- |
+| 認証情報（`sk-ant-` / `ghp_` / `github_pat_` / 秘密鍵 / 40桁hex） | 0 件 |
+| メール・実名・会社名 | 0 件 |
+| `session-full.ndjson`（私的な会話を含む録画） | 履歴にも一度も無い |
+| 録画の会話本文 | 疎通用の合成のみ（`pong` / `hello izuna`） |
+
+トークンは `~/.izuna` の `safeStorage` にあり、リポジトリの外。
+
+### **これは「あとで public にできる」状態ではない**
+
+private の範囲には収まっているが、**履歴に入っている**ものが 3 つある。
+公開したくなった時点では `git filter-repo` で書き換えるか、作り直すことになる。
+
+1. **環境の指紋**（`test/fixtures/*.ndjson`）——
+   `~/.claude/plugins/cache/…/1.10.0`、`slash_commands` 52 件の全リスト、
+   `messaging_socket_path`（PID 由来）。**アカウントがどの機能を使えるかが分かる**
+2. **コミットの著者メール**（個人の Gmail）が全コミットに入っている
+3. **§14 の口座の話** —— Pro プラン、`five_hour 3% / seven_day 5%`、
+   自宅 Forgejo の `localhost:4649`、別リポジトリ名
+
+**fixture を先回りして加工しない。** §11 で「加工した時点で観測ではなく解釈になる」
+と決めてある。private のうちは触らないほうが原則に合う。
+公開するなら、そのとき fixture を**録り直す**（削るのではなく）。
