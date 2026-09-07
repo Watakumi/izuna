@@ -106,10 +106,22 @@ export function NewSession({
     .filter((p) => cwd.trim() !== '' && belongsTo(p, cwd.trim(), (repo?.worktrees ?? []).map((w) => w.path)))
     .sort(byNewest)
 
-  const problem = repo && useWorktree && branch
-    ? validateNewWorktree(repo.worktrees, branch, worktreePathFor('', repo.name, branch))
+  /**
+   * **やることは必須にしない。**
+   *
+   * 以前は空だと「起こす」を押せなくした。ブランチ名をやることから作る設計に
+   * したので、空だとブランチが決まらず worktree を作れなかったためである。
+   * だが「とりあえず開いて、会話で伝える」を潰す理由にはならない ——
+   * 道具の入口で作文を強制していた。
+   *
+   * 空のときは worktree を作らず、リポジトリでそのまま開く。
+   * **worktree は「名前の付く仕事」があるときだけ**という切り分けにした。
+   */
+  const makeWorktree = useWorktree && repo !== null && branch !== ''
+  const problem = makeWorktree
+    ? validateNewWorktree(repo!.worktrees, branch, worktreePathFor('', repo!.name, branch))
     : null
-  const ready = !busy && cwd.trim() !== '' && prompt !== '' && (!useWorktree || (branch !== '' && !problem))
+  const ready = !busy && cwd.trim() !== '' && !problem
 
   /**
    * 続きから起こすときは worktree を作らない。**その worktree は既にある。**
@@ -136,13 +148,14 @@ export function NewSession({
     setBusy(true)
     setFailure(null)
     try {
-      if (repo && useWorktree) {
+      if (makeWorktree && repo) {
         const created = await window.izuna.createWorktree(repo.root, branch)
         await onStart({ cwd: created.path, label: issue ? `#${issue.number} ${issue.title}` : branch,
           branch: created.branch, team: created.branch, initialPrompt: prompt })
       } else {
         const base = repo?.root ?? cwd.trim()
         const name = repo?.name ?? base.split('/').filter(Boolean).pop() ?? base
+        // prompt は空でよい。空なら何も送らず、会話の入力欄から始める
         await onStart({ cwd: base, label: name, branch: null, team: name, initialPrompt: prompt })
       }
     } catch (e) {
@@ -227,7 +240,7 @@ export function NewSession({
 
           {/* 3. 何をするか —— ここが本題 */}
           {cwd.trim() !== '' && (
-            <Section label="何をするか">
+            <Section label="何をするか（任意）">
               {issues && issues.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
@@ -248,14 +261,16 @@ export function NewSession({
 
               <TextArea
                 value={text} rows={2}
-                placeholder={issues && issues.length > 0 ? 'または、やることを直接書く' : 'やることを書く'}
+                placeholder={issues && issues.length > 0
+                  ? 'または、やることを直接書く（後で会話でもいい）'
+                  : 'やることを書く（後で会話でもいい）'}
                 onChange={(e) => { setText(e.target.value); setIssue(null); setBranchOverride(null) }}
               />
             </Section>
           )}
 
-          {/* 3. 詳細 —— 既定で畳む。worktree もブランチ名も結果 */}
-          {branch !== '' && (
+          {/* 4. 詳細 —— 既定で畳む。worktree もブランチ名も結果 */}
+          {cwd.trim() !== '' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div onClick={() => setShowDetail((v) => !v)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
@@ -263,17 +278,20 @@ export function NewSession({
                 <span style={{ fontSize: 11, color: C.dim2 }}>詳細</span>
                 <span style={{ font: `11px ${MONO}`, color: problem ? C.red : C.faint,
                   minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {useWorktree ? `worktree ${branch}` : 'このディレクトリで直接'}
+                  {makeWorktree ? `worktree ${branch}` : 'このディレクトリで直接'}
                 </span>
               </div>
 
               {showDetail && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 16 }}>
-                  <Check checked={useWorktree} disabled={!repo} onChange={setUseWorktree}>
+                  <Check checked={makeWorktree} disabled={!repo || branch === ''} onChange={setUseWorktree}>
                     worktree を作る
                     {!repo && <span style={{ fontSize: F.small, color: C.faint }}>（git リポジトリのみ）</span>}
+                    {repo && branch === '' && (
+                      <span style={{ fontSize: F.small, color: C.faint }}>（やることを書くと使えます）</span>
+                    )}
                   </Check>
-                  {useWorktree && (
+                  {useWorktree && branch !== '' && (
                     <>
                       <Input value={branch}
                         onChange={(e) => setBranchOverride(e.target.value)}
@@ -298,8 +316,10 @@ export function NewSession({
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
           borderTop: `1px solid ${C.line}` }}>
-          <span style={{ fontSize: 11, color: C.faint }}>
-            {ready ? '起こすと、選んだ内容がそのまま最初の依頼になります' : ''}
+          <span style={{ fontSize: F.small, color: C.faint }}>
+            {!ready ? '' : prompt !== ''
+              ? '起こすと、選んだ内容がそのまま最初の依頼になります'
+              : 'そのまま開きます。やることは会話で伝えられます'}
           </span>
           <div style={{ flexGrow: 1 }} />
           <Button onClick={onCancel} >やめる</Button>
