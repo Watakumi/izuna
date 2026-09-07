@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   atContrast, contrast, isDark, luminance, mergeColors, mix, normalizeHex,
-  parseGhosttyConfig, readableOn, skinFrom, type GhosttyColors
+  monoFrom, parseGhosttyConfig, readableOn, readingFrom, skinFrom, type GhosttyColors
 } from '../src/shared/ghostty'
 
 /**
@@ -62,6 +62,37 @@ describe('設定の読み取り', () => {
     expect(normalizeHex('ff0000')).toBe('#ff0000')
     expect(normalizeHex('#FFF')).toBe('#ffffff')
     expect(normalizeHex('わからない')).toBeNull()
+  })
+})
+
+describe('読む面の組み', () => {
+  const config = parseGhosttyConfig(REAL_CONFIG)
+
+  it('等幅は利用者の指定が先頭', () => {
+    expect(monoFrom(config)[0]).toBe("'JetBrainsMono Nerd Font'")
+  })
+
+  it('本文には**2 番目以降だけ**を借りる（先頭は等幅なので欧文に使わない）', () => {
+    expect(readingFrom(config).fallbacks).toEqual(["'BIZ UDGothic'"])
+  })
+
+  it('font-size を読む', () => {
+    expect(readingFrom(config).size).toBe(14)
+  })
+
+  it('既定より小さい指定は無視する（長文を読む面なので下げない）', () => {
+    expect(readingFrom(parseGhosttyConfig('font-size = 9')).size).toBe(14)
+  })
+
+  it('adjust-cell-height を行間に足す', () => {
+    // 22% 増し → 1.6 + 0.22
+    expect(readingFrom(parseGhosttyConfig('adjust-cell-height = 22%')).lineHeight).toBeCloseTo(1.82, 5)
+  })
+
+  it('指定が無くても読める既定に落ちる', () => {
+    const r = readingFrom(parseGhosttyConfig(''))
+    expect(r).toMatchObject({ fallbacks: [], size: 14 })
+    expect(r.lineHeight).toBeGreaterThanOrEqual(1.8)
   })
 })
 

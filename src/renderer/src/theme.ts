@@ -1,4 +1,5 @@
-import type { Skin, TokenName } from '../../shared/ghostty'
+import type { TokenName } from '../../shared/ghostty'
+import type { GhosttySkin } from '../../main/ghostty'
 
 /**
  * 見た目の土台。**ここに無い値を直接書かない。**
@@ -53,14 +54,21 @@ export const C = Object.fromEntries(
  *
  * `:root` に変数を置くだけなので、React の再描画は要らない。
  */
-export function applySkin(skin: Skin | null, fontMono?: string): void {
+export function applySkin(g: GhosttySkin | null): void {
   const root = document.documentElement
   for (const k of Object.keys(BASE)) root.style.removeProperty(`--c-${k}`)
-  root.style.removeProperty('--font-mono')
-  if (!skin) return
-  for (const [k, v] of Object.entries(skin)) root.style.setProperty(`--c-${k}`, v)
-  // Ghostty で使っている等幅フォントも借りる。無ければ既定のまま
-  if (fontMono) root.style.setProperty('--font-mono', `'${fontMono}', ${MONO_BASE}`)
+  for (const k of ['--font-mono', '--font-read', '--read-size', '--read-line']) root.style.removeProperty(k)
+  if (!g) return
+
+  for (const [k, v] of Object.entries(g.skin)) root.style.setProperty(`--c-${k}`, v)
+
+  if (g.mono.length > 0) root.style.setProperty('--font-mono', `${g.mono.join(', ')}, ${MONO_BASE}`)
+
+  // **挟む。** 欧文は比例書体のまま、日本語だけ利用者の指定を借りる
+  const { fallbacks, size, lineHeight } = g.reading
+  root.style.setProperty('--font-read', [LATIN, ...fallbacks, GENERIC].join(', '))
+  root.style.setProperty('--read-size', `${size}px`)
+  root.style.setProperty('--read-line', String(lineHeight))
 }
 
 /**
@@ -101,6 +109,22 @@ export const S = {
 
 const MONO_BASE = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 export const MONO = `var(--font-mono, ${MONO_BASE})`
+
+/**
+ * 欧文の書体と、汎用の指定。**この 2 つのあいだに日本語の書体を挟む。**
+ * 挟む位置が要点で、前後どちらに置いても効かない（`shared/ghostty.ts` 参照）。
+ */
+const LATIN = "'IBM Plex Sans'"
+const GENERIC = 'system-ui, -apple-system, sans-serif'
+
+/**
+ * 会話の本文（＝長文を読む面）。
+ *
+ * **UI の詰まりとは別に持つ。** サイドバーや札は詰まっていてよいが、
+ * 本文は読むためのもので、同じ寸法でよい理由がない。既定は 14px/1.8 で、
+ * 利用者の Ghostty に指定があればそちらに従う（`applySkin`）。
+ */
+export const READ = `var(--read-size, 14px)/var(--read-line, 1.8) var(--font-read, ${LATIN}, ${GENERIC})`
 export const SANS = "'IBM Plex Sans', system-ui, -apple-system, sans-serif"
 
 /** `font` 一括指定を組む。文字サイズをスケールから外させない */

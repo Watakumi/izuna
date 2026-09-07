@@ -29,8 +29,15 @@ export interface GhosttyConfig {
   /** `theme = X`。別ファイルを読む必要があることを示す */
   theme: string | null
   colors: GhosttyColors
-  /** `font-family` は複数行書ける。先頭が主 */
+  /**
+   * `font-family` は複数行書ける。**先頭が主で、無い字を後ろから拾う。**
+   * 実測では `["JetBrainsMono Nerd Font", "BIZ UDGothic"]` ——
+   * 2 番目以降が日本語を受け持っている。
+   */
   fontFamily: string[]
+  fontSize: number | null
+  /** `adjust-cell-height = 22%` の 0.22。行間の目安に使う */
+  cellHeight: number | null
 }
 
 const empty = (): GhosttyColors => ({ background: null, foreground: null, palette: Array(16).fill(null) })
@@ -53,6 +60,8 @@ export function parseGhosttyConfig(text: string): GhosttyConfig {
   const colors = empty()
   const fontFamily: string[] = []
   let theme: string | null = null
+  let fontSize: number | null = null
+  let cellHeight: number | null = null
 
   for (const line of text.split(/\r?\n/)) {
     const body = line.replace(/^\s*#.*$/, '').trim()
@@ -70,6 +79,16 @@ export function parseGhosttyConfig(text: string): GhosttyConfig {
       case 'background': colors.background = normalizeHex(value); break
       case 'foreground': colors.foreground = normalizeHex(value); break
       case 'font-family': if (value) fontFamily.push(value); break
+      case 'font-size': {
+        const n = Number(value)
+        if (Number.isFinite(n) && n > 0) fontSize = n
+        break
+      }
+      case 'adjust-cell-height': {
+        const m = /^([+-]?[\d.]+)%$/.exec(value)
+        if (m) cellHeight = Number(m[1]) / 100
+        break
+      }
       case 'palette': {
         const m = /^(\d{1,2})\s*=\s*(.+)$/.exec(value)
         if (!m) break
@@ -79,7 +98,50 @@ export function parseGhosttyConfig(text: string): GhosttyConfig {
       }
     }
   }
-  return { theme, colors, fontFamily }
+  return { theme, colors, fontFamily, fontSize, cellHeight }
+}
+
+/**
+ * 読む面の組みかたを決める。
+ *
+ * ターミナルと並べると**明らかにこちらが読みにくい**と言われた（2026-09-08）。
+ * 数えたら 3 つとも負けていた ——
+ * 大きさ 13 対 14、行間 1.8 対 22% 増し、そして**日本語の書体が指定なし**で
+ * ヒラギノに落ちていた（相手は UD 書体の BIZ UDGothic）。
+ *
+ * **UI の詰まりは変えない。** 読む面（会話の本文）だけ利用者の設定に従う。
+ */
+export interface Reading {
+  /**
+   * 差し込む書体。**欧文の書体と、汎用の指定のあいだに入れる。**
+   *
+   * 順番を間違えると台無しになる。`BIZ UDGothic` を先頭に置くと
+   * **欧文までそちらで描かれる**（あの書体は欧文も持っている）。
+   * 逆に `system-ui` の後ろに置くと、日本語が先にヒラギノで拾われて
+   * **一度も使われない**。挟む位置だけが正しい。
+   */
+  fallbacks: string[]
+  /** px */
+  size: number
+  lineHeight: number
+}
+
+const quote = (name: string): string => (/^[\w-]+$/.test(name) ? name : `'${name.replace(/'/g, '')}'`)
+
+export function readingFrom(config: GhosttyConfig): Reading {
+  return {
+    // 先頭は等幅なので外す。2 番目以降が「無い字を拾う」＝日本語を受け持つ
+    fallbacks: config.fontFamily.slice(1).map(quote),
+    // 長文を読む面なので下げない。既定より小さい指定は無視する
+    size: Math.max(14, config.fontSize ?? 0),
+    // 端末の行送りをそのまま使うと詰まるので、下限を置いて足す
+    lineHeight: Math.max(1.8, 1.6 + (config.cellHeight ?? 0))
+  }
+}
+
+/** 等幅。**先頭が利用者の指定**で、後ろに自前の控えを置く */
+export function monoFrom(config: GhosttyConfig): string[] {
+  return config.fontFamily.map(quote)
 }
 
 /** あとの値が勝つ。**設定ファイル本体がテーマを上書きする**（Ghostty と同じ順） */

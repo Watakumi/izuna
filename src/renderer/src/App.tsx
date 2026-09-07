@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PermissionMode, PermissionResult, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
 import { appendUserText, markDenied, setPermissionMode } from '../../shared/transcript'
-import { applySkin, C, MONO, SANS } from './theme'
+import { applySkin, C, MONO, READ, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { ModeSwitch } from './components/ModeSwitch'
 import { NewSession } from './components/NewSession'
@@ -37,7 +37,7 @@ function App(): React.JSX.Element {
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
   useEffect(() => {
     void window.izuna.ghosttySkin()
-      .then((g) => applySkin(g?.skin ?? null, g?.fontFamily[0]))
+      .then(applySkin)
       .catch(() => applySkin(null))
   }, [])
 
@@ -237,6 +237,8 @@ function App(): React.JSX.Element {
                 <div style={S.inputBox}>
                   <TextArea
                     bare
+                    // 打つ字と読む字が違うのは落ち着かない。同じ組みにする
+                    style={{ font: READ }}
                     ref={box}
                     value={active.prompt}
                     rows={2}

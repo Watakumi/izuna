@@ -2,8 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
-  mergeColors, parseGhosttyConfig, skinFrom,
-  type GhosttyConfig, type Skin
+  mergeColors, monoFrom, parseGhosttyConfig, readingFrom, skinFrom,
+  type GhosttyConfig, type Reading, type Skin
 } from '../shared/ghostty'
 
 /**
@@ -56,7 +56,10 @@ export interface GhosttySkin {
   skin: Skin
   /** どこから来たか。設定画面に出して、効いていることを見せる */
   source: { config: string | null; theme: string | null }
-  fontFamily: string[]
+  /** 等幅の候補（先頭が利用者の指定） */
+  mono: string[]
+  /** 読む面の組み */
+  reading: Reading
 }
 
 export async function loadGhosttySkin(): Promise<GhosttySkin | null> {
@@ -78,5 +81,10 @@ export async function loadGhosttySkin(): Promise<GhosttySkin | null> {
 
   const skin = skinFrom(colors)
   if (!skin) return null
-  return { skin, source: { config: config.theme, theme: themeName }, fontFamily: config.fontFamily }
+  return {
+    skin,
+    source: { config: config.theme, theme: themeName },
+    mono: monoFrom(config),
+    reading: readingFrom(config)
+  }
 }

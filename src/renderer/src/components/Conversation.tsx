@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Draft, Item } from '../../../shared/transcript'
-import { C, MONO } from '../theme'
+import { C, MONO, READ } from '../theme'
 import { ToolBlock } from './ToolBlock'
 import { Markdown } from './Markdown'
 
@@ -16,7 +16,7 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
       </div>
       {open && (
         <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 12, color: C.dim,
-          fontSize: 12, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+          font: READ, whiteSpace: 'pre-wrap' }}>
           {text || '（要約は返っていません）'}
         </div>
       )}
@@ -28,7 +28,7 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
   if (item.kind === 'user') {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '68%', background: C.raised,
-        padding: '12px 16px', borderRadius: '10px 10px 2px 10px', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+        padding: '12px 16px', borderRadius: '10px 10px 2px 10px', font: READ, whiteSpace: 'pre-wrap' }}>
         {item.text}
       </div>
     )
@@ -64,7 +64,7 @@ function DraftView({ draft }: { draft: Draft }): React.JSX.Element {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <span style={{ fontSize: 11, color: C.dim2 }}>{label}<Dots /></span>}
       {draft.kind === 'text' && (
-        <div style={{ color: C.ink2, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+        <div style={{ color: C.ink2, font: READ, whiteSpace: 'pre-wrap' }}>
           {draft.text}
           <span style={{ background: C.amber, color: C.amber, marginLeft: 1 }}>&nbsp;</span>
         </div>

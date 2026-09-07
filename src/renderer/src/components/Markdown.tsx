@@ -1,5 +1,5 @@
 import { parseInline, parseMarkdown, type Inline, type ListItem, type Node } from '../../../shared/markdown'
-import { C, F, MONO, R, S } from '../theme'
+import { C, F, MONO, R, READ, S } from '../theme'
 
 /**
  * 会話の本文。解釈は `shared/markdown.ts`（純粋関数）が持つ。
@@ -12,7 +12,8 @@ import { C, F, MONO, R, S } from '../theme'
  * 通せば既定のブラウザに逃がせる（main 側で `will-navigate` も塞いである）。
  */
 export function Markdown({ text }: { text: string }): React.JSX.Element {
-  return <Blocks nodes={parseMarkdown(text)} />
+  // **読む面の組みはここで決める。** UI の詰まりを持ち込まない
+  return <div style={{ font: READ }}><Blocks nodes={parseMarkdown(text)} /></div>
 }
 
 function Blocks({ nodes }: { nodes: Node[] }): React.JSX.Element {
@@ -26,7 +27,7 @@ function Blocks({ nodes }: { nodes: Node[] }): React.JSX.Element {
 function Block({ node }: { node: Node }): React.JSX.Element {
   switch (node.kind) {
     case 'p':
-      return <div style={{ lineHeight: 1.8 }}><Spans nodes={node.children} /></div>
+      return <div><Spans nodes={node.children} /></div>
 
     case 'heading': {
       // 見出しは 3 段まで。それ以上は本文と同じ扱いにする（会話に h4 は要らない）
