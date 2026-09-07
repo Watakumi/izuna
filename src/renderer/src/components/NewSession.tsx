@@ -124,11 +124,11 @@ export function NewSession({
         background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
         boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column' }}>
 
-        <div style={{ padding: '15px 18px', borderBottom: `1px solid ${C.line}`, fontWeight: 600 }}>
+        <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`, fontWeight: 600 }}>
           新しいセッション
         </div>
 
-        <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: 18,
+        <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: 16,
           display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* 1. どこで */}
@@ -156,7 +156,7 @@ export function NewSession({
                         textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.group}</span>
                     </div>
                   ))}
-                  {matches.length === 0 && <Faint style={{ padding: '11px 12px' }}>当たるものがありません</Faint>}
+                  {matches.length === 0 && <Faint style={{ padding: '12px 12px' }}>当たるものがありません</Faint>}
                 </div>
               </>
             )}
@@ -170,7 +170,7 @@ export function NewSession({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
                     <div key={i.number} onClick={() => { setIssue(i); setText(''); setBranchOverride(null) }}
-                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '9px 12px',
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
                         borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
                         background: issue?.number === i.number ? C.amberBg : 'transparent' }}>
@@ -207,7 +207,7 @@ export function NewSession({
               </div>
 
               {showDetail && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 17 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 16 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
                     <input type="checkbox" checked={useWorktree} disabled={!repo}
                       onChange={(e) => setUseWorktree(e.target.checked)} />
@@ -232,12 +232,12 @@ export function NewSession({
           )}
 
           {failure && (
-            <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '9px 12px',
+            <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '8px 12px',
               fontSize: 11, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 18px',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
           borderTop: `1px solid ${C.line}` }}>
           <span style={{ fontSize: 11, color: C.faint }}>
             {ready ? '起こすと、選んだ内容がそのまま最初の依頼になります' : ''}

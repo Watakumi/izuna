@@ -101,7 +101,7 @@ export function Inspector({
         </div>
 
         <button onClick={onOpenForge} style={{
-          padding: '7px 0', borderRadius: 7, border: `1px solid ${C.line2}`,
+          padding: '8px 0', borderRadius: 7, border: `1px solid ${C.line2}`,
           background: 'transparent', color: C.ink2, fontSize: 12, cursor: 'pointer'
         }}>
           {upstream ? 'PR を作る' : 'remote を用意する'}
@@ -120,7 +120,7 @@ export function Inspector({
       </Block>
 
       {/* 共有フォルダは畳んでおく。実行役を使わないセッションには無関係 */}
-      <div style={{ padding: '11px 16px', borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.line}` }}>
         <div onClick={() => setShowTeam((v) => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <span style={{ font: `10px ${MONO}`, color: C.faint, width: 8 }}>{showTeam ? '▾' : '▸'}</span>
@@ -145,7 +145,7 @@ export function Inspector({
 
 function Block({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <div style={{ padding: '14px 16px', borderBottom: `1px solid ${C.line}`,
+    <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
       display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{title}</span>
       {children}

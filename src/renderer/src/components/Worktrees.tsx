@@ -58,7 +58,7 @@ export function Worktrees({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
         background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
         <span style={{ fontWeight: 600, fontSize: 12 }}>ブランチ</span>
         <span style={{ fontSize: 10, color: C.faint }}>人が起こした分</span>
@@ -66,7 +66,7 @@ export function Worktrees({
         <Button size="sm" onClick={() => void load()}>読み直す</Button>
       </div>
 
-      <div style={{ padding: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {!rows && <span style={{ color: C.faint, fontSize: 11 }}>調べています…</span>}
 
         {rows?.map((row) => {
@@ -74,7 +74,7 @@ export function Worktrees({
           const unpushed = (row.status?.ahead ?? 0) > 0 || (row.status?.changed ?? 0) > 0
           return (
             <div key={row.path} style={{ border: `1px solid ${row.session ? C.line2 : C.line}`,
-              borderRadius: 7, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8,
+              borderRadius: 7, padding: '12px 12px', display: 'flex', flexDirection: 'column', gap: 8,
               background: row.session ? C.raised : 'transparent' }}>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -100,7 +100,7 @@ export function Worktrees({
 
               {confirming === row.path ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: C.amberBg,
-                  border: `1px solid ${C.amberLine}`, borderRadius: 7, padding: '9px 11px' }}>
+                  border: `1px solid ${C.amberLine}`, borderRadius: 7, padding: '8px 12px' }}>
                   <span style={{ fontSize: 11, color: C.ink2, lineHeight: 1.6 }}>
                     {unpushed ? '未 push の変更があります。畳むと戻せません' : '畳みます。ディレクトリは消えます'}
                   </span>
@@ -127,7 +127,7 @@ export function Worktrees({
       </div>
 
       {msg && (
-        <div style={{ padding: '11px 14px', borderTop: `1px solid ${C.line}`, fontSize: 11,
+        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: 11,
           color: msg.bad ? C.red : C.ink2 }}>{msg.text}</div>
       )}
     </div>

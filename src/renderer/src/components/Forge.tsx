@@ -137,7 +137,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
       {/* 受け渡し */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        padding: '10px 0', background: C.panel, borderTop: `1px solid ${C.line}`,
+        padding: '12px 0', background: C.panel, borderTop: `1px solid ${C.line}`,
         borderBottom: `1px solid ${C.line}` }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
           stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
@@ -197,7 +197,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
       </div>
 
       {msg && (
-        <div style={{ padding: '11px 14px', borderTop: `1px solid ${C.line}`, fontSize: 11,
+        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: 11,
           color: msg.bad ? C.red : C.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
           {msg.text}
         </div>
@@ -208,7 +208,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
 function Head({ dot, title, sub, note }: { dot: string; title: string; sub: string; note: string }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
       background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       <span style={{ fontWeight: 600, fontSize: 12 }}>{title}</span>

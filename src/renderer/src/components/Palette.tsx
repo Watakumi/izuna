@@ -46,7 +46,7 @@ export function Palette({
     }}>
       <div ref={listRef} style={{ maxHeight: 268, overflowY: 'auto', padding: 6 }}>
         {results.length === 0 && (
-          <div style={{ padding: '14px 12px', fontSize: 12, color: C.faint }}>
+          <div style={{ padding: '16px 12px', fontSize: 12, color: C.faint }}>
             当たるコマンドがありません
           </div>
         )}
@@ -59,7 +59,7 @@ export function Palette({
               onMouseEnter={() => onSelect(i)}
               onMouseDown={(e) => { e.preventDefault(); onChoose(s) }}
               style={{
-                display: 'flex', alignItems: 'baseline', gap: 12, padding: '9px 12px',
+                display: 'flex', alignItems: 'baseline', gap: 12, padding: '8px 12px',
                 borderRadius: 7, cursor: 'pointer',
                 background: i === selected ? C.raised : 'transparent'
               }}
@@ -99,7 +99,7 @@ export function Palette({
 
       {current && (
         <div style={{ borderTop: `1px solid ${C.line}`, background: C.panel,
-          padding: '12px 15px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ font: `12px ${MONO}`, color: C.amber }}>/{current.command.name}</span>
             {current.command.argumentHint && (
@@ -117,7 +117,7 @@ export function Palette({
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '9px 15px',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 16px',
         background: C.panel, borderTop: `1px solid ${C.line}`, fontSize: 11, color: C.faint }}>
         <span style={{ font: `11px ${MONO}` }}>↑↓ 選択</span>
         <span style={{ font: `11px ${MONO}` }}>↵ / ⇥ 補完</span>

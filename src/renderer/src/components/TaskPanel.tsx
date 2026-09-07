@@ -27,7 +27,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
   return (
     <div style={{ border: `1px solid ${C.line2}`, borderRadius: 7, background: C.surface, overflow: 'hidden' }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 13px', cursor: 'pointer' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 12px', cursor: 'pointer' }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         <span style={{
           width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
@@ -53,7 +53,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
       </div>
 
       {open && (
-        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {task.prompt && (
             <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 12, fontSize: 12,
               color: C.dim2, lineHeight: 1.65 }}>{task.prompt}</div>
@@ -65,7 +65,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
             </div>
           ))}
           {task.summary && task.status !== 'running' && (
-            <div style={{ background: C.code, borderRadius: 7, padding: '10px 12px',
+            <div style={{ background: C.code, borderRadius: 7, padding: '12px 12px',
               fontSize: 12, color: C.dim, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
               {task.summary}
             </div>

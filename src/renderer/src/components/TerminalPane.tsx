@@ -92,7 +92,7 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.code }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
         borderBottom: `1px solid ${C.line}`, background: C.panel, flexShrink: 0 }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.dim2}
           strokeWidth="2" strokeLinecap="round"><path d="M4 17l6-6-6-6M12 19h8" /></svg>
@@ -112,7 +112,7 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
       </div>
 
       {error ? (
-        <div style={{ padding: '14px 16px', fontSize: 12, color: C.red, lineHeight: 1.7 }}>{error}</div>
+        <div style={{ padding: '16px 16px', fontSize: 12, color: C.red, lineHeight: 1.7 }}>{error}</div>
       ) : (
         <div ref={host} style={{ flexGrow: 1, minHeight: 0, padding: 6 }} />
       )}

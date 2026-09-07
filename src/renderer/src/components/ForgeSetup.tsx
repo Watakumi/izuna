@@ -60,13 +60,13 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   return (
     <div onClick={onClose} style={{
       position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.62)', zIndex: 40,
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 64
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
         width: 660, background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
         boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column'
       }}>
-        <div style={{ padding: '15px 18px', borderBottom: `1px solid ${C.line}`,
+        <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
           display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 600 }}>Forgejo の準備</span>
           <span style={{ fontSize: 11, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
@@ -74,13 +74,13 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           <Button size="sm" onClick={() => void refresh()}>調べ直す</Button>
         </div>
 
-        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!checks && <div style={{ padding: 12, color: C.faint, fontSize: 12 }}>調べています…</div>}
           {checks?.map((c) => {
             const m = MARK[c.level]
             return (
               <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '11px 13px', borderRadius: 7, border: `1px solid ${C.line}` }}>
+                padding: '12px 12px', borderRadius: 7, border: `1px solid ${C.line}` }}>
                 <span style={{ color: m.color, font: `13px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
                   <span style={{ fontSize: 12 }}>{c.label}</span>
@@ -100,13 +100,13 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
 
           {message && (
             <div style={{ border: `1px solid ${message.bad ? C.red : C.line2}`, borderRadius: 7,
-              padding: '10px 13px', fontSize: 12, color: message.bad ? C.red : C.ink2,
+              padding: '12px 12px', fontSize: 12, color: message.bad ? C.red : C.ink2,
               whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{message.text}</div>
           )}
         </div>
 
         {cfg && (
-          <div style={{ padding: '11px 18px', borderTop: `1px solid ${C.line}`,
+          <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`,
             display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
@@ -125,7 +125,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 18px',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
           borderTop: `1px solid ${C.line}` }}>
           <span style={{ fontSize: 12, color: ready ? C.teal : C.dim2 }}>
             {ready ? '準備できています' : '必須の項目が残っています（任意の項目は数えません）'}

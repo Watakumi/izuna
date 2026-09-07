@@ -35,7 +35,7 @@ export function ModeSwitch({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 7,
+          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 7,
           border: `1px solid ${current?.danger ? C.red : C.line2}`, background: 'transparent',
           color: current?.danger ? C.red : C.ink2, font: `11px ${MONO}`,
           cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
@@ -58,7 +58,7 @@ export function ModeSwitch({
                 key={m.value}
                 onClick={() => { onChange(m.value); setOpen(false) }}
                 style={{
-                  padding: '9px 13px', display: 'flex', flexDirection: 'column', gap: 2,
+                  padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2,
                   cursor: 'pointer', background: m.value === mode ? C.raised : 'transparent',
                   borderLeft: `2px solid ${m.value === mode ? C.amber : 'transparent'}`
                 }}

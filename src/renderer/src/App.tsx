@@ -110,7 +110,7 @@ function App(): React.JSX.Element {
           <b>main プロセスが古いままです。</b>
           <span style={{ opacity: 0.85 }}>
             renderer は更新されましたが main は入れ替わっていません。
-            <code style={{ font: `11px ${MONO}`, padding: '1px 5px', background: 'rgba(0,0,0,0.25)', borderRadius: 4, margin: '0 4px' }}>
+            <code style={{ font: `11px ${MONO}`, padding: '2px 6px', background: 'rgba(0,0,0,0.25)', borderRadius: 4, margin: '0 4px' }}>
               pnpm dev
             </code>
             を起動し直してください。
@@ -192,7 +192,7 @@ function App(): React.JSX.Element {
               <Conversation items={active.transcript.items} draft={active.transcript.draft} />
               <TaskPanel tasks={active.transcript.tasks} />
               {active.pending && (
-                <div style={{ padding: '0 24px 22px' }}>
+                <div style={{ padding: '0 24px 24px' }}>
                   <PermissionBar
                     request={active.pending}
                     onAllow={(always) => respond(
@@ -266,7 +266,7 @@ function App(): React.JSX.Element {
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
                 {(['info', 'pr', 'branch'] as const).map((t) => (
                   <div key={t} onClick={() => setTab(t)} style={{
-                    flexGrow: 1, textAlign: 'center', padding: '9px 0', cursor: 'pointer',
+                    flexGrow: 1, textAlign: 'center', padding: '8px 0', cursor: 'pointer',
                     fontSize: 11, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                   }}>
@@ -310,21 +310,21 @@ const S: Record<string, React.CSSProperties> = {
   app: { position: 'absolute', inset: 0, display: 'flex', background: C.bg, color: C.ink,
     font: `13px/1.6 ${SANS}` },
   stale: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60,
-    display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
+    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
     background: C.red, color: '#fff', fontSize: 12 },
   main: { flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   bar: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', height: 44,
     background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 },
   brand: { fontWeight: 600, letterSpacing: '0.02em' },
-  tag: { font: `11px ${MONO}`, color: C.dim2, padding: '2px 7px',
+  tag: { font: `11px ${MONO}`, color: C.dim2, padding: '2px 8px',
     border: `1px solid ${C.line2}`, borderRadius: 4 },
   note: { fontSize: 11, color: C.dim2 },
-  btn: { padding: '9px 20px', borderRadius: 7, border: 'none', background: C.amber,
+  btn: { padding: '8px 24px', borderRadius: 7, border: 'none', background: C.amber,
     color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' },
-  ghostSmall: { padding: '5px 13px', borderRadius: 7, border: `1px solid ${C.line2}`,
+  ghostSmall: { padding: '6px 12px', borderRadius: 7, border: `1px solid ${C.line2}`,
     background: 'transparent', color: C.ink2, fontSize: 11, cursor: 'pointer' },
   /** 破壊的な操作。ほかのボタンと同じ形にしない */
-  danger: { padding: '5px 13px', borderRadius: 7, border: `1px solid ${C.red}`,
+  danger: { padding: '6px 12px', borderRadius: 7, border: `1px solid ${C.red}`,
     background: 'transparent', color: C.red, fontSize: 11, cursor: 'pointer' },
   empty: { flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: 16 },
@@ -333,8 +333,8 @@ const S: Record<string, React.CSSProperties> = {
   inputBox: { border: `1px solid ${C.line2}`, borderRadius: 7, background: C.surface,
     display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   textarea: { border: 'none', background: 'transparent', color: C.ink, outline: 'none',
-    resize: 'none', padding: '11px 13px 6px', font: `13px/1.6 ${SANS}` },
-  inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 13px' },
+    resize: 'none', padding: '12px 12px 6px', font: `13px/1.6 ${SANS}` },
+  inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 12px' },
   send: { padding: '6px 16px', borderRadius: 7, border: 'none', background: C.amber,
     color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
 }

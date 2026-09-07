@@ -27,18 +27,18 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
             <span style={{ width: 42, flexShrink: 0, textAlign: 'right', paddingRight: 8, color: C.faint }}>
               {l.before ?? ''}
             </span>
-            <span style={{ width: 42, flexShrink: 0, textAlign: 'right', paddingRight: 10, color: C.faint }}>
+            <span style={{ width: 42, flexShrink: 0, textAlign: 'right', paddingRight: 12, color: C.faint }}>
               {l.after ?? ''}
             </span>
             <span style={{ width: 14, flexShrink: 0 }}>
               {l.kind === 'add' ? '+' : l.kind === 'del' ? '−' : ' '}
             </span>
-            <span style={{ paddingRight: 14 }}>{l.text || ' '}</span>
+            <span style={{ paddingRight: 16 }}>{l.text || ' '}</span>
           </div>
         ))}
       </div>
       {hidden > 0 && (
-        <div style={{ padding: '7px 12px', fontSize: 11, color: C.faint, borderTop: `1px solid ${C.line}` }}>
+        <div style={{ padding: '8px 12px', fontSize: 11, color: C.faint, borderTop: `1px solid ${C.line}` }}>
           ほか {hidden} 行
         </div>
       )}

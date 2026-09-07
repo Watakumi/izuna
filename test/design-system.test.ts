@@ -62,6 +62,41 @@ describe('スケールの外に出ない', () => {
   })
 })
 
+describe('余白もスケールに乗せる', () => {
+  /**
+   * `padding: '9px 12px'` のような文字列と `padding: 12` の両方を見る。
+   *
+   * **24 を超える値は余白ではなく配置**（モーダルを上から何 px 下げるか等）
+   * なので、スケールには乗せない。ただし 8 の倍数に揃えてリズムは保つ。
+   */
+  function paddingNumbers(): string[] {
+    const bad: string[] = []
+    for (const { path, text } of files) {
+      if (path === THEME) continue
+      const check = (n: number, at: number, raw: string): void => {
+        if (n === 0) return
+        const ok = n <= 24 ? (Object.values(S) as number[]).includes(n) : n % 8 === 0
+        if (!ok) bad.push(`${path}:${text.slice(0, at).split('\n').length} ${raw}`)
+      }
+      for (const m of text.matchAll(/padding: '([^']*)'/g)) {
+        for (const tok of m[1].split(/\s+/)) {
+          const v = /^(\d+)px$/.exec(tok)
+          if (v) check(Number(v[1]), m.index, `padding: ${tok}`)
+        }
+      }
+      for (const m of text.matchAll(/padding(?:Top|Left|Right|Bottom)?: (\d+)\b/g)) {
+        check(Number(m[1]), m.index, m[0])
+      }
+    }
+    return bad
+  }
+
+  it('スケールの外に出ない', () => {
+    // 数えたら 44 通り、1〜24 のほぼ全部の数字を使っていた
+    expect(paddingNumbers()).toEqual([])
+  })
+})
+
 describe('部品を 1 箇所にまとめる', () => {
   it('ボタンや入力欄を各所で定義しない', () => {
     // 以前は 5 ファイルに 13 箇所コピペされ、padding が微妙に違っていた

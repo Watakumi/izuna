@@ -26,7 +26,7 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
   return (
     <div style={{ border: `1px solid ${C.line2}`, borderRadius: 7, overflow: 'hidden', background: C.surface }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', cursor: 'pointer' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer' }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         <span style={{ fontWeight: 500, fontSize: 12 }}>{block.name}</span>
         <span style={{ font: `11px ${MONO}`, color: C.dim2, flexGrow: 1, minWidth: 0,
@@ -42,15 +42,15 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
       </div>
 
       {open && (
-        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {diff
             ? <DiffView diff={diff} />
-            : <pre style={{ margin: 0, padding: '10px 12px', background: C.code, borderRadius: 7,
+            : <pre style={{ margin: 0, padding: '12px 12px', background: C.code, borderRadius: 7,
                 font: `11.5px/1.7 ${MONO}`, color: C.dim, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                 {JSON.stringify(block.input, null, 2)}
               </pre>}
           {block.result && (
-            <pre style={{ margin: 0, padding: '10px 12px', background: C.code, borderRadius: 7,
+            <pre style={{ margin: 0, padding: '12px 12px', background: C.code, borderRadius: 7,
               font: `11.5px/1.7 ${MONO}`, color: block.state === 'done' ? C.dim : C.delInk,
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 220, overflowY: 'auto' }}>
               {block.result.length > 4000 ? block.result.slice(0, 4000) + '\n…' : block.result}

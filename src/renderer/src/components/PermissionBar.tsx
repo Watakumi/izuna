@@ -23,14 +23,14 @@ export function PermissionBar({
 
   return (
     <div style={{ border: `1px solid ${C.amberLine}`, background: C.amberBg, borderRadius: 11,
-      display: 'flex', flexDirection: 'column', gap: 12, padding: 15 }}>
+      display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <b style={{ fontSize: 13 }}>{request.toolName}</b>
             {request.agentId && (
               // 実行役の要求でも人間に上げる。誰の要求かは見せる
-              <span style={{ font: `10px ${MONO}`, color: C.dim2, padding: '2px 7px',
+              <span style={{ font: `10px ${MONO}`, color: C.dim2, padding: '2px 8px',
                 border: `1px solid ${C.amberLine}`, borderRadius: 4 }}>
                 実行役 {request.agentId.slice(0, 6)}
               </span>

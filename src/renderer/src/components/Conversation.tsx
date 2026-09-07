@@ -14,7 +14,7 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
         思考
       </div>
       {open && (
-        <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 13, color: C.dim,
+        <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 12, color: C.dim,
           fontSize: 12, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
           {text || '（要約は返っていません）'}
         </div>
@@ -27,7 +27,7 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
   if (item.kind === 'user') {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '68%', background: C.raised,
-        padding: '11px 14px', borderRadius: '10px 10px 2px 10px', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+        padding: '12px 16px', borderRadius: '10px 10px 2px 10px', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
         {item.text}
       </div>
     )
@@ -36,7 +36,7 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
   if (item.kind === 'notice') {
     return (
       <div style={{ border: `1px solid ${item.tone === 'bad' ? C.red : C.amberLine}`, borderRadius: 7,
-        padding: '10px 13px', fontSize: 12, color: item.tone === 'bad' ? C.red : C.amber }}>
+        padding: '12px 12px', fontSize: 12, color: item.tone === 'bad' ? C.red : C.amber }}>
         {item.text}
       </div>
     )
@@ -77,7 +77,7 @@ function Dots(): React.JSX.Element {
 
 export function Conversation({ items, draft }: { items: Item[]; draft: Draft | null }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 24px' }}>
       {items.length === 0 && !draft && (
         <div style={{ color: C.faint, fontSize: 12 }}>作業ディレクトリを選んで、依頼を送ってください</div>
       )}
