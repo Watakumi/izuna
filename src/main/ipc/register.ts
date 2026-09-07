@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
+import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { ClaudeSession } from '../claude/session'
 import { CH, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
 
@@ -57,6 +58,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.send, (_e, id: SessionId, text: string) => { must(id).send(text) })
   ipcMain.handle(CH.slashCommands, (_e, id: SessionId) => must(id).slashCommands())
   ipcMain.handle(CH.interrupt, (_e, id: SessionId) => must(id).interrupt())
+  ipcMain.handle(CH.setPermissionMode, (_e, id: SessionId, mode: PermissionMode) =>
+    must(id).setPermissionMode(mode))
+  ipcMain.handle(CH.setModel, (_e, id: SessionId, model?: string) => must(id).setModel(model))
 
   ipcMain.handle(CH.respondPermission, (_e, answer: PermissionAnswer) => {
     must(answer.id).respondToPermission(answer.requestId, answer.result)

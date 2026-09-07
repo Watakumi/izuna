@@ -183,8 +183,20 @@ export class ClaudeSession extends EventEmitter<Events> {
     return await this.#query.supportedCommands()
   }
 
+  /**
+   * 権限モードを変える。ストリーミング入力モードでのみ効く（Izuna は該当）。
+   *
+   * 段4 で効いてくる注意: **モードのクラスは他セッションからの
+   * SendMessage の配送可否を決める**（CLAUDE.md §12）。ブレインと実行役で
+   * bypass / prompting が食い違うと、指示が黙って保留される。
+   */
   async setPermissionMode(mode: PermissionMode): Promise<void> {
     await this.#query?.setPermissionMode(mode)
+  }
+
+  /** モデルを変える。undefined で既定に戻す */
+  async setModel(model?: string): Promise<void> {
+    await this.#query?.setModel(model)
   }
 
   /** 生成中のターンを止める。会話は生かしたまま */

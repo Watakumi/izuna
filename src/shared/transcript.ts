@@ -1,4 +1,4 @@
-import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { PermissionMode, SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
 /**
  * SDKMessage の並び → 画面に描く形、への変換。
@@ -49,6 +49,13 @@ export interface Transcript {
   model: string | null
   /** init が返した送信可能なコマンド。段2 の / パレットの材料 */
   slashCommands: string[]
+  /**
+   * いまの権限モード。init で来た値を起点に、変えたら UI 側で更新する。
+   * **モード変更の通知イベントは無い**ので、状態は持つしかない。
+   */
+  permissionMode: PermissionMode
+  /** CLI が言う稼働状態。result からの推測より正確 */
+  state: 'idle' | 'running' | 'requires_action'
   /** turn が走っているか。result で false になる */
   running: boolean
   costUsd: number | null
@@ -59,7 +66,8 @@ export interface Transcript {
 export function emptyTranscript(): Transcript {
   return {
     items: [], draft: null, sessionId: null, model: null,
-    slashCommands: [], running: false, costUsd: null, streamingMessageId: null
+    slashCommands: [], permissionMode: 'default', state: 'idle',
+    running: false, costUsd: null, streamingMessageId: null
   }
 }
 
@@ -67,6 +75,10 @@ export function emptyTranscript(): Transcript {
  * 人間の発話は SDK のストリームに戻ってこない（`--replay-user-messages` を
  * 使っていないため）。送った側で足すこと。
  */
+export function setPermissionMode(t: Transcript, permissionMode: PermissionMode): Transcript {
+  return { ...t, permissionMode }
+}
+
 export function appendUserText(t: Transcript, text: string, id: string): Transcript {
   return { ...t, items: [...t.items, { kind: 'user', id, text }], running: true }
 }
@@ -75,7 +87,16 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
   switch (m.type) {
     case 'system':
       if (m.subtype === 'init') {
-        return { ...t, sessionId: m.session_id, model: m.model, slashCommands: [...m.slash_commands] }
+        return {
+          ...t,
+          sessionId: m.session_id,
+          model: m.model,
+          permissionMode: m.permissionMode,
+          slashCommands: [...m.slash_commands]
+        }
+      }
+      if (m.subtype === 'session_state_changed') {
+        return { ...t, state: m.state }
       }
       return t
 

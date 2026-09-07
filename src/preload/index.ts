@@ -11,6 +11,8 @@ const izuna: IzunaApi = {
   send: (id: SessionId, text: string) => ipcRenderer.invoke(CH.send, id, text),
   respondPermission: (answer: PermissionAnswer) => ipcRenderer.invoke(CH.respondPermission, answer),
   slashCommands: (id: SessionId) => ipcRenderer.invoke(CH.slashCommands, id),
+  setPermissionMode: (id: SessionId, mode) => ipcRenderer.invoke(CH.setPermissionMode, id, mode),
+  setModel: (id: SessionId, model?: string) => ipcRenderer.invoke(CH.setModel, id, model),
   interrupt: (id: SessionId) => ipcRenderer.invoke(CH.interrupt, id),
   stop: (id: SessionId) => ipcRenderer.invoke(CH.stop, id),
   onEvent: (handler: (event: SessionEvent) => void) => {

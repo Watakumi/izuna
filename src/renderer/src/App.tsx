@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk'
+import type { PermissionMode, PermissionResult } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../../main/claude/session'
 import type { SessionId } from '../../shared/ipc'
 import {
   appendUserText,
   applyMessage,
   emptyTranscript,
+  setPermissionMode,
   type Transcript
 } from '../../shared/transcript'
 import { C, MONO, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { PermissionBar } from './components/PermissionBar'
+import { ModeSwitch } from './components/ModeSwitch'
 
 /**
  * 段1 の画面。1 セッションを動かし、承認と差分が見える。
@@ -76,6 +78,17 @@ function App(): React.JSX.Element {
     void window.izuna.send(id, text)
   }
 
+  const changeMode = (mode: PermissionMode): void => {
+    if (!id) return
+    const previous = t.permissionMode
+    setT((prev) => setPermissionMode(prev, mode))
+    // 通知イベントが無いので楽観的に進め、失敗したら戻す
+    void window.izuna.setPermissionMode(id, mode).catch((err) => {
+      setT((prev) => setPermissionMode(prev, previous))
+      notice(`モードを変えられませんでした: ${String(err)}`, 'bad')
+    })
+  }
+
   const respond = (result: PermissionResult): void => {
     if (!id || !pending) return
     void window.izuna.respondPermission({ id, requestId: pending.id, result })
@@ -87,8 +100,9 @@ function App(): React.JSX.Element {
       <div style={S.bar}>
         <span style={S.brand}>Izuna</span>
         {t.model && <span style={S.tag}>{t.model.replace(/-\d{8}$/, '')}</span>}
+        <ModeSwitch mode={t.permissionMode} disabled={!id} onChange={changeMode} />
         <div style={{ flexGrow: 1 }} />
-        {t.running && <span style={{ ...S.note, color: C.teal }}>実行中</span>}
+        {t.state === 'running' && <span style={{ ...S.note, color: C.teal }}>実行中</span>}
         {pending && <span style={{ ...S.note, color: C.amber }}>承認待ち</span>}
         {t.costUsd !== null && <span style={S.note}>${t.costUsd.toFixed(4)}</span>}
         <span style={{ ...S.note, color: id ? C.teal : C.faint }}>

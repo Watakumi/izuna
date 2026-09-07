@@ -33,6 +33,8 @@ export interface IzunaApi {
   send(id: SessionId, text: string): Promise<void>
   respondPermission(answer: PermissionAnswer): Promise<void>
   slashCommands(id: SessionId): Promise<SlashCommand[]>
+  setPermissionMode(id: SessionId, mode: PermissionMode): Promise<void>
+  setModel(id: SessionId, model?: string): Promise<void>
   interrupt(id: SessionId): Promise<void>
   stop(id: SessionId): Promise<void>
   /** main からの通知を受ける。返り値を呼ぶと購読をやめる */
@@ -52,6 +54,8 @@ export const CH = {
   send: 'izuna:session:send',
   respondPermission: 'izuna:session:respond-permission',
   slashCommands: 'izuna:session:slash-commands',
+  setPermissionMode: 'izuna:session:set-permission-mode',
+  setModel: 'izuna:session:set-model',
   interrupt: 'izuna:session:interrupt',
   stop: 'izuna:session:stop',
   event: 'izuna:session:event'

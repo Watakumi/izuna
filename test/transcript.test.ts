@@ -9,6 +9,7 @@ import {
   buildTranscript,
   emptyTranscript,
   plainText,
+  setPermissionMode,
   type Block,
   type Item
 } from '../src/shared/transcript'
@@ -124,6 +125,35 @@ describe('人間の発話', () => {
     const withUser = appendUserText(emptyTranscript(), 'やって', 'u1')
     expect(withUser.items).toEqual([{ kind: 'user', id: 'u1', text: 'やって' }])
     expect(withUser.running).toBe(true)
+  })
+})
+
+describe('権限モードと稼働状態', () => {
+  it('init のモードを起点にする', () => {
+    expect(t.permissionMode).toBe('default')
+  })
+
+  it('モード変更の通知イベントは無いので、状態は持つしかない', () => {
+    // 上流が通知を出すようになったらこの検査は落ちる。そのとき設計を見直す
+    const hasNotice = messages.some(
+      (m) => m.type === 'system' && String((m as { subtype?: string }).subtype).includes('permission_mode')
+    )
+    expect(hasNotice).toBe(false)
+    expect(setPermissionMode(t, 'plan').permissionMode).toBe('plan')
+    // ほかは変えない
+    expect(setPermissionMode(t, 'plan').items).toEqual(t.items)
+  })
+
+  it('session_state_changed で稼働状態を取る', () => {
+    const running = applyMessage(emptyTranscript(), {
+      type: 'system', subtype: 'session_state_changed', state: 'running',
+      uuid: 'u', session_id: 's'
+    } as unknown as SDKMessage)
+    expect(running.state).toBe('running')
+    expect(applyMessage(running, {
+      type: 'system', subtype: 'session_state_changed', state: 'requires_action',
+      uuid: 'u', session_id: 's'
+    } as unknown as SDKMessage).state).toBe('requires_action')
   })
 })
 
