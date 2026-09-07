@@ -1,110 +1,84 @@
-import { useEffect, useRef, useState } from 'react'
-import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../../main/claude/session'
 import type { SessionId } from '../../shared/ipc'
+import {
+  appendUserText,
+  applyMessage,
+  emptyTranscript,
+  type Transcript
+} from '../../shared/transcript'
+import { C, MONO, SANS } from './theme'
+import { Conversation } from './components/Conversation'
+import { PermissionBar } from './components/PermissionBar'
 
 /**
- * 段1-a の動作確認画面。
+ * 段1 の画面。1 セッションを動かし、承認と差分が見える。
  *
- * 目的は**実ウィンドウから claude が起きること**の確認に絞ってある。
- * ログインシェル経由の PATH 解決とキーチェーン読み取りが Finder 起動でも
- * 通るか（CLAUDE.md §9）が、ここで初めて分かる。
- *
- * 会話の描画は段1-c で作り直す。ここでは生のイベントを並べるだけにして、
- * 状態モデル（段1-b）を先回りして作り込まない。
+ * 状態の組み立ては `shared/transcript.ts`（純粋関数・録画で検査済み）に任せ、
+ * ここは描画と入出力だけを持つ。ここが疑わしいときは、まず
+ * `pnpm verify` が緑かを見ること —— 緑なら原因は必ずこちら側にある。
  */
-
-interface Row {
-  at: string
-  label: string
-  detail: string
-  tone: 'plain' | 'good' | 'warn' | 'bad'
-}
-
-function describe(m: SDKMessage): Row | null {
-  const at = new Date().toLocaleTimeString('ja-JP', { hour12: false })
-  if (m.type === 'system' && m.subtype === 'init') {
-    return { at, label: 'init', tone: 'good',
-      detail: `session=${m.session_id.slice(0, 8)} model=${m.model} mode=${m.permissionMode} / ${m.slash_commands.length} コマンド` }
-  }
-  if (m.type === 'assistant') {
-    const parts = m.message.content.map((b) => {
-      if (b.type === 'text') return `text: ${b.text.trim().slice(0, 120)}`
-      if (b.type === 'thinking') return 'thinking'
-      if (b.type === 'tool_use') return `tool_use: ${b.name}`
-      return b.type
-    })
-    return { at, label: 'assistant', detail: parts.join(' / '), tone: 'plain' }
-  }
-  if (m.type === 'user') {
-    const c = m.message.content
-    const n = Array.isArray(c) ? c.filter((b) => b.type === 'tool_result').length : 0
-    return { at, label: 'user', detail: n ? `tool_result × ${n}` : '（送信の echo）', tone: 'plain' }
-  }
-  if (m.type === 'result') {
-    const cost = 'total_cost_usd' in m ? m.total_cost_usd : undefined
-    return { at, label: 'result', tone: m.subtype === 'success' ? 'good' : 'bad',
-      detail: `${m.subtype}${cost !== undefined ? ` / $${cost}` : ''}` }
-  }
-  // stream_event はここでは出さない。数が多く、段1-b で状態モデルが畳む
-  if (m.type === 'stream_event') return null
-  return { at, label: m.type, detail: 'subtype' in m ? String(m.subtype ?? '') : '', tone: 'plain' }
-}
-
-const TONE: Record<Row['tone'], string> = {
-  plain: '#9aa2b4', good: '#4fc4b0', warn: '#e8a33d', bad: '#e06c75'
-}
-
 function App(): React.JSX.Element {
   const [cwd, setCwd] = useState(() => localStorage.getItem('izuna.cwd') ?? '')
   const [id, setId] = useState<SessionId | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [prompt, setPrompt] = useState('Reply with exactly: pong')
-  const [rows, setRows] = useState<Row[]>([])
+  const [starting, setStarting] = useState(false)
+  const [t, setT] = useState<Transcript>(emptyTranscript)
   const [pending, setPending] = useState<PermissionRequest | null>(null)
-  const logRef = useRef<HTMLDivElement>(null)
+  const [prompt, setPrompt] = useState('')
+  const scroller = useRef<HTMLDivElement>(null)
 
-  const push = (r: Row): void => setRows((prev) => [...prev, r])
+  const notice = useCallback((text: string, tone: 'warn' | 'bad') => {
+    setT((prev) => ({
+      ...prev,
+      items: [...prev.items, { kind: 'notice', id: `n${prev.items.length}`, tone, text }],
+      running: false
+    }))
+  }, [])
 
   useEffect(() => window.izuna.onEvent((event) => {
-    if (event.kind === 'message') {
-      const row = describe(event.message)
-      if (row) push(row)
-    } else if (event.kind === 'permission') {
-      setPending(event.request)
-      push({ at: new Date().toLocaleTimeString('ja-JP', { hour12: false }),
-        label: 'permission', detail: `${event.request.toolName} の承認待ち`, tone: 'warn' })
-    } else if (event.kind === 'error') {
-      push({ at: new Date().toLocaleTimeString('ja-JP', { hour12: false }),
-        label: 'error', detail: event.message, tone: 'bad' })
-    } else {
-      push({ at: new Date().toLocaleTimeString('ja-JP', { hour12: false }),
-        label: 'exit', detail: 'セッションが終了しました', tone: 'warn' })
+    if (event.kind === 'message') setT((prev) => applyMessage(prev, event.message))
+    else if (event.kind === 'permission') setPending(event.request)
+    else if (event.kind === 'error') notice(event.message, 'bad')
+    else {
+      notice('セッションが終了しました', 'warn')
       setId(null)
     }
-  }), [])
+  }), [notice])
 
-  useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight }) }, [rows])
+  // 下に貼りつく。人が上にスクロールしている最中は邪魔しない
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (atBottom) el.scrollTo({ top: el.scrollHeight })
+  }, [t, pending])
 
   const start = async (): Promise<void> => {
     if (!cwd.trim()) return
-    setBusy(true)
-    setRows([])
+    setStarting(true)
+    setT(emptyTranscript())
     try {
       localStorage.setItem('izuna.cwd', cwd)
-      setId(await window.izuna.start({ cwd: cwd.trim(), model: 'haiku' }))
+      setId(await window.izuna.start({ cwd: cwd.trim() }))
     } catch (err) {
-      push({ at: new Date().toLocaleTimeString('ja-JP', { hour12: false }),
-        label: 'start 失敗', detail: String(err), tone: 'bad' })
+      notice(`起動に失敗しました: ${String(err)}`, 'bad')
     } finally {
-      setBusy(false)
+      setStarting(false)
     }
   }
 
-  const answer = (allow: boolean): void => {
-    if (!pending || !id) return
-    void window.izuna.respondPermission({ id, requestId: pending.id,
-      result: allow ? { behavior: 'allow' } : { behavior: 'deny', message: '人間が拒否しました' } })
+  const send = (): void => {
+    const text = prompt.trim()
+    if (!id || !text) return
+    setT((prev) => appendUserText(prev, text, `u${prev.items.length}`))
+    setPrompt('')
+    void window.izuna.send(id, text)
+  }
+
+  const respond = (result: PermissionResult): void => {
+    if (!id || !pending) return
+    void window.izuna.respondPermission({ id, requestId: pending.id, result })
     setPending(null)
   }
 
@@ -112,79 +86,92 @@ function App(): React.JSX.Element {
     <div style={S.app}>
       <div style={S.bar}>
         <span style={S.brand}>Izuna</span>
-        <span style={S.note}>段1-a 動作確認</span>
+        {t.model && <span style={S.tag}>{t.model.replace(/-\d{8}$/, '')}</span>}
         <div style={{ flexGrow: 1 }} />
-        <span style={{ ...S.note, color: id ? TONE.good : '#4a5164' }}>
-          {id ? `session ${id.slice(0, 8)}` : '未起動'}
+        {t.running && <span style={{ ...S.note, color: C.teal }}>実行中</span>}
+        {pending && <span style={{ ...S.note, color: C.amber }}>承認待ち</span>}
+        {t.costUsd !== null && <span style={S.note}>${t.costUsd.toFixed(4)}</span>}
+        <span style={{ ...S.note, color: id ? C.teal : C.faint }}>
+          {id ? `${t.slashCommands.length} コマンド` : '未起動'}
         </span>
       </div>
 
       <div style={S.row}>
         <input style={S.input} value={cwd} placeholder="作業ディレクトリの絶対パス"
-          onChange={(e) => setCwd(e.target.value)} spellCheck={false} />
-        <button style={S.btn} disabled={busy || !!id} onClick={() => void start()}>
-          {busy ? '起動中…' : '起動'}
-        </button>
-        <button style={S.btnGhost} disabled={!id} onClick={() => { if (id) void window.izuna.stop(id).then(() => setId(null)) }}>
-          停止
-        </button>
+          spellCheck={false} onChange={(e) => setCwd(e.target.value)} />
+        {id ? (
+          <>
+            <button style={S.ghost} onClick={() => void window.izuna.interrupt(id)}>中断</button>
+            <button style={S.ghost} onClick={() => void window.izuna.stop(id).then(() => setId(null))}>停止</button>
+          </>
+        ) : (
+          <button style={S.btn} disabled={starting} onClick={() => void start()}>
+            {starting ? '起動中…' : '起動'}
+          </button>
+        )}
       </div>
 
-      <div style={S.row}>
-        <input style={S.input} value={prompt} onChange={(e) => setPrompt(e.target.value)} spellCheck={false} />
-        <button style={S.btn} disabled={!id} onClick={() => { if (id) void window.izuna.send(id, prompt) }}>送信</button>
+      <div style={S.body} ref={scroller}>
+        <Conversation items={t.items} draft={t.draft} />
+        {pending && (
+          <div style={{ padding: '0 24px 22px' }}>
+            <PermissionBar
+              request={pending}
+              onAllow={(always) => respond(
+                always && pending.suggestions?.length
+                  ? { behavior: 'allow', updatedPermissions: pending.suggestions }
+                  : { behavior: 'allow' }
+              )}
+              onDeny={() => respond({ behavior: 'deny', message: '人間が拒否しました' })}
+            />
+          </div>
+        )}
       </div>
 
-      {pending && (
-        <div style={S.perm}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <b>{pending.toolName}</b>
-            <span style={S.note}>{JSON.stringify(pending.input).slice(0, 140)}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button style={S.btn} onClick={() => answer(true)}>許可</button>
-            <button style={S.btnGhost} onClick={() => answer(false)}>拒否</button>
-          </div>
-        </div>
-      )}
-
-      <div style={S.log} ref={logRef}>
-        {rows.length === 0 && <div style={S.note}>作業ディレクトリを入れて「起動」を押してください</div>}
-        {rows.map((r, i) => (
-          <div key={i} style={S.line}>
-            <span style={S.time}>{r.at}</span>
-            <span style={{ ...S.label, color: TONE[r.tone] }}>{r.label}</span>
-            <span style={S.detail}>{r.detail}</span>
-          </div>
-        ))}
+      <div style={S.footer}>
+        <textarea
+          style={S.textarea}
+          value={prompt}
+          rows={2}
+          placeholder={id ? '依頼を書く（⌘↵ で送信）' : '先に起動してください'}
+          disabled={!id}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              send()
+            }
+          }}
+        />
+        <button style={S.btn} disabled={!id || !prompt.trim()} onClick={send}>送信</button>
       </div>
     </div>
   )
 }
 
-const mono = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
 const S: Record<string, React.CSSProperties> = {
-  app: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', gap: 10,
-    padding: 14, background: '#14161b', color: '#e6e8ee',
-    font: "13px/1.6 'IBM Plex Sans', system-ui, sans-serif" },
-  bar: { display: 'flex', alignItems: 'center', gap: 12 },
+  app: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+    background: C.bg, color: C.ink, font: `13px/1.6 ${SANS}` },
+  bar: { display: 'flex', alignItems: 'center', gap: 14, padding: '0 16px', height: 42,
+    background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 },
   brand: { fontWeight: 600, letterSpacing: '0.02em' },
-  note: { fontSize: 11.5, color: '#7d8598' },
-  row: { display: 'flex', gap: 8 },
-  input: { flexGrow: 1, minWidth: 0, padding: '9px 12px', borderRadius: 7, border: '1px solid #2c3140',
-    background: '#171a21', color: '#e6e8ee', font: `12px ${mono}`, outline: 'none' },
-  btn: { padding: '9px 18px', borderRadius: 7, border: 'none', background: '#e8a33d',
-    color: '#16130c', fontWeight: 600, fontSize: 12.5, cursor: 'pointer' },
-  btnGhost: { padding: '9px 18px', borderRadius: 7, border: '1px solid #2c3140',
-    background: 'transparent', color: '#c8cddb', fontSize: 12.5, cursor: 'pointer' },
-  perm: { border: '1px solid #3d3527', background: '#1a1710', borderRadius: 9,
-    padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 14, justifyContent: 'space-between' },
-  log: { flexGrow: 1, minHeight: 0, overflowY: 'auto', border: '1px solid #242832',
-    borderRadius: 9, background: '#0d0f13', padding: '10px 12px' },
-  line: { display: 'flex', gap: 12, padding: '3px 0', alignItems: 'baseline' },
-  time: { font: `11px ${mono}`, color: '#4a5164', flexShrink: 0 },
-  label: { font: `11px ${mono}`, width: 92, flexShrink: 0 },
-  detail: { fontSize: 12, color: '#c8cddb', wordBreak: 'break-word' }
+  tag: { font: `11px ${MONO}`, color: C.dim2, padding: '2px 7px',
+    border: `1px solid ${C.line2}`, borderRadius: 4 },
+  note: { fontSize: 11.5, color: C.dim2 },
+  row: { display: 'flex', gap: 8, padding: '12px 16px 0', flexShrink: 0 },
+  input: { flexGrow: 1, minWidth: 0, padding: '9px 12px', borderRadius: 7,
+    border: `1px solid ${C.line2}`, background: C.surface, color: C.ink,
+    font: `12px ${MONO}`, outline: 'none' },
+  btn: { padding: '9px 20px', borderRadius: 7, border: 'none', background: C.amber,
+    color: C.amberInk, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' },
+  ghost: { padding: '9px 18px', borderRadius: 7, border: `1px solid ${C.line2}`,
+    background: 'transparent', color: C.ink2, fontSize: 12.5, cursor: 'pointer' },
+  body: { flexGrow: 1, minHeight: 0, overflowY: 'auto' },
+  footer: { display: 'flex', gap: 8, alignItems: 'flex-end', padding: '12px 16px 16px',
+    borderTop: `1px solid ${C.line}`, flexShrink: 0 },
+  textarea: { flexGrow: 1, minWidth: 0, padding: '10px 13px', borderRadius: 9,
+    border: `1px solid ${C.line2}`, background: C.surface, color: C.ink,
+    font: `13px/1.6 ${SANS}`, outline: 'none', resize: 'none' }
 }
 
 export default App
