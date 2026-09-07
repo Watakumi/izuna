@@ -4,6 +4,9 @@ import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import { ensureTeam, teamInstructions } from '../team'
 import { applyFix, gatherFacts, type FixId } from '../forge/setup'
+import { createPull, ensureRepo, listPulls, listRepos } from '../forge/client'
+import * as gh from '../forge/github'
+import * as remote from '../git/remote'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -36,7 +39,34 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     if (win && !win.isDestroyed()) win.webContents.send(CH.event, event)
   }
 
+  /** rootUrl は main 側で解決する。renderer に持たせない */
+  const forgeRoot = async (): Promise<string> => {
+    const url = (await gatherFacts()).config?.rootUrl
+    if (!url) throw new Error('Forgejo の ROOT_URL が読めません。「Forgejo」画面で確認してください')
+    return url
+  }
+
   ipcMain.handle(CH.forgeFacts, () => gatherFacts())
+  ipcMain.handle(CH.forgeRepos, async () => listRepos(await forgeRoot()))
+  ipcMain.handle(CH.forgePulls, async (_e, owner: string, repo: string) =>
+    listPulls(await forgeRoot(), owner, repo))
+  ipcMain.handle(CH.forgeCreatePull, async (_e, owner: string, repo: string, input) =>
+    createPull(await forgeRoot(), owner, repo, input))
+  ipcMain.handle(CH.forgeEnsureRepo, async (_e, name: string) => ensureRepo(await forgeRoot(), name))
+
+  ipcMain.handle(CH.ghStatus, (_e, cwd: string) => gh.ghStatus(cwd))
+  ipcMain.handle(CH.ghIssues, (_e, cwd: string) => gh.listIssues(cwd))
+  ipcMain.handle(CH.ghPulls, (_e, cwd: string) => gh.listPulls(cwd))
+  ipcMain.handle(CH.ghCreatePull, (_e, cwd: string, input: gh.CreatePrInput) => gh.createPull(cwd, input))
+
+  ipcMain.handle(CH.remotes, async (_e, cwd: string) =>
+    remote.listRemotes(cwd, (await gatherFacts()).config?.rootUrl ?? null))
+  ipcMain.handle(CH.ensureWorkshopRemote, async (_e, cwd: string, owner: string, repo: string) =>
+    remote.ensureWorkshopRemote(cwd, await forgeRoot(), owner, repo))
+  ipcMain.handle(CH.currentBranch, (_e, cwd: string) => remote.currentBranch(cwd))
+  ipcMain.handle(CH.isPushed, (_e, cwd: string, r: string, b: string) => remote.isPushed(cwd, r, b))
+  ipcMain.handle(CH.push, (_e, cwd: string, r: string, b: string) => remote.push(cwd, r, b))
+  ipcMain.handle(CH.commitsSince, (_e, cwd: string, base: string) => remote.commitsSince(cwd, base))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {

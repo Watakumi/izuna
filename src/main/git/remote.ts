@@ -1,0 +1,72 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { parseRemotes, workshopRemoteUrl, type RemoteRef } from '../../shared/remote'
+import { loginShellEnv } from '../claude/locate'
+
+const exec = promisify(execFile)
+
+/** remote の操作（段5）。解釈は `shared/remote.ts` が持つ */
+
+async function git(cwd: string, args: string[]): Promise<string> {
+  const env = await loginShellEnv()
+  try {
+    const { stdout } = await exec('git', args, { cwd, env, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 })
+    return stdout
+  } catch (err) {
+    const e = err as { stderr?: string; message?: string }
+    throw new Error((e.stderr || e.message || String(err)).trim())
+  }
+}
+
+export async function listRemotes(cwd: string, forgeRootUrl: string | null): Promise<RemoteRef[]> {
+  return parseRemotes(await git(cwd, ['remote', '-v']), forgeRootUrl)
+}
+
+/** 作業場の remote を用意する。既にあれば URL を合わせるだけ */
+export async function ensureWorkshopRemote(
+  cwd: string,
+  forgeRootUrl: string,
+  owner: string,
+  repo: string,
+  name = 'forgejo'
+): Promise<string> {
+  const url = workshopRemoteUrl(forgeRootUrl, owner, repo)
+  const existing = await listRemotes(cwd, forgeRootUrl)
+  if (existing.some((r) => r.name === name)) {
+    await git(cwd, ['remote', 'set-url', name, url])
+    return `${name} の URL を ${url} に合わせました`
+  }
+  await git(cwd, ['remote', 'add', name, url])
+  return `${name} を ${url} として足しました`
+}
+
+export async function currentBranch(cwd: string): Promise<string | null> {
+  const out = (await git(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim()
+  return out === 'HEAD' ? null : out
+}
+
+/** 指定の remote に push する。上流も張る */
+export async function push(cwd: string, remote: string, branch: string): Promise<string> {
+  await git(cwd, ['push', '--set-upstream', remote, branch])
+  return `${remote} に ${branch} を push しました`
+}
+
+/** その remote に、そのブランチが既にあるか */
+export async function isPushed(cwd: string, remote: string, branch: string): Promise<boolean> {
+  try {
+    const out = await git(cwd, ['ls-remote', '--heads', remote, branch])
+    return out.trim() !== ''
+  } catch {
+    return false
+  }
+}
+
+/** PR の本文の材料。base から先のコミットを並べる */
+export async function commitsSince(cwd: string, base: string, limit = 30): Promise<string[]> {
+  try {
+    const out = await git(cwd, ['log', `${base}..HEAD`, `--max-count=${limit}`, '--pretty=%s'])
+    return out.split('\n').map((l) => l.trim()).filter(Boolean)
+  } catch {
+    return []
+  }
+}

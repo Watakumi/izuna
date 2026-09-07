@@ -3,6 +3,9 @@ import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
 import type { FixId } from '../main/forge/setup'
+import type { ForgejoPull, ForgejoRepo } from '../main/forge/client'
+import type { GitHubIssue, GitHubPull } from '../main/forge/github'
+import type { RemoteRef } from './remote'
 import type { WorktreeStatus } from '../main/git/worktree'
 
 /**
@@ -45,6 +48,25 @@ export interface IzunaApi {
   forgeFacts(): Promise<ForgeFacts>
   /** 明示的に押されたときだけ走る修正 */
   forgeFix(id: FixId): Promise<string>
+
+  // ── 段5: 二段の PR ───────────────────────────────────────
+  /** 作業場（Forgejo） */
+  forgeRepos(): Promise<ForgejoRepo[]>
+  forgePulls(owner: string, repo: string): Promise<ForgejoPull[]>
+  forgeCreatePull(owner: string, repo: string, input: { title: string; head: string; base: string; body?: string }): Promise<ForgejoPull>
+  forgeEnsureRepo(name: string): Promise<ForgejoRepo>
+  /** 出口（GitHub · gh に任せる） */
+  ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
+  ghIssues(cwd: string): Promise<GitHubIssue[]>
+  ghPulls(cwd: string): Promise<GitHubPull[]>
+  ghCreatePull(cwd: string, input: { title: string; body: string; head: string; base?: string; draft?: boolean }): Promise<string>
+  /** remote と push */
+  remotes(cwd: string): Promise<RemoteRef[]>
+  ensureWorkshopRemote(cwd: string, owner: string, repo: string): Promise<string>
+  currentBranch(cwd: string): Promise<string | null>
+  isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
+  push(cwd: string, remote: string, branch: string): Promise<string>
+  commitsSince(cwd: string, base: string): Promise<string[]>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
   createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
@@ -73,6 +95,20 @@ export type SessionEvent =
 export const CH = {
   forgeFacts: 'izuna:forge:facts',
   forgeFix: 'izuna:forge:fix',
+  forgeRepos: 'izuna:forge:repos',
+  forgePulls: 'izuna:forge:pulls',
+  forgeCreatePull: 'izuna:forge:create-pull',
+  forgeEnsureRepo: 'izuna:forge:ensure-repo',
+  ghStatus: 'izuna:gh:status',
+  ghIssues: 'izuna:gh:issues',
+  ghPulls: 'izuna:gh:pulls',
+  ghCreatePull: 'izuna:gh:create-pull',
+  remotes: 'izuna:git:remotes',
+  ensureWorkshopRemote: 'izuna:git:ensure-workshop',
+  currentBranch: 'izuna:git:branch',
+  isPushed: 'izuna:git:is-pushed',
+  push: 'izuna:git:push',
+  commitsSince: 'izuna:git:commits',
   repo: 'izuna:repo',
   createWorktree: 'izuna:worktree:create',
   removeWorktree: 'izuna:worktree:remove',
