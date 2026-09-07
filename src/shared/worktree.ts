@@ -113,41 +113,13 @@ export function slugifyBranch(branch: string): string {
 }
 
 /**
- * worktree を置く場所。
+ * **置き場所を決める関数は落とした**（2026-09-08）。
  *
- * **リポジトリの外に置く。** 中に置くと、そのリポジトリ自身の worktree 一覧や
- * ignore と噛み合って事故になる。共有フォルダ（§12）と同じ `~/.izuna/` 配下に
- * 揃えてある。
+ * worktree を作るのはエージェントで、`EnterWorktree` が
+ * `<project>/.claude/worktrees/` に作る（CLAUDE.md §12 の実測）。
+ * Izuna も `~/.izuna/worktrees/` に作っていたので二重になっていた。
+ * `slugifyBranch` は一覧の表示で使うので残す。
  */
-export function worktreePathFor(base: string, repo: string, branch: string): string {
-  return `${base.replace(/\/$/, '')}/${slugifyBranch(repo)}/${slugifyBranch(branch)}`
-}
-
-/**
- * 作る前の検査。**通らないものは作らせない。**
- * 返り値は人に見せる理由。問題なければ null。
- */
-export function validateNewWorktree(
-  existing: Worktree[],
-  branch: string,
-  path: string
-): string | null {
-  const name = branch.trim()
-  if (name === '') return 'ブランチ名が空です'
-  if (slugifyBranch(name) === '') return `ブランチ名 "${name}" はディレクトリ名にできません`
-  // git が拒む形は先に弾く。作ってから失敗するより分かりやすい
-  if (/[\s~^:?*[\\]/.test(name)) return `ブランチ名に使えない文字が含まれています: ${name}`
-  if (name.includes('..')) return 'ブランチ名に .. は使えません'
-
-  const sameBranch = existing.find((w) => w.branch === name)
-  if (sameBranch) {
-    return sameBranch.main
-      ? `${name} は本体が使っています。別のブランチ名にしてください`
-      : `${name} は既に ${sameBranch.path} で開いています`
-  }
-  if (existing.some((w) => w.path === path)) return `${path} は既に worktree です`
-  return null
-}
 
 /** 畳んでよいか。本体とロック中は畳ませない */
 export function canRemove(worktree: Worktree): string | null {

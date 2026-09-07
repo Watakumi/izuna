@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react'
 import type { RepoInfo } from '../../../shared/ipc'
 import type { FoundRepo } from '../../../main/repos'
 import type { GitHubIssue } from '../../../main/forge/github'
-import { branchFromIssue, branchFromText, uniqueBranch } from '../../../shared/branch'
-import { validateNewWorktree, worktreePathFor } from '../../../shared/worktree'
 import { belongsTo, byNewest, labelOf, type SessionSummary } from '../../../shared/sessions'
 import { C, F, MONO, R, S } from '../theme'
-import { Button, Check, Faint, Input, TextArea } from './ui'
+import { Button, Faint, Input, TextArea } from './ui'
 
 /**
  * セッションを起こす（段3・段4 の入口）。
  *
- * **人間に worktree を作らせない。** 人が考えるのは「この Issue をやりたい」
- * であって、worktree を作るかどうかでもブランチ名でもない。
- * worktree もブランチも**結果**なので、自動で決めて、詳細に畳む。
+ * **worktree はここに出てこない。** 隔離するのはエージェントの仕事で、
+ * `EnterWorktree` を呼んで `<project>/.claude/worktrees/` に作る（§12 実測）。
+ * 以前はここに「worktree を作る」チェックとブランチ名の欄があったが、
+ * **Izuna が別の場所（`~/.izuna/worktrees/`）に作る二重の経路**になっていた。
  *
  * 順番も直した。以前は「場所 → 方式 → ブランチ名」で、**やることを最後まで
  * 聞かなかった**。docs/GOAL.md の 7 手は Issue から始まるのに、その入口が
@@ -50,9 +49,6 @@ export function NewSession({
   const [text, setText] = useState('')
 
   const [showAllPast, setShowAllPast] = useState(false)
-  const [showDetail, setShowDetail] = useState(false)
-  const [branchOverride, setBranchOverride] = useState<string | null>(null)
-  const [useWorktree, setUseWorktree] = useState(true)
 
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
@@ -76,7 +72,6 @@ export function NewSession({
           if (!alive) return
           setRepo(null)
           setRepoError(String(e).replace(/^Error:\s*/, ''))
-          setUseWorktree(false)
         })
       window.izuna.ghIssues(path).then((v) => { if (alive) setIssues(v) }).catch(() => { if (alive) setIssues(null) })
     }, 300)
@@ -88,14 +83,6 @@ export function NewSession({
     return q === '' || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q)
   })
 
-  // ブランチ名は**やること**から決まる。人が考えない
-  const taken = (repo?.worktrees ?? []).flatMap((w) => (w.branch ? [w.branch] : []))
-  const auto = issue
-    ? branchFromIssue(issue.number, issue.title)
-    : text.trim()
-      ? branchFromText(text)
-      : ''
-  const branch = branchOverride ?? (auto ? uniqueBranch(auto, taken) : '')
 
   const prompt = issue
     ? `GitHub の Issue #${issue.number}「${issue.title}」に取り組んでください。\n${issue.url}`
@@ -107,25 +94,14 @@ export function NewSession({
     .sort(byNewest)
 
   /**
-   * **やることは必須にしない。**
-   *
-   * 以前は空だと「起こす」を押せなくした。ブランチ名をやることから作る設計に
-   * したので、空だとブランチが決まらず worktree を作れなかったためである。
-   * だが「とりあえず開いて、会話で伝える」を潰す理由にはならない ——
-   * 道具の入口で作文を強制していた。
-   *
-   * 空のときは worktree を作らず、リポジトリでそのまま開く。
-   * **worktree は「名前の付く仕事」があるときだけ**という切り分けにした。
+   * **やることは必須にしない。** 「とりあえず開いて、会話で伝える」を潰さない。
+   * 空なら何も送らず、会話の入力欄から始める。
    */
-  const makeWorktree = useWorktree && repo !== null && branch !== ''
-  const problem = makeWorktree
-    ? validateNewWorktree(repo!.worktrees, branch, worktreePathFor('', repo!.name, branch))
-    : null
-  const ready = !busy && cwd.trim() !== '' && !problem
+  const ready = !busy && cwd.trim() !== ''
 
   /**
-   * 続きから起こすときは worktree を作らない。**その worktree は既にある。**
-   * 作り直すと、同じブランチで 2 つ目を作ろうとして落ちる。
+   * 続きからのときは、記録に残っていた `cwd` でそのまま起こす
+   * （その worktree にいたなら、そこに戻る）。
    */
   const start = async (resume?: SessionSummary): Promise<void> => {
     if (resume) {
@@ -148,16 +124,10 @@ export function NewSession({
     setBusy(true)
     setFailure(null)
     try {
-      if (makeWorktree && repo) {
-        const created = await window.izuna.createWorktree(repo.root, branch)
-        await onStart({ cwd: created.path, label: issue ? `#${issue.number} ${issue.title}` : branch,
-          branch: created.branch, team: created.branch, initialPrompt: prompt })
-      } else {
-        const base = repo?.root ?? cwd.trim()
-        const name = repo?.name ?? base.split('/').filter(Boolean).pop() ?? base
-        // prompt は空でよい。空なら何も送らず、会話の入力欄から始める
-        await onStart({ cwd: base, label: name, branch: null, team: name, initialPrompt: prompt })
-      }
+      const base = repo?.root ?? cwd.trim()
+      const name = repo?.name ?? base.split('/').filter(Boolean).pop() ?? base
+      // prompt は空でよい。空なら何も送らず、会話の入力欄から始める
+      await onStart({ cwd: base, label: name, branch: null, team: name, initialPrompt: prompt })
     } catch (e) {
       setFailure(String(e).replace(/^Error:\s*/, ''))
       setBusy(false)
@@ -193,7 +163,7 @@ export function NewSession({
                 <div style={{ maxHeight: 132, overflowY: 'auto', border: `1px solid ${C.line}`,
                   borderRadius: 7, display: 'flex', flexDirection: 'column' }}>
                   {matches.slice(0, 60).map((r) => (
-                    <div key={r.path} onClick={() => { setCwd(r.path); setIssue(null); setBranchOverride(null) }}
+                    <div key={r.path} onClick={() => { setCwd(r.path); setIssue(null) }}
                       style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
                         cursor: 'pointer', borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
                         background: r.path === cwd ? C.raised : 'transparent' }}>
@@ -244,7 +214,7 @@ export function NewSession({
               {issues && issues.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
-                    <div key={i.number} onClick={() => { setIssue(i); setText(''); setBranchOverride(null) }}
+                    <div key={i.number} onClick={() => { setIssue(i); setText('') }}
                       style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
                         borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
@@ -264,49 +234,11 @@ export function NewSession({
                 placeholder={issues && issues.length > 0
                   ? 'または、やることを直接書く（後で会話でもいい）'
                   : 'やることを書く（後で会話でもいい）'}
-                onChange={(e) => { setText(e.target.value); setIssue(null); setBranchOverride(null) }}
+                onChange={(e) => { setText(e.target.value); setIssue(null) }}
               />
             </Section>
           )}
 
-          {/* 4. 詳細 —— 既定で畳む。worktree もブランチ名も結果 */}
-          {cwd.trim() !== '' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div onClick={() => setShowDetail((v) => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <span style={{ font: `10px ${MONO}`, color: C.faint, width: 8 }}>{showDetail ? '▾' : '▸'}</span>
-                <span style={{ fontSize: 11, color: C.dim2 }}>詳細</span>
-                <span style={{ font: `11px ${MONO}`, color: problem ? C.red : C.faint,
-                  minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {makeWorktree ? `worktree ${branch}` : 'このディレクトリで直接'}
-                </span>
-              </div>
-
-              {showDetail && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 16 }}>
-                  <Check checked={makeWorktree} disabled={!repo || branch === ''} onChange={setUseWorktree}>
-                    worktree を作る
-                    {!repo && <span style={{ fontSize: F.small, color: C.faint }}>（git リポジトリのみ）</span>}
-                    {repo && branch === '' && (
-                      <span style={{ fontSize: F.small, color: C.faint }}>（やることを書くと使えます）</span>
-                    )}
-                  </Check>
-                  {useWorktree && branch !== '' && (
-                    <>
-                      <Input value={branch}
-                        onChange={(e) => setBranchOverride(e.target.value)}
-                        style={{ borderColor: problem ? C.red : C.line2 }} />
-                      {problem
-                        ? <span style={{ fontSize: 11, color: C.red }}>{problem}</span>
-                        : <span style={{ font: `10px ${MONO}`, color: C.faint }}>
-                            {worktreePathFor('~/.izuna/worktrees', repo?.name ?? '?', branch)}
-                          </span>}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           {failure && (
             <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '8px 12px',

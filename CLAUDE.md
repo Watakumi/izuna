@@ -694,11 +694,34 @@ worktree.sparsePaths   大きな monorepo で必要な範囲だけ書き出す
 `EnterWorktree` を呼ばせる必要がある。**人に選ばせるものではない**
 （人が考えるのは「この Issue をやりたい」であって worktree ではない）。
 
-**置き場所が食い違っている。** CLI は `<project>/.claude/worktrees/`、
-Izuna は `~/.izuna/worktrees/<repo>/<branch>` に作っている。
-`worktree.location` の設定はあるが、型定義に
-「CLI（`--worktree` / `EnterWorktree` / agent isolation）はまだ読まない」と
-明記されているので、**設定で寄せることはできない**。どちらかに決める必要がある。
+### 決めたこと（2026-09-08）—— Izuna は worktree を作らない
+
+置き場所が 2 つあった。CLI は `<project>/.claude/worktrees/`、Izuna は
+`~/.izuna/worktrees/<repo>/<branch>`。`worktree.location` の設定はあるが、
+型定義に「CLI（`--worktree` / `EnterWorktree` / agent isolation）は
+**まだ読まない**」と明記されているので、設定で寄せることはできない。
+
+**`EnterWorktree` に一本化した。** Izuna の作る側を落とした。
+
+| 落としたもの | 残したもの |
+| --- | --- |
+| `createWorktree` の IPC・main・preload | `listWorktrees` / `removeWorktree` / `worktreeStatus` |
+| `worktreePathFor` / `validateNewWorktree` | `parseWorktrees` / `slugifyBranch` / `canRemove` |
+| 「新しいセッション」の worktree チェックとブランチ欄 | Worktrees 画面（見る・畳む） |
+| `shared/branch.ts` 一式（Issue からブランチ名を作っていた） | —— |
+
+`git worktree list` を読んでいるので、**エージェントが作ったものはそのまま
+一覧に出る**。ブランチ名も CLI が `worktree-<名前>` で付けるので、
+Izuna が Issue から作る必要がなくなった。
+
+`test/worktree.test.ts` の「Izuna は worktree を作らない」が門。
+作る経路を戻すなら、**まず「どちらに置くか」を決め直すこと。**
+
+**なぜ間違えたか。** SDK の型に `agent isolation` と書いてあるのを見て、
+「隔離してくれる」＝「worktree を配ってくれる」と読んだ。実際は
+「`EnterWorktree` が呼ばれるまで**塞ぐ**」だった。**説明に書いていない動作を
+足して読んでいた。** しかも誤った結論を §12 に書いたまま、それと矛盾する
+UI（人に worktree を選ばせる）を作り、指摘されるまで 2 回その画面を直した。
 
 ### まだ測っていないこと
 

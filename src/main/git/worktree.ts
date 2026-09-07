@@ -1,8 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { homedir } from 'node:os'
-import { basename, join } from 'node:path'
-import { parseWorktrees, validateNewWorktree, worktreePathFor, canRemove, type Worktree } from '../../shared/worktree'
+import { basename } from 'node:path'
+import { parseWorktrees, canRemove, type Worktree } from '../../shared/worktree'
 import { loginShellEnv } from '../claude/locate'
 
 const exec = promisify(execFile)
@@ -13,9 +12,6 @@ const exec = promisify(execFile)
  * 解釈と検査は `shared/worktree.ts`（純粋関数）が持つ。ここは走らせるだけ。
  * この分け方のおかげで、並列の要である検査に git も実リポジトリも要らない。
  */
-
-/** worktree の置き場。共有フォルダ（§12）と同じ ~/.izuna/ 配下に揃える */
-export const WORKTREE_BASE = join(homedir(), '.izuna', 'worktrees')
 
 async function git(cwd: string, args: string[]): Promise<string> {
   const env = await loginShellEnv()
@@ -63,36 +59,17 @@ export async function listWorktrees(cwd: string): Promise<Worktree[]> {
   return parseWorktrees(await git(cwd, ['worktree', 'list', '--porcelain']))
 }
 
-export interface CreatedWorktree {
-  path: string
-  branch: string
-}
-
 /**
- * ブランチごと新しい worktree を作る。
+ * **worktree を作る機能は落とした**（2026-09-08）。
  *
- * **作る前に検査を通す。** git に任せて失敗させるより、理由を先に見せたほうが
- * 直しやすい（`validateNewWorktree`）。
+ * 隔離するのはエージェントの仕事で、`EnterWorktree` を呼んで
+ * `<project>/.claude/worktrees/` に作る（CLAUDE.md §12 の実測）。
+ * Izuna も `~/.izuna/worktrees/` に作っていたので、**同じリポジトリの
+ * worktree が 2 箇所に散っていた**。片方を落とすほうが筋が通る。
+ *
+ * ここに残すのは**見ることと畳むこと**だけ。`git worktree list` を読むので、
+ * エージェントが作ったものもそのまま一覧に出る。
  */
-export async function createWorktree(cwd: string, branch: string): Promise<CreatedWorktree> {
-  const root = await repoRoot(cwd)
-  const path = worktreePathFor(WORKTREE_BASE, basename(root), branch)
-  const existing = await listWorktrees(root)
-
-  const problem = validateNewWorktree(existing, branch, path)
-  if (problem) throw new Error(problem)
-
-  await git(root, ['worktree', 'add', '-b', branch, path])
-  return { path, branch }
-}
-
-/** 既にあるブランチで開く（作らない） */
-export async function openWorktree(cwd: string, branch: string): Promise<CreatedWorktree> {
-  const root = await repoRoot(cwd)
-  const path = worktreePathFor(WORKTREE_BASE, basename(root), branch)
-  await git(root, ['worktree', 'add', path, branch])
-  return { path, branch }
-}
 
 /**
  * 畳む。**push していない変更があれば止める**（`force` で押し切れる）。

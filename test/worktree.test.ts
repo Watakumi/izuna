@@ -3,8 +3,6 @@ import {
   canRemove,
   parseWorktrees,
   slugifyBranch,
-  validateNewWorktree,
-  worktreePathFor,
   type Worktree
 } from '../src/shared/worktree'
 
@@ -87,45 +85,8 @@ describe('置き場所', () => {
     expect(slugifyBranch('a---b')).toBe('a-b')
   })
 
-  it('リポジトリの外に置く', () => {
-    // 中に置くと、そのリポジトリ自身の worktree 一覧や ignore と噛み合って事故になる
-    expect(worktreePathFor('/Users/x/.izuna/worktrees', 'izuna', 'feat/palette'))
-      .toBe('/Users/x/.izuna/worktrees/izuna/feat-palette')
-  })
-
-  it('末尾のスラッシュを重ねない', () => {
-    expect(worktreePathFor('/base/', 'r', 'b')).toBe('/base/r/b')
-  })
 })
 
-describe('作る前の検査', () => {
-  const existing = [
-    wt({ path: '/repo', branch: 'main', main: true }),
-    wt({ path: '/wt/feat-a', branch: 'feat/a' })
-  ]
-
-  it('問題なければ null', () => {
-    expect(validateNewWorktree(existing, 'feat/b', '/wt/feat-b')).toBeNull()
-  })
-
-  it('本体のブランチは取り合わない', () => {
-    expect(validateNewWorktree(existing, 'main', '/wt/main')).toContain('本体')
-  })
-
-  it('既に開いているブランチは場所を教える', () => {
-    expect(validateNewWorktree(existing, 'feat/a', '/wt/x')).toContain('/wt/feat-a')
-  })
-
-  it('同じ場所には作らせない', () => {
-    expect(validateNewWorktree(existing, 'feat/z', '/wt/feat-a')).toContain('既に worktree')
-  })
-
-  it('git が拒む名前は先に弾く（作ってから失敗するより分かりやすい）', () => {
-    for (const bad of ['a b', 'a~1', 'a^', 'a:b', 'a?', 'a*', 'a[b', 'a..b', '']) {
-      expect(validateNewWorktree(existing, bad, '/wt/x'), `"${bad}" が通ってしまった`).not.toBeNull()
-    }
-  })
-})
 
 describe('畳んでよいか', () => {
   it('本体は畳めない', () => {
@@ -139,5 +100,25 @@ describe('畳んでよいか', () => {
 
   it('普通のものは畳める', () => {
     expect(canRemove(wt({ branch: 'feat/a' }))).toBeNull()
+  })
+})
+
+describe('Izuna は worktree を作らない', () => {
+  /**
+   * 隔離するのはエージェントの仕事で、`EnterWorktree` を呼んで
+   * `<project>/.claude/worktrees/` に作る（CLAUDE.md §12 の実測）。
+   *
+   * 以前は Izuna も `~/.izuna/worktrees/` に作っていて、**同じリポジトリの
+   * worktree が 2 箇所に散っていた。** 作る経路を戻すなら、
+   * まず「どちらに置くか」を決め直すこと。この検査はその合図である。
+   */
+  it('作る口が生えていない', async () => {
+    const shared = await import('../src/shared/worktree')
+    const main = await import('../src/main/git/worktree')
+    const ipc = await import('../src/shared/ipc')
+    expect(Object.keys(shared)).not.toContain('worktreePathFor')
+    expect(Object.keys(shared)).not.toContain('validateNewWorktree')
+    expect(Object.keys(main)).not.toContain('createWorktree')
+    expect(Object.keys(ipc.CH)).not.toContain('createWorktree')
   })
 })

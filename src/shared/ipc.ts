@@ -93,7 +93,6 @@ export interface IzunaApi {
   teamPath(name: string): Promise<string>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
-  createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
   removeWorktree(cwd: string, path: string, force?: boolean): Promise<void>
   worktreeStatus(path: string): Promise<WorktreeStatus>
   start(input: StartSessionInput): Promise<SessionId>
@@ -140,7 +139,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 11
+export const IPC_VERSION = 12
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -174,7 +173,6 @@ export const CH = {
   ipcVersion: 'izuna:ipc-version',
   teamPath: 'izuna:team:path',
   repo: 'izuna:repo',
-  createWorktree: 'izuna:worktree:create',
   removeWorktree: 'izuna:worktree:remove',
   worktreeStatus: 'izuna:worktree:status',
   start: 'izuna:session:start',

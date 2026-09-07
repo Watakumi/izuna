@@ -15,7 +15,6 @@ import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
 import {
-  createWorktree,
   listWorktrees,
   removeWorktree,
   repoName,
@@ -102,7 +101,6 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     ])
     return { root, name, worktrees }
   })
-  ipcMain.handle(CH.createWorktree, (_e, cwd: string, branch: string) => createWorktree(cwd, branch))
   ipcMain.handle(CH.removeWorktree, (_e, cwd: string, path: string, force?: boolean) =>
     removeWorktree(cwd, path, force))
   ipcMain.handle(CH.worktreeStatus, (_e, path: string) => worktreeStatus(path))
