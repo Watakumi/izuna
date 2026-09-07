@@ -110,7 +110,7 @@ function App(): React.JSX.Element {
           <b>main プロセスが古いままです。</b>
           <span style={{ opacity: 0.85 }}>
             renderer は更新されましたが main は入れ替わっていません。
-            <code style={{ font: `11px ${MONO}`, padding: '1px 5px', background: 'rgba(0,0,0,0.25)', borderRadius: 3, margin: '0 4px' }}>
+            <code style={{ font: `11px ${MONO}`, padding: '1px 5px', background: 'rgba(0,0,0,0.25)', borderRadius: 4, margin: '0 4px' }}>
               pnpm dev
             </code>
             を起動し直してください。
@@ -250,9 +250,9 @@ function App(): React.JSX.Element {
                     }}
                   />
                   <div style={S.inputFoot}>
-                    <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>/ コマンド</span>
+                    <span style={{ font: `10px ${MONO}`, color: C.faint }}>/ コマンド</span>
                     <div style={{ flexGrow: 1 }} />
-                    <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>⌘↵</span>
+                    <span style={{ font: `10px ${MONO}`, color: C.faint }}>⌘↵</span>
                     <button style={S.send} disabled={active.ended || !active.prompt.trim()} onClick={send}>
                       送信
                     </button>
@@ -267,7 +267,7 @@ function App(): React.JSX.Element {
                 {(['info', 'pr', 'branch'] as const).map((t) => (
                   <div key={t} onClick={() => setTab(t)} style={{
                     flexGrow: 1, textAlign: 'center', padding: '9px 0', cursor: 'pointer',
-                    fontSize: 11.5, color: tab === t ? C.ink : C.dim2,
+                    fontSize: 11, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                   }}>
                     {t === 'info' ? '情報' : t === 'pr' ? 'PR' : 'ブランチ'}
@@ -318,24 +318,24 @@ const S: Record<string, React.CSSProperties> = {
   brand: { fontWeight: 600, letterSpacing: '0.02em' },
   tag: { font: `11px ${MONO}`, color: C.dim2, padding: '2px 7px',
     border: `1px solid ${C.line2}`, borderRadius: 4 },
-  note: { fontSize: 11.5, color: C.dim2 },
+  note: { fontSize: 11, color: C.dim2 },
   btn: { padding: '9px 20px', borderRadius: 7, border: 'none', background: C.amber,
-    color: C.amberInk, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' },
-  ghostSmall: { padding: '5px 13px', borderRadius: 6, border: `1px solid ${C.line2}`,
-    background: 'transparent', color: C.ink2, fontSize: 11.5, cursor: 'pointer' },
+    color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' },
+  ghostSmall: { padding: '5px 13px', borderRadius: 7, border: `1px solid ${C.line2}`,
+    background: 'transparent', color: C.ink2, fontSize: 11, cursor: 'pointer' },
   /** 破壊的な操作。ほかのボタンと同じ形にしない */
-  danger: { padding: '5px 13px', borderRadius: 6, border: `1px solid ${C.red}`,
-    background: 'transparent', color: C.red, fontSize: 11.5, cursor: 'pointer' },
+  danger: { padding: '5px 13px', borderRadius: 7, border: `1px solid ${C.red}`,
+    background: 'transparent', color: C.red, fontSize: 11, cursor: 'pointer' },
   empty: { flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: 16 },
   body: { flexGrow: 1, minHeight: 0, overflowY: 'auto' },
   footer: { padding: '12px 16px 16px', borderTop: `1px solid ${C.line}`, flexShrink: 0 },
-  inputBox: { border: `1px solid ${C.line2}`, borderRadius: 9, background: C.surface,
+  inputBox: { border: `1px solid ${C.line2}`, borderRadius: 7, background: C.surface,
     display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   textarea: { border: 'none', background: 'transparent', color: C.ink, outline: 'none',
     resize: 'none', padding: '11px 13px 6px', font: `13px/1.6 ${SANS}` },
   inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 13px' },
-  send: { padding: '6px 16px', borderRadius: 6, border: 'none', background: C.amber,
+  send: { padding: '6px 16px', borderRadius: 7, border: 'none', background: C.amber,
     color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
 }
 

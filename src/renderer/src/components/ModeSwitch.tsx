@@ -35,14 +35,14 @@ export function ModeSwitch({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 7, padding: '4px 10px', borderRadius: 6,
+          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 7,
           border: `1px solid ${current?.danger ? C.red : C.line2}`, background: 'transparent',
-          color: current?.danger ? C.red : C.ink2, font: `11.5px ${MONO}`,
+          color: current?.danger ? C.red : C.ink2, font: `11px ${MONO}`,
           cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
         }}
       >
         {current?.label ?? mode}
-        <span style={{ color: C.faint, fontSize: 9 }}>▾</span>
+        <span style={{ color: C.faint, fontSize: 10 }}>▾</span>
       </button>
 
       {open && !disabled && (
@@ -50,7 +50,7 @@ export function ModeSwitch({
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
           <div style={{
             position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 11, width: 260,
-            background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 9,
+            background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 7,
             boxShadow: '0 18px 48px rgba(0,0,0,0.55)', overflow: 'hidden'
           }}>
             {MODES.map((m) => (
@@ -58,12 +58,12 @@ export function ModeSwitch({
                 key={m.value}
                 onClick={() => { onChange(m.value); setOpen(false) }}
                 style={{
-                  padding: '9px 13px', display: 'flex', flexDirection: 'column', gap: 3,
+                  padding: '9px 13px', display: 'flex', flexDirection: 'column', gap: 2,
                   cursor: 'pointer', background: m.value === mode ? C.raised : 'transparent',
                   borderLeft: `2px solid ${m.value === mode ? C.amber : 'transparent'}`
                 }}
               >
-                <span style={{ fontSize: 12.5, color: m.danger ? C.red : C.ink }}>{m.label}</span>
+                <span style={{ fontSize: 12, color: m.danger ? C.red : C.ink }}>{m.label}</span>
                 <span style={{ fontSize: 11, color: C.dim2, lineHeight: 1.5 }}>{m.hint}</span>
               </div>
             ))}

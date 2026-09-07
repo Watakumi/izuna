@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ForgejoPull } from '../../../main/forge/client'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
-import { C, MONO } from '../theme'
+import { C, F, MONO, S } from '../theme'
+import { Button, Card, Faint } from './ui'
 
 /**
  * 右ペインの「PR」タブ。二段の PR（docs/GOAL.md 柱2）。
@@ -81,44 +82,44 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
       {/* Sandbox */}
       <Head dot={sandbox ? C.teal : C.faint} title="Sandbox"
         sub={sandbox?.host ?? '未設定'} note="荒れてよい" />
-      <Pane>
+      <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
         {!sandbox ? (
           <>
-            <Note>Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが Upstream に漏れなくなります</Note>
-            <button disabled={busy !== null} style={BTN}
+            <Faint>Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが Upstream に漏れなくなります</Faint>
+            <Button disabled={busy !== null} kind="primary"
               onClick={() => void act('remote', async () => {
                 const name = upstream?.repo ?? cwd.split('/').pop() ?? 'repo'
                 const repo = await window.izuna.forgeEnsureRepo(name)
                 return window.izuna.ensureSandboxRemote(cwd, repo.owner, repo.name)
               })}>
               {busy === 'remote' ? '用意しています…' : 'sandbox を用意する'}
-            </button>
+            </Button>
           </>
         ) : (
           <>
             {!pushed && branch && (
               <>
-                <Note>{branch} はまだ sandbox にありません</Note>
-                <button disabled={busy !== null} style={BTN}
+                <Faint>{branch} はまだ sandbox にありません</Faint>
+                <Button disabled={busy !== null} kind="primary"
                   onClick={() => void act('push', () => window.izuna.push(cwd, sandbox.name, branch))}>
                   {busy === 'push' ? 'push 中…' : `${sandbox.name} に push`}
-                </button>
+                </Button>
               </>
             )}
 
             {pulls.map((p) => (
               <Card key={p.number}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
                   <span style={{ fontSize: 12, minWidth: 0, overflow: 'hidden',
                     textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
                 </div>
-                <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
+                <span style={{ font: `10px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
               </Card>
             ))}
 
             {pulls.length === 0 && pushed && branch && (
-              <button disabled={busy !== null} style={BTN}
+              <Button disabled={busy !== null} kind="primary"
                 onClick={() => void act('pr', async () => {
                   const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
                     title: branch, head: branch,
@@ -128,38 +129,38 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                   return `sandbox に PR !${pr.number} を作りました`
                 })}>
                 {busy === 'pr' ? '作成中…' : 'sandbox で PR を作る'}
-              </button>
+              </Button>
             )}
           </>
         )}
-      </Pane>
+      </div>
 
       {/* 受け渡し */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         padding: '10px 0', background: C.panel, borderTop: `1px solid ${C.line}`,
         borderBottom: `1px solid ${C.line}` }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
           stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
-        <span style={{ fontSize: 10.5, color: C.faint }}>通ったものだけ</span>
+        <span style={{ fontSize: 10, color: C.faint }}>通ったものだけ</span>
       </div>
 
       {/* Upstream */}
       <Head dot={gh?.ok ? C.teal : C.red} title="Upstream"
         sub={gh?.ok ? gh.detail : 'gh が使えません'} note="仕上がったものだけ" />
-      <Pane>
-        {!gh?.ok && <Note>{gh?.detail ?? '確認しています…'}</Note>}
+      <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
+        {!gh?.ok && <Faint>{gh?.detail ?? '確認しています…'}</Faint>}
         {gh?.ok && branch && (
-          <div style={{ ...CARD, borderColor: C.amberLine, background: C.amberBg }}>
-            <span style={{ font: `11.5px ${MONO}` }}>
+          <Card tone="attention">
+            <span style={{ font: `11px ${MONO}` }}>
               {branch} → {bases.upstream ?? '(既定ブランチ不明)'}
             </span>
             <span style={{ fontSize: 11, color: C.dim2 }}>
               {commits.length ? `${commits.length} コミット` : '差分がありません'}
             </span>
-            <button disabled={busy !== null || stage !== 'readyForUpstream'}
-              style={{ ...BTN, opacity: stage === 'readyForUpstream' ? 1 : 0.45 }}
+            <Button disabled={busy !== null || stage !== 'readyForUpstream'}
+              kind="primary"
               onClick={() => void act('gh', async () => {
                 const url = await window.izuna.ghCreatePull(cwd, {
                   title: branch, head: branch,
@@ -170,21 +171,21 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                 return url
               })}>
               {busy === 'gh' ? '作成中…' : 'Upstream に PR を作る'}
-            </button>
+            </Button>
             {stage !== 'readyForUpstream' && (
-              <span style={{ fontSize: 10.5, color: C.faint, lineHeight: 1.6 }}>
+              <span style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
                 先に sandbox で見てください（{stage === 'needsSandbox' ? 'sandbox が未設定' : 'push が未了'}）
               </span>
             )}
-          </div>
+          </Card>
         )}
 
         {gh?.ok && issues.length > 0 && (
           <>
-            <span style={LABEL}>元になる Issue</span>
+            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>元になる Issue</span>
             {issues.slice(0, 4).map((i) => (
               <Card key={i.number}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>#{i.number}</span>
                   <span style={{ fontSize: 12, minWidth: 0, overflow: 'hidden',
                     textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
@@ -193,10 +194,10 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
             ))}
           </>
         )}
-      </Pane>
+      </div>
 
       {msg && (
-        <div style={{ padding: '11px 14px', borderTop: `1px solid ${C.line}`, fontSize: 11.5,
+        <div style={{ padding: '11px 14px', borderTop: `1px solid ${C.line}`, fontSize: 11,
           color: msg.bad ? C.red : C.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
           {msg.text}
         </div>
@@ -207,11 +208,11 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
 function Head({ dot, title, sub, note }: { dot: string; title: string; sub: string; note: string }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 14px',
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
       background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       <span style={{ fontWeight: 600, fontSize: 12 }}>{title}</span>
-      <span style={{ font: `10.5px ${MONO}`, color: C.dim2, minWidth: 0, overflow: 'hidden',
+      <span style={{ font: `10px ${MONO}`, color: C.dim2, minWidth: 0, overflow: 'hidden',
         textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>
       <div style={{ flexGrow: 1 }} />
       <span style={{ fontSize: 10, color: C.faint, flexShrink: 0 }}>{note}</span>
@@ -219,24 +220,4 @@ function Head({ dot, title, sub, note }: { dot: string; title: string; sub: stri
   )
 }
 
-const Pane = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
-  <div style={{ padding: 13, display: 'flex', flexDirection: 'column', gap: 9 }}>{children}</div>
-)
-const Card = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
-  <div style={CARD}>{children}</div>
-)
-const Note = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
-  <span style={{ fontSize: 11.5, color: C.faint, lineHeight: 1.7 }}>{children}</span>
-)
 
-const CARD: React.CSSProperties = {
-  border: `1px solid ${C.line2}`, borderRadius: 8, padding: '10px 12px',
-  display: 'flex', flexDirection: 'column', gap: 7
-}
-const LABEL: React.CSSProperties = {
-  fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600, paddingTop: 4
-}
-const BTN: React.CSSProperties = {
-  padding: '8px 0', borderRadius: 7, border: 'none', background: C.amber,
-  color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer'
-}

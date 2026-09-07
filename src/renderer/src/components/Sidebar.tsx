@@ -61,20 +61,20 @@ export function Sidebar({
       </div>
 
       <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px',
-        display: 'flex', flexDirection: 'column', gap: 3 }}>
+        display: 'flex', flexDirection: 'column', gap: 2 }}>
         {panels.length === 0 && (
-          <div style={{ padding: '10px 8px', fontSize: 11.5, color: C.faint, lineHeight: 1.7 }}>
+          <div style={{ padding: '10px 8px', fontSize: 11, color: C.faint, lineHeight: 1.7 }}>
             まだありません。<br />下の「新しいセッション」から。
           </div>
         )}
         {group(panels).map(([repo, group]) => (
-          <div key={repo} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div key={repo} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* リポジトリで束ねる。並列で走らせると、どのリポジトリの話か分からなくなる */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 6px 3px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 6px 3px' }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.faint}
                 strokeWidth="1.9"><path d="M4 4h11l5 5v11H4z" /></svg>
               <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>{repo}</span>
-              <span style={{ fontSize: 10.5, color: C.faint }}>{group.length}</span>
+              <span style={{ fontSize: 10, color: C.faint }}>{group.length}</span>
             </div>
             {group.map((p) => {
           const d = dot(p)
@@ -84,7 +84,7 @@ export function Sidebar({
               key={p.id}
               onClick={() => onSelect(p.id)}
               style={{
-                display: 'flex', gap: 9, padding: '9px 10px', borderRadius: 6, cursor: 'pointer',
+                display: 'flex', gap: 8, padding: '9px 10px', borderRadius: 7, cursor: 'pointer',
                 background: on ? C.raised : 'transparent',
                 borderLeft: `2px solid ${p.pending ? C.amber : on ? C.line2 : 'transparent'}`
               }}
@@ -94,10 +94,10 @@ export function Sidebar({
                 background: d.filled ? d.color : 'transparent',
                 border: d.filled ? 'none' : `1.5px solid ${d.color}`
               }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, flexGrow: 1 }}>
-                <span style={{ fontSize: 12.5, color: on ? C.ink : C.ink2, overflow: 'hidden',
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flexGrow: 1 }}>
+                <span style={{ fontSize: 12, color: on ? C.ink : C.ink2, overflow: 'hidden',
                   textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
-                <span style={{ font: `10.5px ${MONO}`, color: p.pending ? C.amber : C.dim2,
+                <span style={{ font: `10px ${MONO}`, color: p.pending ? C.amber : C.dim2,
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {p.branch ?? '(worktree なし)'} · {label(p)}
                 </span>
@@ -105,7 +105,7 @@ export function Sidebar({
               <span
                 onClick={(e) => { e.stopPropagation(); onClose(p.id) }}
                 title="このセッションを閉じる"
-                style={{ color: C.faint, fontSize: 14, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                style={{ color: C.faint, fontSize: 15, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
               >×</span>
             </div>
           )

@@ -10,12 +10,12 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
     <div style={{ background: C.code, borderRadius: 7, overflow: 'hidden', border: `1px solid ${C.line}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
         borderBottom: `1px solid ${C.line}`, background: C.panel }}>
-        <span style={{ font: `11.5px ${MONO}`, color: C.ink2, overflow: 'hidden',
+        <span style={{ font: `11px ${MONO}`, color: C.ink2, overflow: 'hidden',
           textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diff.path}</span>
         <span style={{ flexGrow: 1 }} />
         <span style={{ font: `11px ${MONO}`, color: C.teal }}>+{diff.added}</span>
         <span style={{ font: `11px ${MONO}`, color: C.red }}>−{diff.removed}</span>
-        {diff.whole && <span style={{ fontSize: 10.5, color: C.faint }}>新規／全文</span>}
+        {diff.whole && <span style={{ fontSize: 10, color: C.faint }}>新規／全文</span>}
       </div>
       <div style={{ overflowX: 'auto', maxHeight: 340, overflowY: 'auto' }}>
         {shown.map((l, i) => (

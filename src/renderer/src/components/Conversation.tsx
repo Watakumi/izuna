@@ -7,15 +7,15 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
   // 思考は既定で畳む。読みたい人だけ開ける
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', color: C.dim2, fontSize: 11.5 }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: C.dim2, fontSize: 11 }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         思考
       </div>
       {open && (
         <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 13, color: C.dim,
-          fontSize: 12.5, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+          fontSize: 12, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
           {text || '（要約は返っていません）'}
         </div>
       )}
@@ -35,8 +35,8 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
 
   if (item.kind === 'notice') {
     return (
-      <div style={{ border: `1px solid ${item.tone === 'bad' ? C.red : C.amberLine}`, borderRadius: 9,
-        padding: '10px 13px', fontSize: 12.5, color: item.tone === 'bad' ? C.red : C.amber }}>
+      <div style={{ border: `1px solid ${item.tone === 'bad' ? C.red : C.amberLine}`, borderRadius: 7,
+        padding: '10px 13px', fontSize: 12, color: item.tone === 'bad' ? C.red : C.amber }}>
         {item.text}
       </div>
     )
@@ -59,8 +59,8 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
 function DraftView({ draft }: { draft: Draft }): React.JSX.Element {
   const label = draft.kind === 'thinking' ? '考えています' : draft.kind === 'tool' ? `${draft.toolName ?? 'ツール'} を組み立てています` : null
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      {label && <span style={{ fontSize: 11.5, color: C.dim2 }}>{label}<Dots /></span>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {label && <span style={{ fontSize: 11, color: C.dim2 }}>{label}<Dots /></span>}
       {draft.kind === 'text' && (
         <div style={{ color: C.ink2, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
           {draft.text}
@@ -77,9 +77,9 @@ function Dots(): React.JSX.Element {
 
 export function Conversation({ items, draft }: { items: Item[]; draft: Draft | null }): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, padding: '20px 24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 24px' }}>
       {items.length === 0 && !draft && (
-        <div style={{ color: C.faint, fontSize: 12.5 }}>作業ディレクトリを選んで、依頼を送ってください</div>
+        <div style={{ color: C.faint, fontSize: 12 }}>作業ディレクトリを選んで、依頼を送ってください</div>
       )}
       {items.map((item) => (
         <ItemView key={item.kind === 'assistant' ? item.id : `${item.kind}-${item.id}`} item={item} />

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import type { FixId } from '../../../main/forge/setup'
 import { C, MONO } from '../theme'
+import { Button } from './ui'
 
 /**
  * Forgejo のセットアップ（段5 の入口）。
@@ -62,37 +63,36 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 80
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        width: 660, background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 13,
+        width: 660, background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
         boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column'
       }}>
         <div style={{ padding: '15px 18px', borderBottom: `1px solid ${C.line}`,
           display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 600 }}>Forgejo の準備</span>
-          <span style={{ fontSize: 11.5, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
+          <span style={{ fontSize: 11, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
           <div style={{ flexGrow: 1 }} />
-          <button onClick={() => void refresh()} style={GHOST}>調べ直す</button>
+          <Button size="sm" onClick={() => void refresh()}>調べ直す</Button>
         </div>
 
         <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: 12.5 }}>調べています…</div>}
+          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: 12 }}>調べています…</div>}
           {checks?.map((c) => {
             const m = MARK[c.level]
             return (
               <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '11px 13px', borderRadius: 9, border: `1px solid ${C.line}` }}>
+                padding: '11px 13px', borderRadius: 7, border: `1px solid ${C.line}` }}>
                 <span style={{ color: m.color, font: `13px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 12.5 }}>{c.label}</span>
+                  <span style={{ fontSize: 12 }}>{c.label}</span>
                   <span style={{ font: `11px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
                   {c.fix?.warning && (
                     <span style={{ fontSize: 11, color: C.faint }}>押すと: {c.fix.warning}</span>
                   )}
                 </div>
                 {c.fix && (
-                  <button disabled={busy !== null} onClick={() => void fix(c)}
-                    style={{ ...BTN, flexShrink: 0, opacity: busy ? 0.5 : 1 }}>
+                  <Button kind="primary" size="sm" disabled={busy !== null} onClick={() => void fix(c)}>
                     {busy === c.id ? '実行中…' : c.fix.label}
-                  </button>
+                  </Button>
                 )}
               </div>
             )
@@ -107,11 +107,11 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
 
         {cfg && (
           <div style={{ padding: '11px 18px', borderTop: `1px solid ${C.line}`,
-            display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
-              <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>{cfg.path}</span>
-              {!cfg.exists && <span style={{ fontSize: 10.5, color: C.faint }}>（未作成・既定で動いています）</span>}
+              <span style={{ font: `10px ${MONO}`, color: C.faint }}>{cfg.path}</span>
+              {!cfg.exists && <span style={{ fontSize: 10, color: C.faint }}>（未作成・既定で動いています）</span>}
             </div>
             <span style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
               Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。
@@ -125,24 +125,16 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 18px',
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 18px',
           borderTop: `1px solid ${C.line}` }}>
           <span style={{ fontSize: 12, color: ready ? C.teal : C.dim2 }}>
             {ready ? '準備できています' : '必須の項目が残っています（任意の項目は数えません）'}
           </span>
           <div style={{ flexGrow: 1 }} />
-          <button onClick={onClose} style={GHOST}>閉じる</button>
+          <Button onClick={onClose} >閉じる</Button>
         </div>
       </div>
     </div>
   )
 }
 
-const BTN: React.CSSProperties = {
-  padding: '7px 15px', borderRadius: 7, border: 'none', background: C.amber,
-  color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer'
-}
-const GHOST: React.CSSProperties = {
-  padding: '6px 14px', borderRadius: 7, border: `1px solid ${C.line2}`,
-  background: 'transparent', color: C.ink2, fontSize: 12, cursor: 'pointer'
-}

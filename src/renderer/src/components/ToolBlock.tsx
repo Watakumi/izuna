@@ -24,12 +24,12 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
     : null
 
   return (
-    <div style={{ border: `1px solid ${C.line2}`, borderRadius: 9, overflow: 'hidden', background: C.surface }}>
+    <div style={{ border: `1px solid ${C.line2}`, borderRadius: 7, overflow: 'hidden', background: C.surface }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 13px', cursor: 'pointer' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 13px', cursor: 'pointer' }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
-        <span style={{ fontWeight: 500, fontSize: 12.5 }}>{block.name}</span>
-        <span style={{ font: `11.5px ${MONO}`, color: C.dim2, flexGrow: 1, minWidth: 0,
+        <span style={{ fontWeight: 500, fontSize: 12 }}>{block.name}</span>
+        <span style={{ font: `11px ${MONO}`, color: C.dim2, flexGrow: 1, minWidth: 0,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {describeToolInput(block.name, block.input)}
         </span>
@@ -42,7 +42,7 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
       </div>
 
       {open && (
-        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {diff
             ? <DiffView diff={diff} />
             : <pre style={{ margin: 0, padding: '10px 12px', background: C.code, borderRadius: 7,

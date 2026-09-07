@@ -46,7 +46,7 @@ export function Palette({
     }}>
       <div ref={listRef} style={{ maxHeight: 268, overflowY: 'auto', padding: 6 }}>
         {results.length === 0 && (
-          <div style={{ padding: '14px 12px', fontSize: 12.5, color: C.faint }}>
+          <div style={{ padding: '14px 12px', fontSize: 12, color: C.faint }}>
             当たるコマンドがありません
           </div>
         )}
@@ -64,7 +64,7 @@ export function Palette({
                 background: i === selected ? C.raised : 'transparent'
               }}
             >
-              <span style={{ font: `12.5px ${MONO}`, flexShrink: 0,
+              <span style={{ font: `12px ${MONO}`, flexShrink: 0,
                 color: i === selected ? C.ink : C.ink2 }}>
                 /<Highlighted text={s.command.name} matches={s.matches} />
               </span>
@@ -73,12 +73,12 @@ export function Palette({
                 {s.command.description}
               </span>
               {s.viaAlias && (
-                <span style={{ font: `10.5px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                <span style={{ font: `10px ${MONO}`, color: C.faint, flexShrink: 0 }}>
                   別名 {s.viaAlias}
                 </span>
               )}
               {s.viaDescription && (
-                <span style={{ fontSize: 10.5, color: C.faint, flexShrink: 0 }}>説明で一致</span>
+                <span style={{ fontSize: 10, color: C.faint, flexShrink: 0 }}>説明で一致</span>
               )}
               {s.command.argumentHint && (
                 // 行では切る。全文は下の詳細に出るので失われない
@@ -88,7 +88,7 @@ export function Palette({
                 </span>
               )}
               {origin.namespace && (
-                <span style={{ font: `10.5px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                <span style={{ font: `10px ${MONO}`, color: C.faint, flexShrink: 0 }}>
                   {origin.namespace}
                 </span>
               )}
@@ -99,8 +99,8 @@ export function Palette({
 
       {current && (
         <div style={{ borderTop: `1px solid ${C.line}`, background: C.panel,
-          padding: '12px 15px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          padding: '12px 15px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ font: `12px ${MONO}`, color: C.amber }}>/{current.command.name}</span>
             {current.command.argumentHint && (
               <span style={{ font: `11px ${MONO}`, color: C.dim2, wordBreak: 'break-word' }}>
@@ -108,7 +108,7 @@ export function Palette({
               </span>
             )}
             {isDeprioritized(current.command) && (
-              <span style={{ fontSize: 10.5, color: C.amber }}>内部用・廃止済み</span>
+              <span style={{ fontSize: 10, color: C.amber }}>内部用・廃止済み</span>
             )}
           </div>
           {current.command.description && (
@@ -117,7 +117,7 @@ export function Palette({
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 18, padding: '9px 15px',
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '9px 15px',
         background: C.panel, borderTop: `1px solid ${C.line}`, fontSize: 11, color: C.faint }}>
         <span style={{ font: `11px ${MONO}` }}>↑↓ 選択</span>
         <span style={{ font: `11px ${MONO}` }}>↵ / ⇥ 補完</span>

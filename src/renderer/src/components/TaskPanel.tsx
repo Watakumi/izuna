@@ -25,16 +25,16 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
   const tools = task.blocks.filter((b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool')
 
   return (
-    <div style={{ border: `1px solid ${C.line2}`, borderRadius: 9, background: C.surface, overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${C.line2}`, borderRadius: 7, background: C.surface, overflow: 'hidden' }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', cursor: 'pointer' }}>
+        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 13px', cursor: 'pointer' }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         <span style={{
           width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
           background: task.status === 'running' ? C.teal : 'transparent',
           border: task.status === 'running' ? 'none' : `1.5px solid ${s.color}`
         }} />
-        <span style={{ fontSize: 12.5, fontWeight: 500, flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, flexShrink: 0 }}>
           {task.subagentType ?? '実行役'}
         </span>
         <span style={{ fontSize: 12, color: C.dim2, flexGrow: 1, minWidth: 0,
@@ -45,7 +45,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
           <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>{task.lastTool}</span>
         )}
         {task.usage && (
-          <span style={{ font: `10.5px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+          <span style={{ font: `10px ${MONO}`, color: C.faint, flexShrink: 0 }}>
             {(task.usage.totalTokens / 1000).toFixed(1)}k
           </span>
         )}
@@ -53,14 +53,14 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
       </div>
 
       {open && (
-        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ padding: '0 13px 13px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {task.prompt && (
             <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 12, fontSize: 12,
               color: C.dim2, lineHeight: 1.65 }}>{task.prompt}</div>
           )}
           {tools.map((b, i) => <ToolBlock key={i} block={b} />)}
           {texts.map((b, i) => (
-            <div key={i} style={{ color: C.ink2, fontSize: 12.5, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+            <div key={i} style={{ color: C.ink2, fontSize: 12, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
               {b.text}
             </div>
           ))}
@@ -81,8 +81,8 @@ export function TaskPanel({ tasks }: { tasks: TaskRun[] }): React.JSX.Element | 
   const running = tasks.filter((t) => t.status === 'running').length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: '0 24px 4px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>実行役</span>
         <span style={{ font: `11px ${MONO}`, color: C.faint }}>
           {tasks.length} 人{running > 0 && ` · ${running} 実行中`}

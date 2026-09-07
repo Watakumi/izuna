@@ -4,6 +4,7 @@ import type { GitHubIssue } from '../../../main/forge/github'
 import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
 import { C, MONO } from '../theme'
+import { Meter } from './ui'
 
 /**
  * 右ペインの「情報」タブ。
@@ -63,9 +64,9 @@ export function Inspector({
         <span style={{ font: `12px ${MONO}`, color: C.ink }}>
           {status?.branch ?? panel.branch ?? '(不明)'}
         </span>
-        <span style={{ font: `10.5px ${MONO}`, color: C.faint, wordBreak: 'break-all' }}>{panel.cwd}</span>
+        <span style={{ font: `10px ${MONO}`, color: C.faint, wordBreak: 'break-all' }}>{panel.cwd}</span>
         {status && (
-          <div style={{ display: 'flex', gap: 13, fontSize: 11.5, alignItems: 'baseline' }}>
+          <div style={{ display: 'flex', gap: 12, fontSize: 11, alignItems: 'baseline' }}>
             <span style={{ color: C.teal }}>+{status.added}</span>
             <span style={{ color: C.red }}>−{status.removed}</span>
             <span style={{ color: C.dim2 }}>{status.changed} ファイル</span>
@@ -77,14 +78,14 @@ export function Inspector({
 
       <Block title="FORGEJO">
         {issues === null ? (
-          <span style={{ fontSize: 11.5, color: C.faint }}>GitHub に繋がっていません</span>
+          <span style={{ fontSize: 11, color: C.faint }}>GitHub に繋がっていません</span>
         ) : issues.length === 0 ? (
-          <span style={{ fontSize: 11.5, color: C.faint }}>open な Issue はありません</span>
+          <span style={{ fontSize: 11, color: C.faint }}>open な Issue はありません</span>
         ) : (
           issues.slice(0, 2).map((i) => (
             <div key={i.number} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-              <span style={{ fontSize: 11.5, color: C.ink2, minWidth: 0, overflow: 'hidden',
+              <span style={{ fontSize: 11, color: C.ink2, minWidth: 0, overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
             </div>
           ))
@@ -94,7 +95,7 @@ export function Inspector({
           <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
             background: pushed ? C.teal : 'transparent',
             border: pushed ? 'none' : `1.5px solid ${C.faint}` }} />
-          <span style={{ fontSize: 11.5, color: C.dim2 }}>
+          <span style={{ fontSize: 11, color: C.dim2 }}>
             {!sandbox ? 'sandbox 未設定' : pushed ? 'sandbox に push 済み' : 'push していません'}
           </span>
         </div>
@@ -114,7 +115,7 @@ export function Inspector({
             <Meter label="7日" value={limits.sevenDay} />
           </>
         ) : (
-          <span style={{ fontSize: 11.5, color: C.faint }}>まだ届いていません</span>
+          <span style={{ fontSize: 11, color: C.faint }}>まだ届いていません</span>
         )}
       </Block>
 
@@ -129,10 +130,10 @@ export function Inspector({
         </div>
         {showTeam && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 8 }}>
-            <span style={{ font: `10.5px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>
+            <span style={{ font: `10px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>
               {team ?? '—'}
             </span>
-            <span style={{ fontSize: 10.5, color: C.faint, lineHeight: 1.6 }}>
+            <span style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
               ブレインと実行役はここだけを共有します
             </span>
           </div>
@@ -152,18 +153,3 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   )
 }
 
-function Meter({ label, value }: { label: string; value: number }): React.JSX.Element {
-  const pct = Math.round(value * 100)
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
-        <span style={{ color: C.dim }}>{label}</span>
-        <span style={{ font: `11px ${MONO}`, color: C.ink2 }}>{pct}%</span>
-      </div>
-      <div style={{ height: 3, background: C.raised, borderRadius: 2 }}>
-        <div style={{ width: `${Math.min(pct, 100)}%`, height: 3, borderRadius: 2,
-          background: pct > 70 ? C.amber : C.teal }} />
-      </div>
-    </div>
-  )
-}

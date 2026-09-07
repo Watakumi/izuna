@@ -5,6 +5,7 @@ import type { GitHubIssue } from '../../../main/forge/github'
 import { branchFromIssue, branchFromText, uniqueBranch } from '../../../shared/branch'
 import { validateNewWorktree, worktreePathFor } from '../../../shared/worktree'
 import { C, MONO } from '../theme'
+import { Button, Faint, Input } from './ui'
 
 /**
  * セッションを起こす（段3・段4 の入口）。
@@ -120,7 +121,7 @@ export function NewSession({
     <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.62)',
       zIndex: 40, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 64 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 660, maxHeight: '84vh',
-        background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 13,
+        background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
         boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column' }}>
 
         <div style={{ padding: '15px 18px', borderBottom: `1px solid ${C.line}`, fontWeight: 600 }}>
@@ -132,25 +133,25 @@ export function NewSession({
 
           {/* 1. どこで */}
           <Section label="どのリポジトリ" action={
-            <button style={LINK} onClick={() => void window.izuna.pickDirectory()
+            <Button size="sm" onClick={() => void window.izuna.pickDirectory()
               .then((p) => { if (p) { setCwd(p); setQuery(''); setIssue(null) } })}>
               フォルダを選ぶ…
-            </button>
+            </Button>
           }>
             {found === null && <Faint>探しています…</Faint>}
             {found !== null && (
               <>
-                <input value={query} spellCheck={false} placeholder={`${found.length} 本から絞り込む`}
-                  onChange={(e) => setQuery(e.target.value)} style={INPUT} />
+                <Input value={query} placeholder={`${found.length} 本から絞り込む`}
+                  onChange={(e) => setQuery(e.target.value)} />
                 <div style={{ maxHeight: 132, overflowY: 'auto', border: `1px solid ${C.line}`,
                   borderRadius: 7, display: 'flex', flexDirection: 'column' }}>
                   {matches.slice(0, 60).map((r) => (
                     <div key={r.path} onClick={() => { setCwd(r.path); setIssue(null); setBranchOverride(null) }}
-                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '8px 12px',
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
                         cursor: 'pointer', borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
                         background: r.path === cwd ? C.raised : 'transparent' }}>
-                      <span style={{ fontSize: 12.5, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
-                      <span style={{ font: `10.5px ${MONO}`, color: C.faint, flexGrow: 1,
+                      <span style={{ fontSize: 12, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
+                      <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1,
                         textAlign: 'right', minWidth: 0, overflow: 'hidden',
                         textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.group}</span>
                     </div>
@@ -159,22 +160,22 @@ export function NewSession({
                 </div>
               </>
             )}
-            {repoError && <span style={{ fontSize: 11.5, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
+            {repoError && <span style={{ fontSize: 11, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
           </Section>
 
           {/* 2. 何をするか —— ここが本題 */}
           {cwd.trim() !== '' && (
             <Section label="何をするか">
               {issues && issues.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
                     <div key={i.number} onClick={() => { setIssue(i); setText(''); setBranchOverride(null) }}
-                      style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '9px 12px',
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '9px 12px',
                         borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
                         background: issue?.number === i.number ? C.amberBg : 'transparent' }}>
                       <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-                      <span style={{ fontSize: 12.5, color: C.ink2, minWidth: 0, overflow: 'hidden',
+                      <span style={{ fontSize: 12, color: C.ink2, minWidth: 0, overflow: 'hidden',
                         textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
                     </div>
                   ))}
@@ -187,18 +188,18 @@ export function NewSession({
                 value={text} rows={2} spellCheck={false}
                 placeholder={issues && issues.length > 0 ? 'または、やることを直接書く' : 'やることを書く'}
                 onChange={(e) => { setText(e.target.value); setIssue(null); setBranchOverride(null) }}
-                style={{ ...INPUT, font: `13px/1.6 inherit`, resize: 'none' }}
+                style={{ font: `13px/1.6 inherit`, resize: 'none' }}
               />
             </Section>
           )}
 
           {/* 3. 詳細 —— 既定で畳む。worktree もブランチ名も結果 */}
           {branch !== '' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div onClick={() => setShowDetail((v) => !v)}
-                style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <span style={{ font: `10px ${MONO}`, color: C.faint, width: 8 }}>{showDetail ? '▾' : '▸'}</span>
-                <span style={{ fontSize: 11.5, color: C.dim2 }}>詳細</span>
+                <span style={{ fontSize: 11, color: C.dim2 }}>詳細</span>
                 <span style={{ font: `11px ${MONO}`, color: problem ? C.red : C.faint,
                   minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {useWorktree ? `worktree ${branch}` : 'このディレクトリで直接'}
@@ -206,8 +207,8 @@ export function NewSession({
               </div>
 
               {showDetail && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 17 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12, cursor: 'pointer' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 17 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
                     <input type="checkbox" checked={useWorktree} disabled={!repo}
                       onChange={(e) => setUseWorktree(e.target.checked)} />
                     worktree を作る
@@ -217,10 +218,10 @@ export function NewSession({
                     <>
                       <input value={branch} spellCheck={false}
                         onChange={(e) => setBranchOverride(e.target.value)}
-                        style={{ ...INPUT, borderColor: problem ? C.red : C.line2 }} />
+                        style={{ borderColor: problem ? C.red : C.line2 }} />
                       {problem
-                        ? <span style={{ fontSize: 11.5, color: C.red }}>{problem}</span>
-                        : <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>
+                        ? <span style={{ fontSize: 11, color: C.red }}>{problem}</span>
+                        : <span style={{ font: `10px ${MONO}`, color: C.faint }}>
                             {worktreePathFor('~/.izuna/worktrees', repo?.name ?? '?', branch)}
                           </span>}
                     </>
@@ -232,7 +233,7 @@ export function NewSession({
 
           {failure && (
             <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '9px 12px',
-              fontSize: 11.5, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
+              fontSize: 11, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
           )}
         </div>
 
@@ -242,10 +243,10 @@ export function NewSession({
             {ready ? '起こすと、選んだ内容がそのまま最初の依頼になります' : ''}
           </span>
           <div style={{ flexGrow: 1 }} />
-          <button onClick={onCancel} style={GHOST}>やめる</button>
-          <button onClick={() => void start()} disabled={!ready} style={{ ...BTN, opacity: ready ? 1 : 0.45 }}>
+          <Button onClick={onCancel} >やめる</Button>
+          <Button kind="primary" onClick={() => void start()} disabled={!ready}>
             {busy ? '用意しています…' : '起こす'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -257,7 +258,7 @@ function Section({ label, action, children }: {
 }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{label}</span>
         <div style={{ flexGrow: 1 }} />
         {action}
@@ -267,22 +268,3 @@ function Section({ label, action, children }: {
   )
 }
 
-const Faint = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }): React.JSX.Element =>
-  <span style={{ fontSize: 11.5, color: C.faint, lineHeight: 1.7, ...style }}>{children}</span>
-
-const INPUT: React.CSSProperties = {
-  padding: '9px 12px', borderRadius: 7, border: `1px solid ${C.line2}`,
-  background: C.bg, color: C.ink, font: `12px ${MONO}`, outline: 'none'
-}
-const BTN: React.CSSProperties = {
-  padding: '8px 20px', borderRadius: 7, border: 'none', background: C.amber,
-  color: C.amberInk, fontWeight: 600, fontSize: 12.5, cursor: 'pointer'
-}
-const GHOST: React.CSSProperties = {
-  padding: '8px 18px', borderRadius: 7, border: `1px solid ${C.line2}`,
-  background: 'transparent', color: C.ink2, fontSize: 12.5, cursor: 'pointer'
-}
-const LINK: React.CSSProperties = {
-  padding: '4px 11px', borderRadius: 6, border: `1px solid ${C.line2}`,
-  background: 'transparent', color: C.ink2, fontSize: 11.5, cursor: 'pointer'
-}
