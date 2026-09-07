@@ -1,0 +1,149 @@
+/**
+ * Forgejo の環境診断（段5 の入口）。
+ *
+ * 純粋関数。**集めた事実から判定するだけ**で、コマンドも HTTP も叩かない。
+ * 実際に調べるのは `main/forge/setup.ts` の役目。この分け方のおかげで、
+ * 「Forgejo が無い環境」「壊れている環境」の判定を、実物なしで検査できる。
+ *
+ * 方針: **検出は自動、変更は明示のクリック。**
+ * 利用者の Forgejo 設定を黙って書き換えない。
+ */
+
+export type CheckId = 'installed' | 'configured' | 'running' | 'token' | 'actions' | 'runner'
+export type Level = 'ok' | 'warn' | 'ng' | 'unknown'
+
+export interface Check {
+  id: CheckId
+  label: string
+  level: Level
+  detail: string
+  /** 押せば直せるもの。null なら手でやるしかない */
+  fix: { label: string; warning: string | null } | null
+}
+
+/** main が集めてくる事実。ここでは判定だけする */
+export interface ForgeFacts {
+  /** forgejo コマンドの場所。無ければ null */
+  binary: string | null
+  version: string | null
+  /** app.ini の中身（見つからなければ null） */
+  config: ForgeConfig | null
+  /** ROOT_URL が応答したか */
+  reachable: boolean
+  /** 保管しているトークンのスコープ。未設定なら null */
+  tokenScopes: string[] | null
+  /** トークンで /api/v1/user が通ったか */
+  tokenWorks: boolean | null
+  /** 登録済み runner の数。Actions が無効なら null */
+  runners: number | null
+}
+
+export interface ForgeConfig {
+  path: string
+  rootUrl: string | null
+  httpPort: number | null
+  installLocked: boolean
+  actionsEnabled: boolean
+}
+
+/** Izuna が要るスコープ。足りないものを見せるために持つ */
+export const REQUIRED_SCOPES = ['read:user', 'write:repository'] as const
+/** PR にコメントを付けるなら要る。無くても段5 は動く */
+export const OPTIONAL_SCOPES = ['write:issue'] as const
+
+/** `HTTP_PORT = 4649` の形を読む。節は見ない（キーが一意なので足りる） */
+export function parseAppIni(text: string): Omit<ForgeConfig, 'path'> {
+  const value = (key: string): string | null => {
+    const m = new RegExp(`^\\s*${key}\\s*=\\s*(.+?)\\s*$`, 'mi').exec(text)
+    return m ? m[1] : null
+  }
+  const port = value('HTTP_PORT')
+  // [actions] の ENABLED だけを見る。ほかの節にも ENABLED はある
+  const actions = /^\s*\[actions\][^[]*?^\s*ENABLED\s*=\s*(\w+)/ms.exec(text)
+  return {
+    rootUrl: value('ROOT_URL'),
+    httpPort: port && /^\d+$/.test(port) ? Number(port) : null,
+    installLocked: (value('INSTALL_LOCK') ?? '').toLowerCase() === 'true',
+    // 節が無ければ既定で有効。明示的に false のときだけ無効
+    actionsEnabled: actions ? actions[1].toLowerCase() !== 'false' : true
+  }
+}
+
+export function missingScopes(have: string[] | null): string[] {
+  if (!have) return [...REQUIRED_SCOPES]
+  return REQUIRED_SCOPES.filter((s) => !have.includes(s))
+}
+
+/** 事実 → 画面に出す診断。上から順に潰す想定で並べる */
+export function diagnose(facts: ForgeFacts): Check[] {
+  const checks: Check[] = []
+
+  checks.push(facts.binary
+    ? { id: 'installed', label: 'Forgejo が入っている', level: 'ok',
+        detail: `${facts.version ?? '版不明'} · ${facts.binary}`, fix: null }
+    : { id: 'installed', label: 'Forgejo が入っている', level: 'ng',
+        detail: '見つかりません',
+        fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' } })
+
+  if (!facts.binary) return checks
+
+  const cfg = facts.config
+  checks.push(!cfg
+    ? { id: 'configured', label: '初期設定が済んでいる', level: 'ng',
+        detail: 'app.ini が見つかりません', fix: null }
+    : cfg.installLocked
+      ? { id: 'configured', label: '初期設定が済んでいる', level: 'ok',
+          detail: `${cfg.rootUrl ?? '(ROOT_URL 未設定)'} · ${cfg.path}`, fix: null }
+      : { id: 'configured', label: '初期設定が済んでいる', level: 'warn',
+          detail: 'INSTALL_LOCK が false。ブラウザで初期設定を終えてください', fix: null })
+
+  checks.push(facts.reachable
+    ? { id: 'running', label: '動いている', level: 'ok',
+        detail: `${cfg?.rootUrl ?? ''} が応答しました`, fix: null }
+    : { id: 'running', label: '動いている', level: 'ng',
+        detail: '応答がありません',
+        fix: { label: '起動する', warning: 'brew services start forgejo を実行します' } })
+
+  const lacking = missingScopes(facts.tokenScopes)
+  checks.push(
+    facts.tokenScopes === null
+      ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+          detail: '未設定です',
+          fix: { label: 'トークンを発行する', warning: 'Forgejo に izuna という名前のトークンを作ります' } }
+      : lacking.length > 0
+        ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+            detail: `スコープが足りません: ${lacking.join(', ')}`,
+            fix: { label: '発行し直す', warning: '足りないスコープを付けて作り直します' } }
+        : facts.tokenWorks === false
+          ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+              detail: 'トークンが拒否されました。作り直してください',
+              fix: { label: '発行し直す', warning: '古いトークンは無効になります' } }
+          : { id: 'token', label: 'Izuna 用のトークンがある', level: 'ok',
+              detail: (facts.tokenScopes ?? []).join(', '), fix: null }
+  )
+
+  // Actions は v1 の必須ではない。無くても PR は作れる
+  checks.push(cfg?.actionsEnabled
+    ? { id: 'actions', label: 'Actions が有効（任意）', level: 'ok', detail: '有効です', fix: null }
+    : { id: 'actions', label: 'Actions が有効（任意）', level: 'warn',
+        detail: '無効です。CI を自宅で回さないなら、このままで構いません',
+        fix: { label: '有効にする', warning: 'app.ini を書き換えて Forgejo を再起動します' } })
+
+  if (cfg?.actionsEnabled) {
+    checks.push((facts.runners ?? 0) > 0
+      ? { id: 'runner', label: 'runner が登録されている（任意）', level: 'ok',
+          detail: `${facts.runners} 台`, fix: null }
+      : { id: 'runner', label: 'runner が登録されている（任意）', level: 'warn',
+          detail: 'ありません。Actions は動きますが、実行するものがいません',
+          fix: { label: '登録用トークンを出す', warning: 'runner のバイナリは別途必要です' } })
+  }
+
+  return checks
+}
+
+/** 段5 に進めるか。任意の項目は数えない */
+export function readyForForge(checks: Check[]): boolean {
+  return checks
+    .filter((c) => c.id === 'installed' || c.id === 'configured' || c.id === 'running' || c.id === 'token')
+    .every((c) => c.level === 'ok')
+}

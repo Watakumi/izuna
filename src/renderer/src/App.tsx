@@ -10,6 +10,7 @@ import { Palette } from './components/Palette'
 import { PermissionBar } from './components/PermissionBar'
 import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
+import { ForgeSetup } from './components/ForgeSetup'
 import { useSessions } from './useSessions'
 
 /**
@@ -22,6 +23,7 @@ function App(): React.JSX.Element {
   const sessions = useSessions()
   const { active } = sessions
   const [showNew, setShowNew] = useState(false)
+  const [showForge, setShowForge] = useState(false)
   const [picked, setPicked] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -119,6 +121,7 @@ function App(): React.JSX.Element {
           {active && (
             <button style={S.ghostSmall} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
           )}
+          <button style={S.ghostSmall} onClick={() => setShowForge(true)}>Forgejo</button>
         </div>
 
         {!active ? (
@@ -187,6 +190,8 @@ function App(): React.JSX.Element {
           </>
         )}
       </div>
+
+      {showForge && <ForgeSetup onClose={() => setShowForge(false)} />}
 
       {showNew && (
         <NewSession

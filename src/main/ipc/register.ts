@@ -3,6 +3,7 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import { ensureTeam, teamInstructions } from '../team'
+import { applyFix, gatherFacts, type FixId } from '../forge/setup'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -34,6 +35,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     const win = getWindow()
     if (win && !win.isDestroyed()) win.webContents.send(CH.event, event)
   }
+
+  ipcMain.handle(CH.forgeFacts, () => gatherFacts())
+  ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {
     const [root, name, worktrees] = await Promise.all([

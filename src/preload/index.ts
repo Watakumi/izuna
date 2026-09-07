@@ -7,6 +7,8 @@ import { CH, type IzunaApi, type PermissionAnswer, type SessionEvent, type Sessi
  * `require` は渡さない。`shared/ipc.ts` の `IzunaApi` に無いものは出さない。
  */
 const izuna: IzunaApi = {
+  forgeFacts: () => ipcRenderer.invoke(CH.forgeFacts),
+  forgeFix: (id) => ipcRenderer.invoke(CH.forgeFix, id),
   repo: (cwd: string) => ipcRenderer.invoke(CH.repo, cwd),
   createWorktree: (cwd: string, branch: string) => ipcRenderer.invoke(CH.createWorktree, cwd, branch),
   removeWorktree: (cwd: string, path: string, force?: boolean) =>

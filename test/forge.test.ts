@@ -1,0 +1,139 @@
+import { describe, expect, it } from 'vitest'
+import {
+  diagnose,
+  missingScopes,
+  parseAppIni,
+  readyForForge,
+  type ForgeFacts
+} from '../src/shared/forge'
+
+/**
+ * Forgejo の環境診断に対する門（段5 の入口）。
+ *
+ * 純粋関数なので、**Forgejo が無い環境でも壊れている環境でも**検査できる。
+ * 判定を間違えると「動いているのに動いていないと言う」道具になる。
+ */
+
+// 手元の app.ini の実物（/opt/homebrew/var/forgejo/custom/conf/app.ini）
+const REAL_INI = `
+APP_NAME = Forgejo
+RUN_USER = watakumi
+RUN_MODE = prod
+
+[server]
+DOMAIN = localhost
+HTTP_PORT = 4649
+ROOT_URL = http://localhost:4649/
+
+[database]
+DB_TYPE = sqlite3
+
+[security]
+INSTALL_LOCK = true
+
+[actions]
+ENABLED = false
+
+[log]
+MODE = file
+`
+
+const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
+  binary: '/opt/homebrew/bin/forgejo',
+  version: '16.0.3',
+  config: { path: '/x/app.ini', rootUrl: 'http://localhost:4649/', httpPort: 4649,
+    installLocked: true, actionsEnabled: false },
+  reachable: true,
+  tokenScopes: ['read:user', 'write:repository'],
+  tokenWorks: true,
+  runners: null,
+  ...over
+})
+
+const find = (f: ForgeFacts, id: string): ReturnType<typeof diagnose>[number] =>
+  diagnose(f).find((c) => c.id === id)!
+
+describe('app.ini を読む', () => {
+  const c = parseAppIni(REAL_INI)
+
+  it('実物から要る値を拾う', () => {
+    expect(c.httpPort).toBe(4649)
+    expect(c.rootUrl).toBe('http://localhost:4649/')
+    expect(c.installLocked).toBe(true)
+  })
+
+  it('[actions] の ENABLED だけを見る', () => {
+    // ほかの節にも ENABLED はあるので、節を跨いで拾ってはいけない
+    expect(c.actionsEnabled).toBe(false)
+    expect(parseAppIni('[actions]\nENABLED = true\n').actionsEnabled).toBe(true)
+  })
+
+  it('[actions] 節が無ければ有効とみなす（Forgejo の既定）', () => {
+    expect(parseAppIni('[server]\nHTTP_PORT = 3000\n').actionsEnabled).toBe(true)
+  })
+
+  it('無い値は null。0 や空文字に倒さない', () => {
+    const empty = parseAppIni('')
+    expect(empty.httpPort).toBeNull()
+    expect(empty.rootUrl).toBeNull()
+    expect(empty.installLocked).toBe(false)
+  })
+})
+
+describe('スコープ', () => {
+  it('足りないものを名指しする', () => {
+    expect(missingScopes(['write:repository'])).toEqual(['read:user'])
+    expect(missingScopes(['read:user', 'write:repository', 'write:issue'])).toEqual([])
+  })
+
+  it('未設定は全部足りない', () => {
+    expect(missingScopes(null)).toEqual(['read:user', 'write:repository'])
+  })
+})
+
+describe('診断', () => {
+  it('揃っていれば段5 に進める', () => {
+    expect(readyForForge(diagnose(facts({})))).toBe(true)
+  })
+
+  it('入っていなければ、そこで止めて先を出さない', () => {
+    // 無いものの上に「動いていません」を重ねても混乱するだけ
+    const checks = diagnose(facts({ binary: null }))
+    expect(checks).toHaveLength(1)
+    expect(checks[0].level).toBe('ng')
+    expect(checks[0].fix?.label).toContain('Homebrew')
+  })
+
+  it('応答が無ければ起動を促す', () => {
+    expect(find(facts({ reachable: false }), 'running')).toMatchObject({ level: 'ng' })
+  })
+
+  it('スコープ不足は理由を名指しする', () => {
+    // 実際に 403 tokenRequiresScopes を踏んだので、原因が読めることを門にする
+    const c = find(facts({ tokenScopes: ['write:repository'] }), 'token')
+    expect(c.level).toBe('ng')
+    expect(c.detail).toContain('read:user')
+  })
+
+  it('トークンが拒否されたら作り直しを促す', () => {
+    expect(find(facts({ tokenWorks: false }), 'token').level).toBe('ng')
+  })
+
+  it('Actions と runner は任意。無効でも段5 には進める', () => {
+    const checks = diagnose(facts({ config: { ...facts({}).config!, actionsEnabled: false } }))
+    expect(checks.find((c) => c.id === 'actions')?.level).toBe('warn')
+    expect(readyForForge(checks)).toBe(true)
+  })
+
+  it('Actions が有効なら runner も見る', () => {
+    const on = { ...facts({}).config!, actionsEnabled: true }
+    expect(diagnose(facts({ config: on, runners: 0 })).find((c) => c.id === 'runner')?.level).toBe('warn')
+    expect(diagnose(facts({ config: on, runners: 1 })).find((c) => c.id === 'runner')?.level).toBe('ok')
+  })
+
+  it('INSTALL_LOCK が false なら手でやってもらう（自動で押し切らない）', () => {
+    const c = find(facts({ config: { ...facts({}).config!, installLocked: false } }), 'configured')
+    expect(c.level).toBe('warn')
+    expect(c.fix).toBeNull()
+  })
+})

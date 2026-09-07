@@ -1,0 +1,173 @@
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
+import { loginShellEnv } from '../claude/locate'
+import { loadToken, saveToken } from './store'
+
+const exec = promisify(execFile)
+
+/**
+ * Forgejo の環境を調べ、押されたら直す（段5 の入口）。
+ *
+ * 判定は `shared/forge.ts`（純粋関数）が持つ。ここは調べて走らせるだけ。
+ *
+ * **検出は自動、変更は明示のクリック。** 利用者の Forgejo 設定を黙って
+ * 書き換えたり brew install を勝手に走らせたりしない。
+ */
+
+const WORK_PATHS = ['/opt/homebrew/var/forgejo', '/usr/local/var/forgejo']
+
+async function run(cmd: string, args: string[]): Promise<string> {
+  const env = await loginShellEnv()
+  const { stdout } = await exec(cmd, args, { env, timeout: 60_000, maxBuffer: 4 * 1024 * 1024 })
+  return stdout.trim()
+}
+
+async function which(cmd: string): Promise<string | null> {
+  try {
+    return (await run('command', ['-v', cmd])) || null
+  } catch {
+    // command はシェル組み込みなので execFile では動かない。ログインシェル経由で聞く
+    try {
+      const env = await loginShellEnv()
+      const { stdout } = await exec(env.SHELL ?? '/bin/zsh', ['-ilc', `command -v ${cmd}`], { env, timeout: 8000 })
+      return stdout.trim() || null
+    } catch {
+      return null
+    }
+  }
+}
+
+async function findConfig(): Promise<ForgeConfig | null> {
+  for (const base of WORK_PATHS) {
+    const path = join(base, 'custom', 'conf', 'app.ini')
+    try {
+      return { path, ...parseAppIni(await readFile(path, 'utf8')) }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+async function probe(rootUrl: string | null): Promise<boolean> {
+  if (!rootUrl) return false
+  try {
+    const res = await fetch(new URL('api/v1/version', rootUrl), {
+      signal: AbortSignal.timeout(3000)
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/** トークンが通るか、どのスコープを持つかを本人に聞く */
+async function inspectToken(
+  rootUrl: string | null,
+  token: string | null
+): Promise<{ scopes: string[] | null; works: boolean | null }> {
+  if (!token) return { scopes: null, works: null }
+  if (!rootUrl) return { scopes: null, works: null }
+  try {
+    const res = await fetch(new URL('api/v1/user', rootUrl), {
+      headers: { Authorization: `token ${token}` },
+      signal: AbortSignal.timeout(4000)
+    })
+    if (!res.ok) return { scopes: [], works: false }
+    // Forgejo はスコープをヘッダに返さないので、通った事実から要るものを持つと見なす。
+    // 足りなければ個別の呼び出しが 403 になり、そこで作り直しに誘導される
+    return { scopes: ['read:user', 'write:repository'], works: true }
+  } catch {
+    return { scopes: [], works: false }
+  }
+}
+
+export async function gatherFacts(): Promise<ForgeFacts> {
+  const binary = await which('forgejo')
+  if (!binary) {
+    return { binary: null, version: null, config: null, reachable: false,
+      tokenScopes: null, tokenWorks: null, runners: null }
+  }
+  const [version, config, token] = await Promise.all([
+    run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null),
+    findConfig(),
+    loadToken()
+  ])
+  const reachable = await probe(config?.rootUrl ?? null)
+  const { scopes, works } = await inspectToken(config?.rootUrl ?? null, token)
+  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works, runners: null }
+}
+
+/** 管理者ユーザーを探す。トークンは「誰の」ものかを決めないと発行できない */
+async function adminUser(binary: string, workPath: string): Promise<string> {
+  const out = await run(binary, ['admin', 'user', 'list', '--admin', '--work-path', workPath])
+  // 1 行目は見出し。ID<TAB>Username<TAB>... の形
+  const row = out.split('\n').slice(1).find((l) => l.trim())
+  const name = row?.split(/\s+/)[1]
+  if (!name) throw new Error('管理者ユーザーが見つかりません')
+  return name
+}
+
+function workPathOf(config: ForgeConfig): string {
+  return config.path.replace(/\/custom\/conf\/app\.ini$/, '')
+}
+
+export type FixId = 'install' | 'start' | 'token' | 'actions' | 'runnerToken'
+
+/** 押されたときだけ走る。戻り値は人に見せる結果 */
+export async function applyFix(id: FixId): Promise<string> {
+  const facts = await gatherFacts()
+
+  switch (id) {
+    case 'install':
+      await run('brew', ['install', 'forgejo'])
+      return 'brew install forgejo が終わりました'
+
+    case 'start':
+      await run('brew', ['services', 'start', 'forgejo'])
+      return 'brew services start forgejo を実行しました。数秒で応答が返るはずです'
+
+    case 'token': {
+      if (!facts.binary || !facts.config) throw new Error('Forgejo が見つかりません')
+      const workPath = workPathOf(facts.config)
+      const user = await adminUser(facts.binary, workPath)
+      // 同名トークンがあると失敗するので、名前に時刻を混ぜる
+      const name = `izuna-${Date.now().toString(36)}`
+      const token = await run(facts.binary, [
+        'admin', 'user', 'generate-access-token',
+        '--username', user, '--token-name', name, '--raw',
+        '--scopes', 'read:user,write:repository,write:issue',
+        '--work-path', workPath
+      ])
+      const value = token.split('\n').pop()?.trim()
+      if (!value) throw new Error('トークンを受け取れませんでした')
+      await saveToken(value)
+      return `${user} のトークン「${name}」を作り、暗号化して保管しました`
+    }
+
+    case 'actions': {
+      if (!facts.config) throw new Error('app.ini が見つかりません')
+      const text = await readFile(facts.config.path, 'utf8')
+      const next = /^\s*\[actions\]/m.test(text)
+        ? text.replace(/(^\s*\[actions\][^[]*?^\s*ENABLED\s*=\s*)\w+/ms, '$1true')
+        : `${text.trimEnd()}\n\n[actions]\nENABLED = true\n`
+      // 書き換える前に控えを残す。設定を壊して戻せなくなるのが一番困る
+      await writeFile(`${facts.config.path}.izuna-backup`, text, 'utf8')
+      await writeFile(facts.config.path, next, 'utf8')
+      await run('brew', ['services', 'restart', 'forgejo'])
+      return 'Actions を有効にして再起動しました（元の app.ini は .izuna-backup に残してあります）'
+    }
+
+    case 'runnerToken': {
+      if (!facts.binary || !facts.config) throw new Error('Forgejo が見つかりません')
+      const out = await run(facts.binary, [
+        'forgejo-cli', 'actions', 'generate-runner-token',
+        '--work-path', workPathOf(facts.config)
+      ])
+      return `runner の登録トークン: ${out.split('\n').pop()?.trim() ?? out}`
+    }
+  }
+}

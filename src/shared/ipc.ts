@@ -1,6 +1,8 @@
 import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
+import type { ForgeFacts } from './forge'
+import type { FixId } from '../main/forge/setup'
 import type { WorktreeStatus } from '../main/git/worktree'
 
 /**
@@ -39,6 +41,10 @@ export interface RepoInfo {
 
 /** renderer が呼ぶもの。すべて invoke（応答を待つ） */
 export interface IzunaApi {
+  /** Forgejo の環境を調べる。**検出だけ。何も変えない** */
+  forgeFacts(): Promise<ForgeFacts>
+  /** 明示的に押されたときだけ走る修正 */
+  forgeFix(id: FixId): Promise<string>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
   createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
@@ -65,6 +71,8 @@ export type SessionEvent =
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
+  forgeFacts: 'izuna:forge:facts',
+  forgeFix: 'izuna:forge:fix',
   repo: 'izuna:repo',
   createWorktree: 'izuna:worktree:create',
   removeWorktree: 'izuna:worktree:remove',
