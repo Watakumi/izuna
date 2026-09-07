@@ -746,3 +746,56 @@ provider     : firstParty
 `test/auth.test.ts` が `apiKeySource` を検査している。
 `ANTHROPIC_API_KEY` を設定した環境で fixture を録り直すと落ちる。
 落ちたら、従量課金の経路に切り替わっていないかを疑うこと。
+
+---
+
+## 15. 設定と汎用性（2026-09-07）
+
+### 決め打ちを 3 種類に分けて扱う
+
+| 種類 | 例 | 扱い |
+| --- | --- | --- |
+| **意図的に切った** | macOS 専用 / Claude Code 専用 / Forgejo と GitHub のみ | `docs/GOAL.md` の「やらないこと」。直さない |
+| **他人の環境で壊れる** | Forgejo のパス、`brew`、探索先、remote 名 | `~/.izuna/config.json` で上書きできるようにした |
+| **自分も踏むバグ** | `base: 'main'` の決め打ち、`origin/HEAD` | **検出に変えた**（下） |
+
+### `~/.izuna/config.json`
+
+無くても動く。**他の環境に合わせるための逃げ道**であって、用意しないと
+使えないものではない。書式は `shared/config.ts`（純粋関数・検査済み）。
+
+```jsonc
+{
+  "forgejoWorkPaths": ["/opt/homebrew/var/forgejo"],  // Docker なら [] にして下を書く
+  "forgejoUrl": null,                                  // app.ini が読めないとき
+  "sandboxRemote": "forgejo",                          // sandbox の remote 名
+  "repoRoots": ["~/work", "~/src"],                    // 探索先
+  "repoDepth": 3,
+  "claudePath": null,                                  // PATH に無い場所に置いているとき
+  "settingSources": ["project", "local"]               // §13
+}
+```
+
+**壊れた設定でアプリを起動不能にしない。** 型の合わない値は既定に倒し、
+**何を落としたかを名指しする** —— 黙って倒すと、直したのに効かない理由が
+分からなくなる。設定画面の下に出る。
+
+`repoDepth` は 1〜6 に制限する。ホーム全体を舐めさせない。
+
+### 既定ブランチを決め打たない
+
+`base: 'main'` と書いていた。`master` や `develop` のリポジトリで PR が
+作れなくなる（**自分も踏む**）。`defaultBranch(cwd, remote)` に変えた。
+
+1. `refs/remotes/<remote>/HEAD` を見る（ネットワークに出ない）
+2. 無ければ `git remote show <remote>` に聞く
+3. それでも駄目なら null。**`main` に倒さない**
+
+`origin/HEAD` の決め打ちも同じ理由でやめ、検出した upstream の remote 名と
+既定ブランチを組んで使う。
+
+### まだ残っている決め打ち
+
+- `brew install` / `brew services`（Homebrew 以外の導入方法）
+- `/opt/homebrew/bin/claude` などのフォールバック（`claudePath` で回避可能）
+- GitHub のホスト名一覧（GitHub Enterprise は未対応）

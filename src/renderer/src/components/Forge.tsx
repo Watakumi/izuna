@@ -23,6 +23,10 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
   const [issues, setIssues] = useState<GitHubIssue[]>([])
   const [gh, setGh] = useState<{ ok: boolean; detail: string } | null>(null)
   const [commits, setCommits] = useState<string[]>([])
+  // **main と決め打たない。** master や develop のリポジトリで PR が作れなくなる
+  const [bases, setBases] = useState<{ sandbox: string | null; upstream: string | null }>(
+    { sandbox: null, upstream: null }
+  )
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
 
@@ -36,6 +40,13 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
     setBranch(br)
     setGh(status)
 
+    const { sandbox: sb, upstream: up } = rolesIn(rs)
+    const [sandboxBase, upstreamBase] = await Promise.all([
+      sb ? window.izuna.defaultBranch(cwd, sb.name).catch(() => null) : Promise.resolve(null),
+      up ? window.izuna.defaultBranch(cwd, up.name).catch(() => null) : Promise.resolve(null)
+    ])
+    setBases({ sandbox: sandboxBase, upstream: upstreamBase })
+
     const { sandbox } = rolesIn(rs)
     if (sandbox && br) {
       setPushed(await window.izuna.isPushed(cwd, sandbox.name, br).catch(() => false))
@@ -45,7 +56,9 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
     }
     if (status.ok) {
       setIssues(await window.izuna.ghIssues(cwd).catch(() => []))
-      setCommits(await window.izuna.commitsSince(cwd, 'origin/HEAD').catch(() => []))
+      // 出口の既定ブランチからの差分。origin と決め打たない
+      const base = up && upstreamBase ? `${up.name}/${upstreamBase}` : 'HEAD~10'
+      setCommits(await window.izuna.commitsSince(cwd, base).catch(() => []))
     }
   }, [cwd])
 
@@ -123,7 +136,8 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
                       <button disabled={busy !== null} style={BTN}
                         onClick={() => void act('pr', async () => {
                           const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
-                            title: branch, head: branch, base: 'main',
+                            title: branch, head: branch,
+                            base: bases.sandbox ?? bases.upstream ?? 'main',
                             body: commits.length ? commits.map((c) => `- ${c}`).join('\n') : ''
                           })
                           return `sandbox に PR !${pr.number} を作りました`
@@ -173,7 +187,9 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
                 <>
                   {branch && (
                     <div style={{ ...CARD, borderColor: C.amberLine, background: C.amberBg }}>
-                      <span style={{ font: `12px ${MONO}` }}>{branch} → main</span>
+                      <span style={{ font: `12px ${MONO}` }}>
+                        {branch} → {bases.upstream ?? '(既定ブランチ不明)'}
+                      </span>
                       <span style={{ fontSize: 11.5, color: C.dim2 }}>
                         {commits.length ? `${commits.length} コミット` : '差分の取得に失敗しました'}
                       </span>
@@ -181,6 +197,7 @@ export function Forge({ cwd, onClose }: { cwd: string; onClose: () => void }): R
                         opacity: stage === 'readyForUpstream' ? 1 : 0.45 }}
                         onClick={() => void act('gh', () => window.izuna.ghCreatePull(cwd, {
                           title: branch, head: branch,
+                          ...(bases.upstream ? { base: bases.upstream } : {}),
                           body: commits.map((c) => `- ${c}`).join('\n') || '（本文なし）'
                         }))}>
                         {busy === 'gh' ? '作成中…' : 'GitHub に PR を作る'}

@@ -20,6 +20,7 @@ const izuna: IzunaApi = {
   remotes: (cwd) => ipcRenderer.invoke(CH.remotes, cwd),
   ensureSandboxRemote: (cwd, owner, repo) => ipcRenderer.invoke(CH.ensureSandboxRemote, cwd, owner, repo),
   currentBranch: (cwd) => ipcRenderer.invoke(CH.currentBranch, cwd),
+  defaultBranch: (cwd, r) => ipcRenderer.invoke(CH.defaultBranch, cwd, r),
   isPushed: (cwd, r, b) => ipcRenderer.invoke(CH.isPushed, cwd, r, b),
   push: (cwd, r, b) => ipcRenderer.invoke(CH.push, cwd, r, b),
   commitsSince: (cwd, base) => ipcRenderer.invoke(CH.commitsSince, cwd, base),
@@ -32,6 +33,7 @@ const izuna: IzunaApi = {
     ipcRenderer.on(CH.terminalEvent, listener)
     return () => { ipcRenderer.off(CH.terminalEvent, listener) }
   },
+  configInfo: () => ipcRenderer.invoke(CH.configInfo),
   findRepos: () => ipcRenderer.invoke(CH.findRepos),
   pickDirectory: () => ipcRenderer.invoke(CH.pickDirectory),
   ipcVersion: () => ipcRenderer.invoke(CH.ipcVersion),

@@ -9,6 +9,8 @@ import * as gh from '../forge/github'
 import * as remote from '../git/remote'
 import * as term from '../terminal'
 import { findRepos, pickDirectory } from '../repos'
+import { CONFIG_PATH, loadConfig } from '../config'
+import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -66,6 +68,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.ensureSandboxRemote, async (_e, cwd: string, owner: string, repo: string) =>
     remote.ensureSandboxRemote(cwd, await forgeRoot(), owner, repo))
   ipcMain.handle(CH.currentBranch, (_e, cwd: string) => remote.currentBranch(cwd))
+  ipcMain.handle(CH.defaultBranch, (_e, cwd: string, r: string) => remote.defaultBranch(cwd, r))
   ipcMain.handle(CH.isPushed, (_e, cwd: string, r: string, b: string) => remote.isPushed(cwd, r, b))
   ipcMain.handle(CH.push, (_e, cwd: string, r: string, b: string) => remote.push(cwd, r, b))
   ipcMain.handle(CH.commitsSince, (_e, cwd: string, base: string) => remote.commitsSince(cwd, base))
@@ -77,6 +80,11 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.closeTerminal, (_e, id: string) => term.closeTerminal(id))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
+  ipcMain.handle(CH.configInfo, async () => {
+    const { ignored } = await loadConfig()
+    const exists = await access(CONFIG_PATH).then(() => true).catch(() => false)
+    return { path: CONFIG_PATH, ignored, exists }
+  })
   ipcMain.handle(CH.findRepos, () => findRepos())
   ipcMain.handle(CH.pickDirectory, () => pickDirectory(getWindow()))
   ipcMain.handle(CH.ipcVersion, () => IPC_VERSION)

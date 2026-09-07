@@ -29,6 +29,9 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   const [checks, setChecks] = useState<Check[] | null>(null)
   const [busy, setBusy] = useState<Check['id'] | null>(null)
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null)
+  const [cfg, setCfg] = useState<{ path: string; ignored: string[]; exists: boolean } | null>(null)
+
+  useEffect(() => { void window.izuna.configInfo().then(setCfg).catch(() => undefined) }, [])
 
   const refresh = useCallback(async () => {
     setChecks(diagnose(await window.izuna.forgeFacts()))
@@ -101,6 +104,26 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
               whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{message.text}</div>
           )}
         </div>
+
+        {cfg && (
+          <div style={{ padding: '11px 18px', borderTop: `1px solid ${C.line}`,
+            display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
+              <span style={{ font: `10.5px ${MONO}`, color: C.faint }}>{cfg.path}</span>
+              {!cfg.exists && <span style={{ fontSize: 10.5, color: C.faint }}>（未作成・既定で動いています）</span>}
+            </div>
+            <span style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
+              Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。
+              Docker で建てているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
+            </span>
+            {cfg.ignored.length > 0 && (
+              <span style={{ fontSize: 11, color: C.amber }}>
+                読めずに既定へ倒した項目: {cfg.ignored.join(', ')}
+              </span>
+            )}
+          </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '13px 18px',
           borderTop: `1px solid ${C.line}` }}>

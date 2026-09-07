@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
 import { loadToken, saveToken } from './store'
+import { resolved } from '../config'
 
 const exec = promisify(execFile)
 
@@ -17,7 +18,7 @@ const exec = promisify(execFile)
  * 書き換えたり brew install を勝手に走らせたりしない。
  */
 
-const WORK_PATHS = ['/opt/homebrew/var/forgejo', '/usr/local/var/forgejo']
+
 
 async function run(cmd: string, args: string[]): Promise<string> {
   const env = await loginShellEnv()
@@ -41,13 +42,20 @@ async function which(cmd: string): Promise<string | null> {
 }
 
 async function findConfig(): Promise<ForgeConfig | null> {
-  for (const base of WORK_PATHS) {
+  const cfg = await resolved()
+  for (const base of cfg.forgejoWorkPaths) {
     const path = join(base, 'custom', 'conf', 'app.ini')
     try {
       return { path, ...parseAppIni(await readFile(path, 'utf8')) }
     } catch {
       continue
     }
+  }
+  // app.ini が読めない環境（Docker で建てている等）。URL だけ設定から使う
+  const cfg2 = await resolved()
+  if (cfg2.forgejoUrl) {
+    return { path: '(設定から)', rootUrl: cfg2.forgejoUrl, httpPort: null,
+      httpAddr: null, installLocked: true, actionsEnabled: true }
   }
   return null
 }

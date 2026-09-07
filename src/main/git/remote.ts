@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
 import { loginShellEnv } from '../claude/locate'
+import { resolved } from '../config'
 
 const exec = promisify(execFile)
 
@@ -28,8 +29,9 @@ export async function ensureSandboxRemote(
   forgeRootUrl: string,
   owner: string,
   repo: string,
-  name = 'forgejo'
+  name?: string
 ): Promise<string> {
+  name ??= (await resolved()).sandboxRemote
   const url = sandboxRemoteUrl(forgeRootUrl, owner, repo)
   const existing = await listRemotes(cwd, forgeRootUrl)
   if (existing.some((r) => r.name === name)) {
@@ -38,6 +40,29 @@ export async function ensureSandboxRemote(
   }
   await git(cwd, ['remote', 'add', name, url])
   return `${name} を ${url} として足しました`
+}
+
+/**
+ * その remote の既定ブランチ。
+ *
+ * **`main` と決め打たない。** `master` や `develop` のリポジトリで
+ * PR が作れなくなる。remote の HEAD を見て、無ければ聞きに行く。
+ */
+export async function defaultBranch(cwd: string, remoteName: string): Promise<string | null> {
+  // 手元に記録があればそれ。ネットワークに出ない
+  try {
+    const ref = (await git(cwd, ['symbolic-ref', '--short', `refs/remotes/${remoteName}/HEAD`])).trim()
+    const branch = ref.replace(new RegExp(`^${remoteName}/`), '')
+    if (branch) return branch
+  } catch {
+    // HEAD が張られていないことがある。下で聞く
+  }
+  try {
+    const out = await git(cwd, ['remote', 'show', remoteName])
+    return /HEAD branch:\s*(\S+)/.exec(out)?.[1] ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function currentBranch(cwd: string): Promise<string | null> {

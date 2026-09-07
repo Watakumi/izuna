@@ -1,7 +1,7 @@
 import { readdir, access } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
-import { homedir } from 'node:os'
 import { basename, join } from 'node:path'
+import { resolved } from './config'
 import { dialog, type BrowserWindow } from 'electron'
 
 /**
@@ -12,9 +12,7 @@ import { dialog, type BrowserWindow } from 'electron'
  * 「よくある置き場を、浅く」に留める。
  */
 
-/** 既定の探索先。無いものは黙って飛ばす */
-export const DEFAULT_ROOTS = ['work', 'src', 'dev', 'Projects', 'projects', 'ghq', 'repos']
-  .map((d) => join(homedir(), d))
+/** 探索先は設定から引く（`~/.izuna/config.json` の `repoRoots`） */
 
 export interface FoundRepo {
   path: string
@@ -67,7 +65,10 @@ async function walk(dir: string, depth: number, out: FoundRepo[], base: string):
 }
 
 /** 既定の置き場を浅く探す。深さ 3 でも `~/work/<分類>/<repo>` は拾える */
-export async function findRepos(roots = DEFAULT_ROOTS, depth = 3): Promise<FoundRepo[]> {
+export async function findRepos(roots?: string[], depth?: number): Promise<FoundRepo[]> {
+  const cfg = await resolved()
+  roots ??= cfg.repoRoots
+  depth ??= cfg.repoDepth
   const out: FoundRepo[] = []
   for (const root of roots) {
     if (await exists(root)) await walk(root, depth, out, root)

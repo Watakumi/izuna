@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import { access, constants } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { resolved } from '../config'
 
 const exec = promisify(execFile)
 
@@ -14,6 +15,10 @@ const exec = promisify(execFile)
  * ログインシェルに一度だけ聞き、失敗したら既知の場所を順に当たる。
  */
 export async function locateClaude(): Promise<string> {
+  // 設定で明示されていればそれを使う（PATH に無い場所に置いている人のため）
+  const { claudePath } = await resolved()
+  if (claudePath && (await isExecutable(claudePath))) return claudePath
+
   const shell = process.env.SHELL ?? '/bin/zsh'
   try {
     const { stdout } = await exec(shell, ['-ilc', 'command -v claude'], { timeout: 5000 })

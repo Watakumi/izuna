@@ -65,6 +65,8 @@ export interface IzunaApi {
   remotes(cwd: string): Promise<RemoteRef[]>
   ensureSandboxRemote(cwd: string, owner: string, repo: string): Promise<string>
   currentBranch(cwd: string): Promise<string | null>
+  /** その remote の既定ブランチ。main と決め打たない */
+  defaultBranch(cwd: string, remote: string): Promise<string | null>
   isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
   push(cwd: string, remote: string, branch: string): Promise<string>
   commitsSince(cwd: string, base: string): Promise<string[]>
@@ -77,6 +79,8 @@ export interface IzunaApi {
   closeTerminal(id: string): Promise<void>
   /** PTY からの出力。返り値を呼ぶと購読をやめる */
   onTerminal(handler: (event: TerminalEvent) => void): () => void
+  /** 設定の場所と、読めずに落とした項目 */
+  configInfo(): Promise<{ path: string; ignored: string[]; exists: boolean }>
   /** よくある置き場から git リポジトリを探す */
   findRepos(): Promise<FoundRepo[]>
   /** ネイティブのフォルダ選択。探索に出てこない場所のため */
@@ -122,7 +126,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 5
+export const IPC_VERSION = 7
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -139,6 +143,7 @@ export const CH = {
   remotes: 'izuna:git:remotes',
   ensureSandboxRemote: 'izuna:git:ensure-sandbox',
   currentBranch: 'izuna:git:branch',
+  defaultBranch: 'izuna:git:default-branch',
   isPushed: 'izuna:git:is-pushed',
   push: 'izuna:git:push',
   commitsSince: 'izuna:git:commits',
@@ -147,6 +152,7 @@ export const CH = {
   resizeTerminal: 'izuna:term:resize',
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
+  configInfo: 'izuna:config:info',
   findRepos: 'izuna:repos:find',
   pickDirectory: 'izuna:repos:pick',
   ipcVersion: 'izuna:ipc-version',
