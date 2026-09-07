@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createInterface, type Interface } from 'node:readline'
 import { EventEmitter } from 'node:events'
 import type { ClaudeEvent, InitEvent } from '../../shared/protocol'
-import { isInit, userInput } from '../../shared/protocol'
+import { isInit, parseLine, userInput } from '../../shared/protocol'
 import { locateClaude, loginShellEnv } from './locate'
 
 export interface SessionOptions {
@@ -61,8 +61,10 @@ export class ClaudeSession extends EventEmitter<Events> {
 
     const args = [
       '--print',
-      '--input-format', 'stream-json',
-      '--output-format', 'stream-json',
+      '--input-format',
+      'stream-json',
+      '--output-format',
+      'stream-json',
       // -p と stream-json の組み合わせでは verbose がないとイベントが落ちる
       '--verbose',
       // 逐次描画のための差分イベント
@@ -70,7 +72,8 @@ export class ClaudeSession extends EventEmitter<Events> {
       // 送った user メッセージを stdout に echo させ、送達確認に使う
       '--replay-user-messages',
       // 権限プロンプトはこのアプリが答える
-      '--permission-prompts', 'host'
+      '--permission-prompts',
+      'host'
     ]
     if (this.options.model) args.push('--model', this.options.model)
     if (this.options.permissionMode) args.push('--permission-mode', this.options.permissionMode)
@@ -126,18 +129,17 @@ export class ClaudeSession extends EventEmitter<Events> {
   }
 
   private onLine(line: string): void {
-    const trimmed = line.trim()
-    if (!trimmed) return
-
-    let parsed: ClaudeEvent
-    try {
-      parsed = JSON.parse(trimmed) as ClaudeEvent
-    } catch {
+    // 解釈そのものは shared/protocol.ts の純粋関数に置いてある。
+    // プロセスから切り離してあるので、録画した NDJSON に対してテストを回せる。
+    const result = parseLine(line)
+    if (result.kind === 'blank') return
+    if (result.kind === 'diagnostic') {
       // NDJSON に混ざった非 JSON は、CLI の警告など診断情報であることが多い。
       // 握りつぶさず stderr 相当として上げる。
-      this.emit('stderr', trimmed + '\n')
+      this.emit('stderr', result.text + '\n')
       return
     }
+    const parsed = result.event
 
     if (isInit(parsed)) {
       this.#init = parsed

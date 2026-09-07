@@ -29,7 +29,8 @@ export interface InitEvent {
   session_id: string
   cwd: string
   model: string
-  permissionMode: 'default' | 'acceptEdits' | 'auto' | 'bypassPermissions' | 'manual' | 'dontAsk' | 'plan'
+  permissionMode:
+    'default' | 'acceptEdits' | 'auto' | 'bypassPermissions' | 'manual' | 'dontAsk' | 'plan'
   claude_code_version: string
   output_style: string
   apiKeySource: string
@@ -158,4 +159,67 @@ export interface UserInputMessage {
 
 export function userInput(text: string): UserInputMessage {
   return { type: 'user', message: { role: 'user', content: [{ type: 'text', text }] } }
+}
+
+/**
+ * §5 の実測を行った CLI の版。
+ *
+ * ワイヤ形式は公開仕様ではないので、CLI が上がれば黙って変わりうる。
+ * **上がったことを検知する仕掛けが無いと、気づくのは UI が壊れたときになる。**
+ * この定数と、録画した fixture と、手元の `claude --version` の 3 つが
+ * 一致することをテストで見る。ずれたら §5 を測り直す合図。
+ */
+export const MEASURED_CLI_VERSION = '2.1.263'
+
+/**
+ * NDJSON の 1 行を解釈した結果。
+ *
+ * プロセスから切り離してあるのは、**録画した NDJSON に対してテストを回すため**。
+ * ここが `spawn` に密着していると、CLI を実際に叩かないと何も検証できない
+ * (= 実 API の費用がかかるので、結局は手で年に数回しか回らなくなる)。
+ */
+export type ParsedLine =
+  | { kind: 'event'; event: ClaudeEvent }
+  /** JSON として読めなかった行。CLI の警告などの診断情報であることが多い */
+  | { kind: 'diagnostic'; text: string }
+  | { kind: 'blank' }
+
+export function parseLine(line: string): ParsedLine {
+  const trimmed = line.trim()
+  if (!trimmed) return { kind: 'blank' }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return { kind: 'diagnostic', text: trimmed }
+  }
+  // 配列・数値・null の行はイベントではない。type を持たない object も同じ。
+  // 握りつぶさず診断として上へ返す(黙って捨てると、CLI の警告が消える)。
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return { kind: 'diagnostic', text: trimmed }
+  }
+  if (typeof (parsed as { type?: unknown }).type !== 'string') {
+    return { kind: 'diagnostic', text: trimmed }
+  }
+  return { kind: 'event', event: parsed as ClaudeEvent }
+}
+
+/**
+ * 実測した版と違う CLI が動いていないか。
+ *
+ * **アプリは止めない。** 版が上がってもワイヤが変わるとは限らず、
+ * 上がるたびに起動しなくなる道具は使われなくなる。
+ * 止めるのは `pnpm verify` の側 —— そこなら止まる代償が安い。
+ * ここが返すのは UI に出すための事実だけである。
+ */
+export function versionDrift(init: InitEvent): {
+  drifted: boolean
+  measured: string
+  actual: string
+} {
+  return {
+    drifted: init.claude_code_version !== MEASURED_CLI_VERSION,
+    measured: MEASURED_CLI_VERSION,
+    actual: init.claude_code_version
+  }
 }

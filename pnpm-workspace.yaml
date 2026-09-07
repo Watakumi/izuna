@@ -1,4 +1,7 @@
+# pnpm 11 は、ビルドスクリプトを走らせる依存をここで明示しないと install を拒む。
+# package.json の `pnpm.onlyBuiltDependencies` は 11 で読まれなくなった(移設先がここ)。
 allowBuilds:
-  electron: set this to true or false
-  electron-winstaller: set this to true or false
-  esbuild: set this to true or false
+  electron: true
+  esbuild: true
+  # Windows 向けインストーラ。§8 で Windows は「やらない」ので走らせない。
+  electron-winstaller: false

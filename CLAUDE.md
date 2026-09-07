@@ -7,7 +7,8 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 なった実測を残す。推測は「未検証」と明記する。
 
 - リポジトリ: `~/work/personal/izuna`
-- 現状: 足場 + Claude Code セッション層まで。UI は未着手
+- 現状: 足場 + Claude Code セッション層 + 検証の土台（§11）まで。UI は未着手
+- **`pnpm verify` は緑**（14件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
 ---
@@ -67,8 +68,13 @@ early-release・406★）しかなく、いずれも「ネイティブに組み�
 
 ## 3. 技術スタック
 
-electron-vite 5 / Electron 39 / React 19 / TypeScript 5.9 / Vite 7 / pnpm。
+electron-vite 5 / Electron 39 / React 19 / TypeScript 5.9 / Vite 7 / pnpm / vitest 5。
 `npm create @quick-start/electron` の react-ts テンプレートが出発点。
+
+**テストは vitest。** `node --test`(依存ゼロ)を検討したが、この構成では使えない。
+import が `from '../../shared/protocol'` と拡張子なしで書かれていて、Node 24 の
+型剥がしはこれを解決できない(実測 2026-09-07: `ERR_MODULE_NOT_FOUND`)。
+全 import に `.ts` を足すのは本末転倒なので、Vite が既にあることを使う。
 
 セキュリティは Electron の既定を維持する。`contextIsolation: true`、
 renderer に `require` を露出しない、`contextBridge` で狭い型付き IPC のみ。
@@ -77,17 +83,23 @@ renderer に `require` を露出しない、`contextBridge` で狭い型付き I
 
 ```
 src/shared/protocol.ts      stream-json のワイヤ型。ここが唯一の真実
+                            パースと版検査もここ(純粋関数。プロセスを知らない)
 src/main/claude/session.ts  双方向 stream-json で claude を飼うセッション層
 src/main/claude/locate.ts   claude 本体とログインシェル環境の解決
-scripts/smoke-session.ts    GUI 抜きで CLI との疎通を担保する確認スクリプト
+scripts/smoke-session.ts    人が目で見る疎通確認。実 API を呼ぶ
+scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
+test/protocol.test.ts       録画に対する門。網も費用も要らない
+test/fixtures/session-safe.ndjson  --safe-mode で録った記録。**版管理に入る**。門はこれを見る
+test/fixtures/session-full.ndjson  素で録った記録。**gitignore**（§11）。手元専用
 CLAUDE.md                   このファイル
 ```
 
 まだ無い: renderer の実装、IPC 登録、`/` コマンドの索引、権限承認。
 
-**設計原則**: `ClaudeSession` は UI を知らない。CLI 相手の疎通は
-`scripts/smoke-session.ts` が GUI 抜きで担保する。UI を壊さずにプロトコル層を
-検証できる状態を保つこと。
+**設計原則**: `ClaudeSession` は UI を知らない。**パースはプロセスを知らない**
+(`parseLine` は `shared/protocol.ts` の純粋関数で、`spawn` に触れない)。
+この 2 段があるので、UI を壊さずにプロトコル層を検証でき、
+かつプロトコル層の検証に実 API が要らない。
 
 ## 5. stream-json 実測仕様
 
@@ -209,6 +221,25 @@ init は「実際に送れるコマンドの権威」。役割が違うので両
   セッションにも効く。実測中、グローバル hook が大量の文脈を注入し、ツール実行も
   ブロックした。GUI から起動する場合の hook 制御（`--settings` 等）を要検討
 - **top-level await が使えない**: tsx の既定は cjs 出力
+- **hook 混入の正体はプラグイン**(2026-09-07 に特定)。`~/.claude/settings.json` と
+  `settings.local.json` の hooks は**どちらも空**だった。犯人は `everything-claude-code`
+  プラグインで、**26 本**登録している —— PreToolUse 8 / PostToolUse 8 / Stop 6 /
+  SessionStart 1 / PreCompact 1 / PostToolUseFailure 1 / SessionEnd 1。
+  ツール実行を止めていたのが PreToolUse、文脈を大量注入していたのが SessionStart。
+  **`--settings` で空を渡してもプラグイン由来は消えない見込み(未検証)**
+- **hook の遮断手段（2026-09-07 に実測）**。メッセージ送信前に hook は出そろうので、
+  **API を呼ばずに測れる**（この手を使うこと）。
+
+  | 手段 | hook | 副作用 |
+  | --- | --- | --- |
+  | 履歴の無いディレクトリで起動 | **消えない**（4,065 B） | cwd を変えても注入される |
+  | `--safe-mode` | **消える**（0 B） | plugins / skills / custom commands も落ちる。ただし `slash_commands` は空にならず 52 件残る（組み込み分） |
+  | `--bare` | **消える**（0 B） | 認証が `ANTHROPIC_API_KEY` 固定。この環境は OAuth（`apiKeySource: "none"`）なので送信時に落ちる見込み（**未検証**） |
+
+  **hook だけを落とす手段は見つかっていない。**
+- **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
+  雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
+  `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
 
 ## 8. スコープ
 
@@ -234,8 +265,19 @@ Windows / Linux、複数エージェント対応。
 2. `stream_event` の逐次適用アルゴリズム。partial から本文を組み立てる規則
 3. `tool_use` input の網羅的な形状（Edit / MultiEdit / Bash / Task）
 4. resume の挙動と、履歴 JSONL の場所・形式
-5. 中断（`interrupt_receipt_v1`）の使い方
+5. 中断（`interrupt_receipt_v1`）の使い方。
+   **いまの `ClaudeSession.interrupt()` は子プロセスに `SIGINT` を送っている。**
+   コメントは「プロセスは生かしたまま」だが、1 プロセス = 1 会話なので
+   会話ごと落としている可能性がある。`capabilities` に中断の制御プロトコルが
+   出ているのだから、本来はそちらのはず。**測っていない**
 6. 異常系: プロセス死、認証切れ、CLI 更新でワイヤ形式が変わったとき
+   → 6 のうち「CLI 更新」だけは §11 で塞いだ。残りは未着手
+7. **プラグイン hook の遮断手段**（§7 の新しい罠）。
+   izuna が起動する `claude` は利用者の環境のプラグインを引き継ぐ。
+   これは実装の罠ではなく**仕様の問題**で、他人の環境では
+   「izuna のバグ」に見える不具合として出る。
+   → 遮断手段の比較は §7 で埋めた（`--safe-mode` / `--bare` は効く、cwd 変更は効かない）。
+   **残っているのは「hook だけを落とす手段」と、`--bare` が OAuth で動くかどうか**
 
 **未決の仕様**（決めれば消える）
 
@@ -246,14 +288,85 @@ Windows / Linux、複数エージェント対応。
 4. ターミナルをいつ入れるか。入れるなら xterm.js / Restty / node-pty のどれか。
    libghostty を諦めるかがここで決まる
 
-## 10. 検証のしかた
+## 10. 完了の条件
+
+```bash
+pnpm verify     # typecheck + test。これが緑にならないものを完了としない
+```
+
+補助（どちらも**実 API を呼ぶ**ので、verify には入れていない）。
 
 ```bash
 pnpm install
-npx tsx scripts/smoke-session.ts   # CLI との疎通。実 API を呼ぶので少額かかる
-pnpm typecheck
-pnpm dev                           # 足場の起動確認（UI はテンプレートのまま）
+npx tsx scripts/smoke-session.ts    # いま CLI と話せるか。人が目で見る
+npx tsx scripts/record-fixture.ts   # そのとき CLI が何を吐いたかを録る
+pnpm dev                            # 足場の起動確認（UI はテンプレートのまま）
 ```
 
-`scripts/smoke-session.ts` が通らなくなったら、CLI 側のワイヤ形式が変わった
-可能性を最初に疑うこと。§5 を測り直す。
+`pnpm verify` が「手元の claude は X、実測は Y」で落ちたら、CLI が上がっている。
+§5 を測り直し、fixture を録り直し、`MEASURED_CLI_VERSION` を更新する。**順番を守る**
+—— 定数だけ先に上げると、検査は緑になるが中身は測っていないことになる。
+
+## 11. 検証の土台（2026-09-07 に入れた）
+
+### なぜ入れたか
+
+CLAUDE.md は §5 を「claude 2.1.263 での実測。公開仕様ではない」と正しく書いていた。
+だが**上がったことを検知する仕掛けが無かった**。`smoke-session.ts` は実 API を
+呼ぶので費用が理由で手でしか回らず、事実上いつでも回る門が 1 つも無い状態だった。
+CLI が黙って上がってワイヤが変われば、気づくのは UI が壊れたときになる。
+
+### 決めたこと
+
+| 決定 | 理由 |
+| --- | --- |
+| テストは **vitest** | `node --test` は拡張子なし import を解決できない（§3、実測） |
+| パースを **`shared/protocol.ts` の純粋関数に出す** | `spawn` に密着していると、CLI を叩かないと何も検証できない |
+| **録画した NDJSON を版管理に入れる** | 網も費用も要らない検査ができる。加工しない —— 加工した時点で観測ではなく解釈になる |
+| 版のずれは **verify で落とし、アプリでは落とさない** | 版が上がってもワイヤが変わるとは限らない。**上がるたびに起動しない道具は使われなくなる**。止める代償が安いのは verify の側 |
+| fixture 未録は **skip ではなく赤** | skip する検査は門ではない。赤が「まず録れ」の合図になる |
+| fixture は **2 本録る**（2026-09-07 追加） | 素で録ると hook が過去セッションの要約（私的な会話内容）を注入し、そのままでは commit できない。**後から削るのは「加工しない」に反する**ので、代わりに観測条件を統制する。`--safe-mode` の safe 版を commit し、full 版は gitignore |
+| full 版の検査だけは **skip してよい** | 「まだ録っていない」ではなく「**設計上 commit しない**」ものだから。門の役は safe 版が負う |
+
+### 録画して分かったこと（2026-09-07）
+
+録ってみたら、**申し送りが想定していたより広い情報が入っていた**。
+「`session_id` / `cwd` / `uuid` に環境依存の値」どころではなかった。
+
+| 行 | 種別 | サイズ | 中身 |
+| --- | --- | --- | --- |
+| 2 | `hook_response` | 4,661 B | **過去セッションの要約**（私的な会話内容） |
+| 3 | `system:init` | 29,140 B | プラグイン・スキル・MCP の全目録、ホームパス |
+
+`watakumi` が 10 箇所、`messaging_socket_path` に PID 由来のソケットパス。
+`git remote` は未設定なので実害は今のところ無いが、公開すると git 履歴から
+消すのが面倒になる。そこで 2 本立てにした（決定は上の表）。
+
+safe 版は 17 行・init 2,219 B。過去要約 0 / hook イベント 0 / `watakumi` は
+cwd の 2 箇所のみ。**`--safe-mode` でも `slash_commands` は空にならない**
+（52 件。組み込み分が残る）ので、門としては十分に働く。
+
+### いまの状態
+
+`pnpm verify` は**緑**（14 件）。内訳は safe 版に対するパース 6 件、
+パースの端 4 件、手元の CLI の版 1 件、full 版に対する 2 件、fixture の存在 1 件。
+
+`test/fixtures/session-full.ndjson` は手元にあり、gitignore 済み。
+これが無い環境では full 版の 2 件が skip され、残り 12 件で緑になる。
+
+### 次のセッションがやること
+
+§11 の宿題は片付いた。**§9-6 の「CLI 更新」だけが消えた。残りの未検証は減っていない。**
+次に手をつけるなら、優先順位は §9 の順。**1 の権限承認ハンドシェイクが最優先**で、
+これが決まらないと承認 UI は設計できず、UI を先に作れば手戻りになる。
+
+### 触っていないこと
+
+- **§6 の権限承認は手つかず。** ただし設計の順番として、
+  ハンドシェイクを実装する前に「**握手が確立できなかったときどう振る舞うか**」を
+  決めること。いまの「何も聞かれず自動拒否」は fail-closed 側に倒れているが、
+  それは設計した結果ではなく偶然である。実装のときに
+  「握手に失敗したら `acceptEdits` に落とす」と書くと、そこで fail-open に反転する
+- 既存文書の推敲（§2・§6・§8 に長すぎる文が 3 件ある）
+- renderer、IPC、`/` パレット、差分ビュー
+- **`ClaudeSession.interrupt()` の SIGINT 疑い（§9-5）**。録画とは無関係なので触っていない
