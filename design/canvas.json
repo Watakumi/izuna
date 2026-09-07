@@ -1,141 +1,48 @@
 {
-  "pages": [
-    {
-      "id": "page-1",
-      "name": "画面"
-    },
-    {
-      "id": "page-2",
-      "name": "方向性の候補"
-    }
-  ],
   "artboards": [
     {
-      "file": "Main.dc.html",
+      "file": "Decisions.dc.html",
       "x": 0,
       "y": 0,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "メイン"
-    },
-    {
-      "file": "Palette.dc.html",
-      "x": 1560,
-      "y": 0,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "/ パレット"
-    },
-    {
-      "file": "Approval.dc.html",
-      "x": 3120,
-      "y": 0,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "承認と差分"
-    },
-    {
-      "file": "Forge.dc.html",
-      "x": 0,
-      "y": 1080,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "Sandbox → Upstream"
-    },
-    {
-      "file": "Worktrees.dc.html",
-      "x": 1560,
-      "y": 1080,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "worktree（人が起こす分）"
-    },
-    {
-      "file": "Setup.dc.html",
-      "x": 4680,
-      "y": 0,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "Forgejo の準備"
-    },
-    {
-      "file": "Brain.dc.html",
-      "x": 3120,
-      "y": 1080,
-      "w": 1440,
-      "h": 900,
-      "page": "page-1",
-      "title": "ブレインと実行役"
+      "w": 1120,
+      "h": 1180,
+      "title": "設計の決定"
     },
     {
       "file": "DirectionB.dc.html",
-      "x": 0,
+      "x": 1240,
       "y": 0,
       "w": 1440,
       "h": 900,
-      "page": "page-2",
-      "title": "候補B 盤面"
+      "title": "候補B 盤面（不採用）"
     },
     {
       "file": "DirectionC.dc.html",
-      "x": 1560,
+      "x": 2800,
       "y": 0,
       "w": 1440,
       "h": 900,
-      "page": "page-2",
-      "title": "候補C 単一の流れ"
+      "title": "候補C 単一の流れ（不採用）"
     }
   ],
   "annotations": [
     {
-      "id": "note-share",
-      "x": 3120,
-      "y": 912,
-      "w": 520,
-      "page": "page-1",
-      "text": "共有はフォルダで行う\nブレインと実行役はコンテキストの窓を共有しない。\n~/.izuna/teams/<team>/ を全員に --add-dir で渡し、\nbrief / tasks / summaries / decisions / log を置く。\ndecisions と log は追記のみ ―― 黙って書き換えない。\n圧縮を跨いで残るのはここだけ。"
-    },
-    {
-      "id": "note-amber",
-      "x": 3120,
-      "y": -168,
-      "w": 460,
-      "page": "page-1",
-      "text": "アンバーの規律\nアクセント色は「承認待ち」だけに割り当てる。\n並列で一番壊れるのは承認の取りこぼしなので、\n色が意味を持つようにして、装飾には使わない。"
-    },
-    {
-      "id": "note-alts",
+      "id": "note-scope",
       "x": 0,
-      "y": -140,
-      "w": 620,
-      "page": "page-2",
-      "text": "採用案は「サイドバー + 会話 + インスペクタ」。\nこの2つは棄却した候補ではなく、まだ選べる分岐。\nどちらかに寄せたい場合は言ってください。"
-    },
-    {
-      "id": "note-goal",
-      "x": 0,
-      "y": -196,
+      "y": -150,
       "w": 700,
-      "page": "page-1",
-      "text": "Izuna / 採用案「端末の血を引くワークベンチ」\n暗色・高密度・等幅寄り。狐火のアンバーは「人間の判断を待っている箇所」だけに使う。\nv1 の完成条件（7手）: GitHub の Issue → ブレイン → 実行役 → idle を受けて指示 →\n人間が承認 → 作業場(Forgejo)の PR → 出口(GitHub)の PR → worktree を畳む。"
+      "text": "実装済みの画面はここから外した（2026-09-07）。\n手書きの複製を保守すると必ずずれる —— 実際に同じ箇所を逆向きに 2 回動かした。\nこのキャンバスは「まだ作っていない画面」と「決めたこと」だけを持つ。\n実物は pnpm dev で見る。"
     },
     {
-      "id": "note-updated",
-      "x": 4680,
-      "y": -196,
-      "w": 560,
-      "page": "page-1",
-      "text": "2026-09-07 更新: 段1〜5 の実装で分かったことを反映した\n・実行役は別セッションではなく Agent ツールのサブエージェント\n・worktree は Claude Code の agent isolation が配る\n・金額は出さない（請求額ではないため）。枠の使用率に置換\n・権限モードの切り替えと Forgejo の準備画面を追加\n・承認は専用画面ではなく会話内インライン\n・作業場 / 出口 → Sandbox / Upstream に改称（比喩が二重だったため）"
+      "id": "note-directions",
+      "x": 1240,
+      "y": -150,
+      "w": 620,
+      "text": "方向性の候補（記録）。採用したのは「サイドバー + 会話 + 右ペイン」。\n候補B は全 worktree をタイルで一望、候補C は 1 画面 1 セッション。\n作り直したくなったときのために残してある。"
     }
   ],
   "launch": {
-    "view": "canvas",
-    "page": "page-1"
+    "view": "focused",
+    "file": "Decisions.dc.html"
   }
 }

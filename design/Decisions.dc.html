@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #e8a33d; } a:hover { color: #f5bd68; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+    .row { display: flex; gap: 16px; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid #1e222b; }
+    .what { width: 236px; flex-shrink: 0; font-size: 13px; font-weight: 500; color: #e6e8ee; line-height: 1.5; }
+    .why { flex-grow: 1; font-size: 12.5px; color: #9aa2b4; line-height: 1.75; }
+    .k { color: #c8cddb; }
+  </style>
+</helmet>
+
+<div style="width: 1120px; height: 1180px; background: #14161b; color: #e6e8ee; padding: 40px 44px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="display: flex; align-items: baseline; gap: 14px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#e8a33d" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="align-self: center;"><path d="M4 4l5 3 3-3 3 3 5-3-2 12H6z"/><circle cx="9.5" cy="12" r="0.9" fill="#e8a33d" stroke="none"/><circle cx="14.5" cy="12" r="0.9" fill="#e8a33d" stroke="none"/></svg>
+      <span style="font-size: 22px; font-weight: 600;">Izuna / 設計の決定</span>
+      <span style="font-size: 12.5px; color: #7d8598;">2026-09-07</span>
+    </div>
+    <div style="font-size: 13px; color: #9aa2b4; line-height: 1.8;">
+      <b style="color: #e8a33d; font-weight: 500;">画面そのものはここに描かない。実装が正である。</b>
+      手書きの複製を保守すると必ずずれる —— 実際に「実装に合わせてモックから消し、
+      あとでモックに合わせて実装に足し直す」を同じ箇所でやった。
+      ここに残すのは<b class="k" style="font-weight: 500;">なぜそうなっているか</b>だけ。実物は <span class="mono" style="color: #c8cddb;">pnpm dev</span> で見る。
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="font-size: 11px; letter-spacing: 0.1em; color: #6c7488; font-weight: 600; padding-bottom: 4px;">見た目</div>
+
+    <div class="row">
+      <div class="what">アンバーは「人間の判断を待っている箇所」だけ</div>
+      <div class="why">並列で最も壊れるのは<b class="k">承認の取りこぼし</b>。実行中にも完了にも同じ色を使うと、探すべきものが埋もれる。装飾には一切使わない。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">金額を出さない</div>
+      <div class="why"><span class="mono">costBasis: "list"</span> の定価換算であって<b class="k">請求額ではない</b>。出すと課金されているように読める。代わりに枠の使用率を出す —— こちらが実際の制約で、ターミナルの Claude Code と同じ窓を共有する。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">破壊的な操作を同じ形にしない</div>
+      <div class="why">「中断」は実行中の破壊的操作、「準備」は環境設定。同じ ghost ボタンで等間隔に並べると<b class="k">押していいものと危ないものの区別がつかない</b>。中断だけ赤で分け、実行中のみ出す。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">インスペクタは「目をやる頻度」順</div>
+      <div class="why">WORKTREE → FORGEJO → 枠 の順。どこで作業しているか → 次に何を出すか → あとどれだけ走らせられるか。<b class="k">並べただけでは順序にならない。</b></div>
+    </div>
+
+    <div class="row">
+      <div class="what">同じ情報を 2 箇所に置かない</div>
+      <div class="why">実行役をインスペクタにも出していたが、会話の下の <span class="mono">TaskPanel</span> と二重でしかも劣化版だった。<b class="k">狭いほうを見る理由が無い。</b></div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="font-size: 11px; letter-spacing: 0.1em; color: #6c7488; font-weight: 600; padding: 10px 0 4px;">構造</div>
+
+    <div class="row">
+      <div class="what">行き来する画面をモーダルにしない</div>
+      <div class="why">PR とブランチは会話と往復しながら使う。モーダルにすると戻る導線が「閉じる」だけになる。<b class="k">右ペインのタブ</b>にして並べて見られるようにした。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">ターミナルはインスペクタに入れない</div>
+      <div class="why">幅 288px では端末として狭すぎる。会話の下に敷く。VT の解釈と描画は <span class="mono">ghostty-web</span>（libghostty-vt の公式 WASM）で、main は PTY を持つだけ。<b class="k">端末なので ANSI を落とさない</b> —— 落とすのは会話ビュー側の話。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">承認は会話に埋めず別置き</div>
+      <div class="why">差分は常時開いて出し、承認バーはその下に置く。モックは「差分を見て許可」を押させる作りだったが、<b class="k">見る前に押させる形は承認になっていない</b>。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">サイドバーはリポジトリで束ねる</div>
+      <div class="why">並列で走らせると<b class="k">どのリポジトリの話か分からなくなる</b>。worktree は <span class="mono">~/.izuna/worktrees/&lt;repo&gt;/&lt;branch&gt;</span> なのでそこから推測できる。</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="font-size: 11px; letter-spacing: 0.1em; color: #6c7488; font-weight: 600; padding: 10px 0 4px;">言葉</div>
+
+    <div class="row">
+      <div class="what">Sandbox / Upstream</div>
+      <div class="why">「作業場 / 出口」は比喩が二重だった —— 出口は方向の比喩なのに GitHub は通過点ではなく本拠地。git の標準語彙に寄せ、<b class="k">型名まで揃えた</b>（UI だけ変えると古い比喩がコードに残る）。</div>
+    </div>
+
+    <div class="row">
+      <div class="what">実行役 = サブエージェント</div>
+      <div class="why">別セッションではなく <span class="mono">Agent</span> ツールのサブエージェント。<b class="k">承認は agentId 付きで人間に届く</b>（実測）。worktree は Claude Code の agent isolation が配るので、Izuna が自前で配らない。</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="border: 1px solid #242832; border-radius: 10px; padding: 15px 17px; display: flex; flex-direction: column; gap: 7px; background: #171a21;">
+    <span style="font-size: 12.5px; font-weight: 500;">このキャンバスの使い方</span>
+    <span style="font-size: 12px; color: #9aa2b4; line-height: 1.8;">
+      <b class="k" style="font-weight: 500;">まだ作っていない画面だけ</b>を描く。作ったら外す。
+      実装済みの画面をここに残すと、絵と実物のどちらが正か分からなくなり、必ずずれる。
+      決めたことは上の表と <span class="mono">CLAUDE.md</span> に残す。
+    </span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
