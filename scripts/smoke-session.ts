@@ -1,37 +1,40 @@
 /**
- * ClaudeSession を実プロセス相手に動かす確認スクリプト。
+ * いま CLI と話せるかを人が目で見る。
  *   npx tsx scripts/smoke-session.ts
- * 会話UIを作る前に、双方向 stream-json が本当に成立するかをここで担保する。
+ * **実 API を呼ぶ。** 承認の往復は smoke-permission.ts が見る。
  */
 import { ClaudeSession } from '../src/main/claude/session'
-import { isAssistant, isInit, isResult } from '../src/shared/protocol'
 
 const session = new ClaudeSession({ cwd: process.cwd(), model: 'haiku' })
 
-session.on('init', (init) => {
-  console.log('[init] session=%s model=%s mode=%s', init.session_id, init.model, init.permissionMode)
-  console.log('[init] slash_commands: %d 件, skills: %d 件, agents: %d 件',
-    init.slash_commands.length, init.skills.length, init.agents.length)
-  console.log('[init] 先頭10件:', init.slash_commands.slice(0, 10).join(', '))
-})
-
-session.on('event', (e) => {
-  if (isInit(e)) return
-  if (isAssistant(e)) {
-    for (const block of e.message.content) {
-      if (block.type === 'text') console.log('[assistant]', (block as { text: string }).text)
+session.on('message', (m) => {
+  if (m.type === 'system' && m.subtype === 'init') {
+    console.log('[init] session=%s model=%s mode=%s', m.session_id, m.model, m.permissionMode)
+  } else if (m.type === 'assistant') {
+    for (const b of m.message.content) {
+      if (b.type === 'text' && b.text.trim()) console.log('[assistant]', b.text.trim())
     }
-  } else if (isResult(e)) {
-    console.log('[result] %s cost=$%s stop=%s', e.subtype, e.total_cost_usd, e.stop_reason)
+  } else if (m.type === 'result') {
+    console.log('[result] %s cost=$%s', m.subtype, 'total_cost_usd' in m ? m.total_cost_usd : '-')
     void session.stop().then(() => process.exit(0))
-  } else {
-    console.log('[%s]', e.type + (e.subtype ? ':' + e.subtype : ''))
   }
 })
 
-session.on('stderr', (s) => process.stderr.write('[stderr] ' + s))
-session.on('error', (err) => { console.error('[error]', err.message); process.exit(1) })
-session.on('exit', ({ code }) => console.log('[exit] code=%s', code))
+session.on('permission', (req) => {
+  // ここに来たら想定外(pong を返すだけの依頼でツールは要らない)。落とさず拒否して先へ。
+  console.log('[permission] 想定外の要求:', req.toolName, '→ deny')
+  session.respondToPermission(req.id, { behavior: 'deny', message: 'スモークではツールを使わない' })
+})
 
-session.start().then(() => session.send('Reply with exactly: pong')).catch((err) => { console.error(String(err)); process.exit(1) })
-setTimeout(() => { console.error("timeout"); process.exit(1) }, 120_000)
+session.on('error', (e) => { console.error('[error]', e.message); process.exit(1) })
+
+session
+  .start()
+  .then(async () => {
+    const commands = await session.slashCommands()
+    console.log('[/] %d 件。先頭5件: %s', commands.length, commands.slice(0, 5).map((c) => '/' + c.name).join(', '))
+    session.send('Reply with exactly: pong')
+  })
+  .catch((e) => { console.error(String(e)); process.exit(1) })
+
+setTimeout(() => { console.error('timeout'); process.exit(1) }, 120_000)

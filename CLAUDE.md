@@ -7,7 +7,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 なった実測を残す。推測は「未検証」と明記する。
 
 - リポジトリ: `~/work/personal/izuna`
-- 現状: 足場 + Claude Code セッション層 + 検証の土台（§11）まで。UI は未着手
+- 現状: セッション層（Agent SDK 経由）+ 権限承認の握手 + 検証の土台まで。UI は未着手
 - **`pnpm verify` は緑**（14件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
@@ -71,6 +71,13 @@ early-release・406★）しかなく、いずれも「ネイティブに組み�
 electron-vite 5 / Electron 39 / React 19 / TypeScript 5.9 / Vite 7 / pnpm / vitest 5。
 `npm create @quick-start/electron` の react-ts テンプレートが出発点。
 
+**`@anthropic-ai/claude-agent-sdk` を使う（0.3.263 に固定）。** 生の NDJSON を
+自前で読むのはやめた。理由は §6。SDK は依存ゼロ・4.8MB で、CLI は同梱せず
+`pathToClaudeCodeExecutable` で指した既存の `claude` を起動する。
+
+**版はパッチ番号で連動する**（SDK `0.3.263` ↔ CLI `2.1.263`）。ずれたまま使うと
+SDK が知らないイベントを CLI が吐く。`test/auth.test.ts` が門になっている。
+
 **テストは vitest。** `node --test`(依存ゼロ)を検討したが、この構成では使えない。
 import が `from '../../shared/protocol'` と拡張子なしで書かれていて、Node 24 の
 型剥がしはこれを解決できない(実測 2026-09-07: `ERR_MODULE_NOT_FOUND`)。
@@ -87,8 +94,10 @@ src/shared/protocol.ts      stream-json のワイヤ型。ここが唯一の真�
 src/main/claude/session.ts  双方向 stream-json で claude を飼うセッション層
 src/main/claude/locate.ts   claude 本体とログインシェル環境の解決
 scripts/smoke-session.ts    人が目で見る疎通確認。実 API を呼ぶ
+scripts/smoke-permission.ts 権限承認の握手が成立するかを見る。実 API を呼ぶ
 scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
 test/protocol.test.ts       録画に対する門。網も費用も要らない
+test/auth.test.ts           認証経路（Pro プランか API キーか）と SDK/CLI の版の門
 test/fixtures/session-safe.ndjson  --safe-mode で録った記録。**版管理に入る**。門はこれを見る
 test/fixtures/session-full.ndjson  素で録った記録。**gitignore**（§11）。手元専用
 CLAUDE.md                   このファイル
@@ -155,16 +164,16 @@ messaging_socket_path, fast_mode_state
 **`system:init` は最初のユーザーメッセージを送るまで届かない。**
 送信前に8秒待っても hook イベントしか来ない（実測で確認）。
 
-したがって `/` パレットは init だけでは埋まらない。三段構えにする。
+**この制約は SDK 採用で回避できた（2026-09-07）。** `query.supportedCommands()` が
+制御要求として一覧を返すので、init を待つ必要がない。実測で起動直後に **316 件**。
 
-1. 初期表示はファイルシステム走査（即時・API コスト0）
-   `~/.claude/commands`, `<cwd>/.claude/commands`, `~/.claude/skills`,
-   `~/.claude/plugins/installed_plugins.json`（v2、`installPath` と scope を持つ）配下
-2. 最初の `system:init` が届いたら**それを正として上書き**（CLI が権威）
-3. init はプロジェクト単位でキャッシュし、次回起動時の初期値にする
+```ts
+type SlashCommand = { name: string; description: string; argumentHint: string; aliases?: string[] }
+```
 
-走査は「補完を即座に出す」「説明文と引数ヒントを読む」ために必要で、
-init は「実際に送れるコマンドの権威」。役割が違うので両方要る。
+**ファイルシステム走査は不要になった。** 以前ここに書いていた三段構え
+（走査で初期表示 → init で上書き → キャッシュ）は**破棄**する。説明文も引数ヒントも
+CLI が返すので、自前で `~/.claude/commands` を読む理由がもう無い。
 
 ### その他の観測
 
@@ -184,31 +193,71 @@ init は「実際に送れるコマンドの権威」。役割が違うので両
 
 差分ビューはこの `input` から起こせる見込み（未実装）。
 
-## 6. 権限承認 — 未解決
+## 6. 権限承認 — 解決済み（2026-09-07）
 
-`--permission-prompts host` を付けて権限の要る操作をさせたが、
-**`control_request` は一切飛んでこなかった。** 代わりにこうなった。
+### 何が起きていたか
+
+生の NDJSON を自前で読んでいたとき、`--permission-prompts host` を付けても
+`control_request` は**一度も飛んでこなかった**。代わりにこうなる。
 
 ```json
 {"type":"system","subtype":"permission_denied","tool_name":"Write",
- "tool_use_id":"toolu_...",
  "message":"Claude requested permissions to write to /path, but you haven't granted it yet."}
 ```
 
-続いてツール結果が `is_error: true`、`tool_result_meta[].non_execution_kind:
-"user-rejected"` で返る。つまり**何も聞かれずに自動拒否された**。
+続いてツール結果が `is_error: true` / `non_execution_kind: "user-rejected"` で返る。
+**何も聞かれずに自動拒否**されていた。
 
-**未検証の仮説**: SDK ホストとしての名乗り（control protocol の initialize
-ハンドシェイク）を stdin で先に送る必要がある。公式 Agent SDK の `canUseTool`
-は control_request / control_response の往復で実現されているはずで、
-その握手を我々が送っていないため CLI が「ホストは答えられない」と判断している。
+### 原因
 
-**次にやること**: `@anthropic-ai/claude-agent-sdk` の実装か
-`code.claude.com/docs/en/agent-sdk` を読み、ハンドシェイクの形式を確定させる。
-これが決まるまで承認 UI は設計できない。
+CLI は「SDK ホストとして名乗った相手」にしか `can_use_tool` を投げない。
+名乗りは control protocol の往復である。
 
-暫定回避策として `--permission-mode acceptEdits` や `bypassPermissions` は
-使えるが、承認 UI が MVP の中核なので回避で済ませないこと。
+```
+ホスト → CLI  {"type":"control_request","request_id":"...","request":{"subtype":"initialize",...}}
+CLI → ホスト  {"type":"control_response","response":{"request_id":"...",...}}
+CLI → ホスト  {"type":"control_request","request_id":"...","request":{"subtype":"can_use_tool",...}}
+ホスト → CLI  {"type":"control_response","response":{...PermissionResult}}
+```
+
+`can_use_tool` のほかに `hook_callback` / `mcp_message` / `elicitation` があり、
+`sdk.d.ts` は 8,804 行。**手で実装すると、これを自前で追い続けることになる。**
+
+### どうしたか
+
+`@anthropic-ai/claude-agent-sdk` に委ねた（§3）。`canUseTool` コールバックを
+渡すだけで握手が成立する。`ClaudeSession` はそれを `permission` イベントとして
+UI に流し、`respondToPermission()` で答えを返す facade になっている。
+
+**実測（`scripts/smoke-permission.ts`）**:
+
+```
+★ 承認を求められた
+   tool       : Write
+   input      : {"file_path":".../hello.txt","content":"hi"}
+   toolUseId  : toolu_0189pcpmaNN4KuHB1F4ndn1L
+   suggestions: [{"type":"setMode","mode":"acceptEdits","destination":"session"}]
+```
+
+### 承認 UI の材料
+
+```ts
+type PermissionResult =
+  | { behavior: 'allow';  updatedInput?: Record<string, unknown>; updatedPermissions?: PermissionUpdate[] }
+  | { behavior: 'deny';   message: string; interrupt?: boolean }
+```
+
+`suggestions` に **CLI 側が「常に許可」の中身を提案してくる**ので、
+ボタンの意味を自前で決めなくてよい。`PermissionUpdate.destination` は
+`'session' | 'localSettings' | 'projectSettings' | 'userSettings' | 'cliArg'` で、
+「今回だけ / このセッション中 / 常に」がそのまま対応する。
+
+### fail-closed を保つこと
+
+答えないまま放置すると CLI は待ち続ける。`ClaudeSession` は
+**中断シグナルとセッション終了の両方で deny を返す**ようにしてある。
+ここを「握手に失敗したら acceptEdits に落とす」と書き換えると
+**fail-open に反転する**ので、変更するときは意図してやること。
 
 ## 7. 実装上の罠（実測で踏んだもの）
 
