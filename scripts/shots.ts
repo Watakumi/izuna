@@ -2,6 +2,7 @@ import { chromium, type Page } from 'playwright'
 import { createServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { loadGhosttySkin } from '../src/main/ghostty'
 
@@ -52,7 +53,10 @@ async function main(): Promise<void> {
 
   // 実機の Ghostty を読んで流し込む。**本番と同じ配色で撮る**
   const skin = await loadGhosttySkin()
-  await page.addInitScript((s) => { (window as never as { __skin: unknown }).__skin = s }, skin)
+  // **関数で渡さない。** tsx が名前付き関数に __name を挿すので、
+  // ページ側で ReferenceError になり、**黙って届かない**（これで一度、
+  // 既定色のまま「確認した」ことにしてしまった）
+  await page.addInitScript(`window.__skin = ${JSON.stringify(skin)}`)
 
   await page.goto('http://localhost:5199/harness.html')
   await page.waitForSelector('text=新しいセッション', { timeout: 15_000 })
@@ -113,6 +117,22 @@ async function main(): Promise<void> {
     const lum = (0.2126 * px[0] + 0.7152 * px[1] + 0.0722 * px[2]) / 255
     check(lum < 0.5, `ターミナルの地が明るい（rgb(${px.join(',')})）—— 配色が渡っていない`)
   }
+
+  /**
+   * **画面に出ている全部の字を測る。**
+   *
+   * ここが今回の核心。「薄い」と 4 回言われて、そのたび勘で直しては
+   * また薄いと言われた。**トークンの値を見ても分からない** ——
+   * 字が載る面が `bg` / `panel` / `raised` / 差分の色地と違うので、
+   * 同じ色でも面によって比が変わる。**描いてから測るしかない。**
+   */
+  const FLOOR = 6
+  const texts = (await page.evaluate(
+    readFileSync(join(ROOT, 'scripts/contrast.js'), 'utf8')
+  )) as { text: string; size: number; ratio: number }[]
+  const faint = texts.filter((t) => t.ratio < FLOOR)
+  console.log(`\n画面の字 ${texts.length} 箇所 / 最も薄いもの ${texts[0]?.ratio}`)
+  for (const t of faint) problems.push(`薄い（比 ${t.ratio} / ${t.size}px）: ${t.text}`)
 
   await browser.close()
   await server.close()

@@ -139,7 +139,11 @@ describe('トークンへの割り当て', () => {
 
   it('意味の位置が変わらない —— アンバーは黄、赤は赤', () => {
     expect(skin.amber).toBe('#ffdc49')
-    expect(skin.red).toBe('#ff7369')
+    // 赤は**字に使うので床まで持ち上げる**。色相は保つ（赤が最も強い）
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(skin.red.slice(i, i + 2), 16))
+    expect(r).toBeGreaterThan(g)
+    expect(r).toBeGreaterThan(b)
+    expect(contrast(skin.bg, skin.red)).toBeGreaterThanOrEqual(7)
   })
 
   it('アンバーの上の字は読める側が選ばれる', () => {
@@ -153,10 +157,24 @@ describe('トークンへの割り当て', () => {
   it('読む字が AA を割らない', () => {
     expect(contrast(skin.bg, skin.ink)).toBeGreaterThanOrEqual(7)
     expect(contrast(skin.bg, skin.ink2)).toBeGreaterThanOrEqual(7)
-    expect(contrast(skin.bg, skin.dim)).toBeGreaterThanOrEqual(7)
-    expect(contrast(skin.bg, skin.dim2)).toBeGreaterThanOrEqual(5.5)
-    // faint は 10px の字に 13 箇所使っている。装飾ではない
-    expect(contrast(skin.bg, skin.faint)).toBeGreaterThanOrEqual(4.4)
+    expect(contrast(skin.bg, skin.dim)).toBeGreaterThanOrEqual(9)
+    expect(contrast(skin.bg, skin.dim2)).toBeGreaterThanOrEqual(8)
+    // **AA(4.5) では足りなかった。** 11〜12px の細い字は、AA を満たしても
+    // 薄く見える。WCAG の下限は「読める」の境目で「読みやすい」ではない
+    expect(contrast(skin.bg, skin.faint)).toBeGreaterThanOrEqual(7)
+  })
+
+  /**
+   * **字が載るのは地だけではない。** `raised` のような明るい面の上では
+   * 比が下がる。地で 6.5 にしても `raised` の上では 5.3 になっていた。
+   */
+  it('一番明るい面の上でも薄くならない', () => {
+    const raised = skin.raised
+    expect(contrast(raised, skin.dim)).toBeGreaterThanOrEqual(7.5)
+    expect(contrast(raised, skin.dim2)).toBeGreaterThanOrEqual(6.8)
+    expect(contrast(raised, skin.faint)).toBeGreaterThanOrEqual(6)
+    expect(contrast(skin.addBg, skin.addInk)).toBeGreaterThanOrEqual(6.5)
+    expect(contrast(skin.delBg, skin.delInk)).toBeGreaterThanOrEqual(6.5)
   })
 
   it('本文は利用者が選んだ文字色そのもの（勝手に薄めない）', () => {

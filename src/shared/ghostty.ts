@@ -262,16 +262,34 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
   const up = (t: number): string => mix(bg, fg, t)
   /** 地から更に離す（暗いテーマでは暗く、明るいテーマでは明るく） */
   const away = (t: number): string => mix(bg, dark ? '#000000' : '#ffffff', t)
-  /** **読む字は比で決める。** 目標に届かなければ文字色そのまま */
-  const text = (target: number): string => atContrast(bg, bg, fg, target)
+  /**
+   * **一番明るい面を基準にする。**
+   *
+   * 最初は地（`bg`）に対して比を決めていた。だが字が載るのは地だけではない ——
+   * `panel`・`raised`・差分の色地の上にも載る。**明るい面ほど比は下がる**ので、
+   * 地で 6.5 にしても、`raised` の上では 5.3 になる（実測して分かった）。
+   *
+   * 一番明るい面で足りていれば、ほかの面でも足りる。
+   */
+  const surface = up(0.1) // = raised
+  const text = (target: number): string => atContrast(surface, surface, fg, target)
 
   const pick = (...ns: number[]): string | null => {
     for (const n of ns) if (colors.palette[n]) return colors.palette[n]
     return null
   }
+  /**
+   * **字に使う色は床を切る。**
+   *
+   * 地と文字の段だけ比で決めて、意味を持つ色（teal・red・差分の緑）を
+   * 放っていた。測ったら「完了」が 6.04、差分の `+` が 6.12 で出ていた。
+   * 色相は保ったまま、文字色のほうへ寄せて床まで持ち上げる。
+   */
+  const lift = (c: string, floor = 7, on = up(0.1)): string => atContrast(on, c, fg, floor)
+
   const amber = pick(11, 3) ?? '#e8a33d'
-  const teal = pick(14, 6, 12) ?? '#4fc4b0'
-  const red = pick(9, 1) ?? '#e06c75'
+  const teal = lift(pick(14, 6, 12) ?? '#4fc4b0')
+  const red = lift(pick(9, 1) ?? '#e06c75')
   const green = pick(10, 2) ?? '#96d3ab'
 
   return {
@@ -286,14 +304,19 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
     // 強調は色ではなく字の太さで付ける（Notion 自身がそうしている）。
     ink: fg,
     ink2: fg,
-    // 以下は比を目標にして解く。7.0 が AAA、4.5 が AA の境目。
+    // 以下は比を目標にして解く。
     //
-    // **`faint` を 4.5 未満にしない。** 数えたら 10px の字に 13 箇所
-    // 使っていた（キーヒント・時刻・補助ラベル）。装飾ではなく情報を
-    // 持っているので、AA を割ると読めない。以前は 2.3 だった。
-    dim: text(8),
-    dim2: text(6),
-    faint: text(4.5),
+    // **一度 8 / 6 / 4.5 にしたが、まだ薄いと言われた。** 測ったら
+    // 補助ラベルが 6.5、パスが 4.87 で出ていた。**AA を満たしていても
+    // 11〜12px の細い字では薄く見える** —— WCAG の下限は「読める」の
+    // 境目であって、「読みやすい」ではない。
+    //
+    // 段の幅を捨てて、下限を上げた。**階層は色ではなく、大きさと太さで付ける。**
+    // 一番明るい面（`raised`）の上での比。実測でその上限は 9.0 だったので、
+    // **段を潰さずに取れる最大**がこの 3 つ。地の上ではもっと高く出る
+    dim: text(8.2),
+    dim2: text(7.2),
+    faint: text(6.5),
 
     // 枠は読む対象ではないが、**見えないと箱が消える**
     line: atContrast(bg, bg, fg, 1.6),
@@ -308,10 +331,11 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
     teal,
     red,
 
+    // 差分の字は**その色地の上**に載る。地ではなくそちらを基準にする
     addBg: mix(bg, green, 0.14),
-    addInk: mix(fg, green, 0.7),
+    addInk: lift(mix(fg, green, 0.7), 7, mix(bg, green, 0.14)),
     delBg: mix(bg, red, 0.14),
-    delInk: mix(fg, red, 0.7)
+    delInk: lift(mix(fg, red, 0.7), 7, mix(bg, red, 0.14))
   }
 }
 

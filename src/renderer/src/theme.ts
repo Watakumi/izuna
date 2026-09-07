@@ -23,12 +23,13 @@ const BASE = {
   surface: '#171a21',
   raised: '#232936',
   // **地に対する比で決めてある**（`shared/ghostty.ts` と同じ目標）。
-  // 目分量で置いていた頃は faint が 2.3 しかなく、10px の字が読めなかった。
+  // 目分量の頃は faint が 2.3、次に 4.5 まで上げたがまだ薄いと言われた。
+  // **AA を満たしていても、11〜12px の細い字では薄く見える。**
   ink: '#e6e8ee',
   ink2: '#e6e8ee', // 本文。強調は色ではなく太さで付ける
-  dim: '#abadb2', // 比 8.1
-  dim2: '#93959a', // 比 6.0
-  faint: '#7d7f84', // 比 4.5 —— 10px の字に使うので AA を割らせない
+  dim: '#c3c5ca', // 一番明るい面の上で 8.2（地の上では 10.5）
+  dim2: '#b7b9be', // 同 7.2（9.2）
+  faint: '#aeb0b5', // 同 6.5（8.3）—— AA(4.5) では 11px の字が薄く見えた
   line: '#393b40', // 比 1.6
   line2: '#4d4f54', // 比 2.2
   /** **人間の判断を待っている箇所にだけ**使う。装飾に使わない */
@@ -36,12 +37,12 @@ const BASE = {
   amberInk: '#16130c',
   amberLine: '#3d3527',
   amberBg: '#1a1710',
-  teal: '#4fc4b0',
-  red: '#e06c75',
+  teal: '#4fc4b0', // 比 8.5
+  red: '#e18890', // 比 7.0 —— 字に使うので床を切る（元は 6.2 だった）
   addBg: '#14261c',
-  addInk: '#96d3ab',
+  addInk: '#96d3ab', // 比 10.5
   delBg: '#2a1518',
-  delInk: '#e0a0a6',
+  delInk: '#e0a0a6', // 比 8.4
   code: '#0d0f13'
 } as const satisfies Record<TokenName, string>
 
