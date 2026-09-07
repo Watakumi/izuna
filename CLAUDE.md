@@ -7,6 +7,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 なった実測を残す。推測は「未検証」と明記する。
 
 - リポジトリ: `~/work/personal/izuna`
+- **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 現状: セッション層（Agent SDK 経由）+ 権限承認の握手 + 検証の土台まで。UI は未着手
 - **`pnpm verify` は緑**（14件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
