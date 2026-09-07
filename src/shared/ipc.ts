@@ -76,6 +76,8 @@ export interface IzunaApi {
   closeTerminal(id: string): Promise<void>
   /** PTY からの出力。返り値を呼ぶと購読をやめる */
   onTerminal(handler: (event: TerminalEvent) => void): () => void
+  /** 共有フォルダの場所。renderer は homedir を知らない */
+  teamPath(name: string): Promise<string>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
   createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
@@ -127,6 +129,7 @@ export const CH = {
   resizeTerminal: 'izuna:term:resize',
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
+  teamPath: 'izuna:team:path',
   repo: 'izuna:repo',
   createWorktree: 'izuna:worktree:create',
   removeWorktree: 'izuna:worktree:remove',

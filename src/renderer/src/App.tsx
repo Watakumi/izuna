@@ -13,6 +13,8 @@ import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
 import { TerminalPane } from './components/TerminalPane'
+import { Inspector } from './components/Inspector'
+import { Worktrees } from './components/Worktrees'
 import { useSessions } from './useSessions'
 
 /**
@@ -28,6 +30,7 @@ function App(): React.JSX.Element {
   const [showForge, setShowForge] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
+  const [showTrees, setShowTrees] = useState(false)
   const [picked, setPicked] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -133,6 +136,7 @@ function App(): React.JSX.Element {
               {showTerm ? 'ターミナルを閉じる' : 'ターミナル'}
             </button>
           )}
+          {active && <button style={S.ghostSmall} onClick={() => setShowTrees(true)}>worktree</button>}
           {active && <button style={S.ghostSmall} onClick={() => setShowForge(true)}>Forge</button>}
           <button style={S.ghostSmall} onClick={() => setShowSetup(true)}>設定</button>
         </div>
@@ -143,7 +147,8 @@ function App(): React.JSX.Element {
             <button style={S.btn} onClick={() => setShowNew(true)}>新しいセッションを起こす</button>
           </div>
         ) : (
-          <>
+          <div style={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
+            <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={S.body} ref={scroller}>
               <Conversation items={active.transcript.items} draft={active.transcript.draft} />
               <TaskPanel tasks={active.transcript.tasks} />
@@ -206,12 +211,24 @@ function App(): React.JSX.Element {
                 <button style={S.btn} disabled={active.ended || !active.prompt.trim()} onClick={send}>送信</button>
               </div>
             </div>
-          </>
+            </div>
+            <Inspector panel={active} />
+          </div>
         )}
       </div>
 
       {showSetup && <ForgeSetup onClose={() => setShowSetup(false)} />}
       {showForge && active && <Forge cwd={active.cwd} onClose={() => setShowForge(false)} />}
+      {showTrees && active && (
+        <Worktrees
+          cwd={active.cwd}
+          panels={sessions.panels}
+          onClose={() => setShowTrees(false)}
+          onOpen={(w) => void sessions.open({
+            cwd: w.path, label: w.branch ?? w.path, branch: w.branch, team: w.branch ?? 'default'
+          })}
+        />
+      )}
 
       {showNew && (
         <NewSession

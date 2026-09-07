@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
-import { ensureTeam, teamInstructions } from '../team'
+import { ensureTeam, teamInstructions, teamPathFor } from '../team'
 import { applyFix, gatherFacts, type FixId } from '../forge/setup'
 import { createPull, ensureRepo, listPulls, listRepos } from '../forge/client'
 import * as gh from '../forge/github'
@@ -75,6 +75,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.resizeTerminal, (_e, id: string, c: number, r: number) => term.resizeTerminal(id, c, r))
   ipcMain.handle(CH.closeTerminal, (_e, id: string) => term.closeTerminal(id))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
+
+  ipcMain.handle(CH.teamPath, (_e, name: string) => teamPathFor(name))
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {
     const [root, name, worktrees] = await Promise.all([

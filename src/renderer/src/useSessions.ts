@@ -18,6 +18,8 @@ export interface Panel {
   label: string
   cwd: string
   branch: string | null
+  /** 共有フォルダの名前（§12） */
+  team: string
   transcript: Transcript
   pending: PermissionRequest | null
   /** 入力欄はセッションごとに保つ。切り替えで書きかけが消えない */
@@ -32,7 +34,7 @@ export interface Sessions {
   activeId: SessionId | null
   active: Panel | null
   setActive: (id: SessionId) => void
-  open: (input: StartSessionInput & { label: string; branch: string | null }) => Promise<SessionId>
+  open: (input: StartSessionInput & { label: string; branch: string | null; team: string }) => Promise<SessionId>
   close: (id: SessionId) => Promise<void>
   update: (id: SessionId, change: (panel: Panel) => Panel) => void
   /** 承認待ちを抱えているもの。並列で一番埋もれやすいので数えて出す */
@@ -75,7 +77,7 @@ export function useSessions(): Sessions {
   }), [])
 
   const open = useCallback(async (
-    input: StartSessionInput & { label: string; branch: string | null }
+    input: StartSessionInput & { label: string; branch: string | null; team: string }
   ): Promise<SessionId> => {
     const id = await window.izuna.start({
       cwd: input.cwd, model: input.model, permissionMode: input.permissionMode,
@@ -83,7 +85,7 @@ export function useSessions(): Sessions {
     })
     const commands = await window.izuna.slashCommands(id)
     setPanels((prev) => [...prev, {
-      id, label: input.label, cwd: input.cwd, branch: input.branch,
+      id, label: input.label, cwd: input.cwd, branch: input.branch, team: input.team,
       transcript: emptyTranscript(), pending: null, prompt: '', commands, ended: false
     }])
     setActiveId(id)
