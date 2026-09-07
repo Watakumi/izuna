@@ -8,13 +8,22 @@ import { F, C, MONO } from '../theme'
  * **変更の通知イベントは無い**ので、成功したら UI 側で状態を進める。
  * 失敗したら元に戻す（黙って食い違わせない）。
  */
-export const MODES: Array<{ value: PermissionMode; label: string; hint: string; danger?: boolean }> = [
-  { value: 'plan', label: '計画', hint: '読むだけ。変更はしない' },
-  { value: 'default', label: '都度きく', hint: '変更のたびに承認を求める' },
-  { value: 'acceptEdits', label: '編集は自動', hint: 'ファイル編集だけ自動で許可' },
-  { value: 'auto', label: '自動', hint: 'Claude の判断に任せる' },
-  { value: 'dontAsk', label: 'きかない', hint: '承認を求めない。できないことは黙って諦める' },
-  { value: 'bypassPermissions', label: '素通し', hint: 'すべての確認を飛ばす', danger: true }
+/**
+ * **名前は訳さない。** `plan` / `acceptEdits` のような値は Claude Code が
+ * そのまま使っている語で、`--permission-mode` にもドキュメントにも同じ形で出る。
+ * 訳すと、**利用者が読んだ文書と画面の言葉が食い違う**うえ、
+ * 表示用のラベルを別に持てば、値が増えたときにずれる。
+ *
+ * 説明のほうは日本語で書く —— こちらは「何が起きるか」であって、
+ * 語彙を合わせる相手がいない。
+ */
+export const MODES: Array<{ value: PermissionMode; hint: string; danger?: boolean }> = [
+  { value: 'plan', hint: '読むだけ。変更はしない' },
+  { value: 'default', hint: '変更のたびに承認を求める' },
+  { value: 'acceptEdits', hint: 'ファイル編集だけ自動で許可' },
+  { value: 'auto', hint: 'Claude の判断に任せる' },
+  { value: 'dontAsk', hint: '承認を求めない。できないことは黙って諦める' },
+  { value: 'bypassPermissions', hint: 'すべての確認を飛ばす', danger: true }
 ]
 
 export function ModeSwitch({
@@ -41,7 +50,7 @@ export function ModeSwitch({
           cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
         }}
       >
-        {current?.label ?? mode}
+        {mode}
         <span style={{ color: C.faint, fontSize: F.micro }}>▾</span>
       </button>
 
@@ -63,7 +72,7 @@ export function ModeSwitch({
                   borderLeft: `2px solid ${m.value === mode ? C.amber : 'transparent'}`
                 }}
               >
-                <span style={{ fontSize: F.body, color: m.danger ? C.red : C.ink }}>{m.label}</span>
+                <span style={{ font: `${F.body}px ${MONO}`, color: m.danger ? C.red : C.ink }}>{m.value}</span>
                 <span style={{ fontSize: F.small, color: C.dim2, lineHeight: 1.5 }}>{m.hint}</span>
               </div>
             ))}

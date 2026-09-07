@@ -57,8 +57,12 @@ async function call<T>(rootUrl: string, path: string, init?: RequestInit): Promi
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     // 403 tokenRequiresScopes は実際に踏んだ。原因が読める文言にする
+    // 403 tokenRequiresScopes は実際に踏んだ。**足りない権限を名指しする** ——
+    // 「スコープが足りません」だけでは、何をどう直すのか分からない
+    const missing = /required scope\(s\): \[([^\]]+)\]/.exec(body)?.[1]
     const hint = res.status === 403 && /scope/i.test(body)
-      ? 'トークンのスコープが足りません。「Forgejo」画面から発行し直してください'
+      ? `トークンに ${missing ?? '必要な権限'} がありません。`
+        + '「Forgejo」画面の「トークンを発行」で作り直してください（古いものは差し替わります）'
       : body.slice(0, 300) || res.statusText
     throw new ForgeError(`Forgejo が ${res.status} を返しました: ${hint}`, res.status)
   }

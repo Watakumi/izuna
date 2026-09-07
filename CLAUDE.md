@@ -367,6 +367,20 @@ type PermissionResult =
   **症状が出ていれば別**（変換候補が出ない・確定した字が消える・メニューが
   反応しない・繰り返し出る）。そのときはログではなく症状を追うこと。
 
+- **Forgejo でリポジトリを作るには権限が 2 つ要る**（2026-09-08 実測）。
+  `POST /api/v1/user/repos` は `write:repository` だけでは 403 になる。
+
+  | 与えたもの | 結果 |
+  | --- | --- |
+  | `write:repository` だけ | 403「`write:user` が要る」 |
+  | `write:user` だけ | 403「`write:repository` が要る」 |
+  | **両方** | **201** |
+
+  「ユーザーの下に作る」ので、どちらの権限も要求される。
+  `REQUIRED_SCOPES`（`src/main/forge/setup.ts`）が唯一の定義。
+  403 の文面は**足りない権限を名指しする** —— 「スコープが足りません」
+  だけでは、何をどう直すのか分からない。
+
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
@@ -953,6 +967,17 @@ F  micro 10 / small 11 / body 12 / base 13 / title 15
 R  sm 4 / md 7 / lg 11 / full 999
 S  hair 2 / xs 4 / sm 6 / md 8 / lg 12 / xl 16 / xxl 24
 ```
+
+### Claude Code の語は訳さない（2026-09-08）
+
+権限モードを「計画 / 都度きく / 編集は自動 / 素通し」と訳して出していた。
+**`plan` / `acceptEdits` / `bypassPermissions` は Claude Code がそのまま使う語**で、
+`--permission-mode` にもドキュメントにも同じ形で出る。訳すと、
+**利用者が読んだ文書と画面の言葉が食い違う。**
+
+表示用のラベルを別に持つのもやめた（値が増えたときにずれる）。
+**値をそのまま出す。** 説明のほうは日本語で書く —— こちらは「何が起きるか」で
+あって、語彙を合わせる相手がいない。
 
 ### 部品は `components/ui.tsx` だけ
 

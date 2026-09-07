@@ -73,6 +73,17 @@ async function probe(rootUrl: string | null): Promise<boolean> {
 }
 
 /** トークンが通るか、どのスコープを持つかを本人に聞く */
+/**
+ * リポジトリを作るのに要る権限（実測）。
+ *
+ * | 与えたもの | `POST /user/repos` |
+ * | --- | --- |
+ * | `write:repository` だけ | 403「`write:user` が要る」 |
+ * | `write:user` だけ | 403「`write:repository` が要る」 |
+ * | **両方** | **201** |
+ */
+export const REQUIRED_SCOPES = ['write:user', 'write:repository', 'write:issue'] as const
+
 async function inspectToken(
   rootUrl: string | null,
   token: string | null
@@ -87,7 +98,7 @@ async function inspectToken(
     if (!res.ok) return { scopes: [], works: false }
     // Forgejo はスコープをヘッダに返さないので、通った事実から要るものを持つと見なす。
     // 足りなければ個別の呼び出しが 403 になり、そこで作り直しに誘導される
-    return { scopes: ['read:user', 'write:repository'], works: true }
+    return { scopes: [...REQUIRED_SCOPES], works: true }
   } catch {
     return { scopes: [], works: false }
   }
@@ -147,7 +158,10 @@ export async function applyFix(id: FixId): Promise<string> {
       const token = await run(facts.binary, [
         'admin', 'user', 'generate-access-token',
         '--username', user, '--token-name', name, '--raw',
-        '--scopes', 'read:user,write:repository,write:issue',
+        // **`write:user` が要る。** `POST /user/repos` は `write:repository`
+        // だけでは 403 になる（2026-09-08 に実測。片方ずつ試して確かめた）。
+        // 「ユーザーの下に作る」ので、どちらの権限も要求される。
+        '--scopes', 'write:user,write:repository,write:issue',
         '--work-path', workPath
       ])
       const value = token.split('\n').pop()?.trim()
