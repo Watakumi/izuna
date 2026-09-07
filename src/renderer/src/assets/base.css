@@ -26,6 +26,27 @@ ul {
   list-style: none;
 }
 
+/*
+ * フォーム要素だけ、親から継承させる。
+ *
+ * インラインの `style` は**書いたものしか塗らない**ので、塗り忘れた要素は
+ * ブラウザ既定（＝明るい）に落ちる。実際に `<textarea>` が真っ白で出た。
+ *
+ * Tailwind を使っていれば Preflight がこれを当ててくれる部分で、
+ * **その一枚だけをフレームワークなしで貰う。** `ui.tsx` の部品は
+ * 背景も色も明示しているので、こちらが勝って影響しない。
+ *
+ * チェックボックスとラジオは除く —— `appearance` を殺すと箱が消える。
+ * あちらは `color-scheme: dark` が面倒を見る。
+ */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+}
+
 body {
   min-height: 100vh;
   line-height: 1.6;
