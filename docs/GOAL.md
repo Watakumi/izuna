@@ -7,7 +7,8 @@
 
 ## 一行で
 
-**自分のコードを自分のインフラに置いたまま、複数の Claude Code を並列に走らせる開発環境。**
+**GitHub の自分のリポジトリに対し、複数の Claude Code をブレイン主導で並列に走らせる開発環境。**
+荒れる作業は自宅の Forgejo でレビューし、GitHub には仕上がったものだけを出す。
 
 ---
 
@@ -18,12 +19,15 @@ Claude Code の GUI は既に飽和している。それでも作る理由は一
 
 調査で確かめた事実（2026-09-07）:
 
-| 既存 | 並列エージェント | self-hosted forge |
-| --- | --- | --- |
-| Claude Code 公式デスクトップ | worktree で対応 | GitHub 前提 |
-| Nimbalyst（MIT / 1.7k★ / 5,936 commits） | worktree で対応 | **無い** |
-| Conductor | 対応 | 不明（クローズド） |
-| Clarc | 無い | 無い |
+| 既存 | 並列エージェント | ブレイン主導 | 作業場の分離 |
+| --- | --- | --- | --- |
+| Claude Code 公式デスクトップ | worktree で対応 | 無い | 無い |
+| Nimbalyst（MIT / 1.7k★ / 5,936 commits） | worktree で対応 | **あり**（TeammateManager） | 無い |
+| Conductor | 対応 | 不明（クローズド） | 無い |
+| Clarc | 無い | 無い | 無い |
+
+**空いているのは「作業場の分離」。** どれも作業ブランチを本番の forge に
+そのまま積む前提で、荒れる場所と見せる場所を分ける発想が無い。
 
 Nimbalyst のソースを実際に読んで数えた結果:
 
@@ -33,7 +37,11 @@ Nimbalyst のソースを実際に読んで数えた結果:
 - `forgeUrl` / `baseUrl` / `selfHosted` に相当する設定項目が**存在しない**
 
 つまり既存のどれも、**自分の forge を向けられない**。`gh` は GitHub Enterprise までで
-Forgejo には向かない。ここが空いている。
+Forgejo には向かない。
+
+そして誰も、**エージェントの作業場と公開先を分けていない**。
+作業ブランチも実験も、本番の forge にそのまま積む前提になっている。
+実行役 2 つが一日回れば作業ブランチは十数本になる。ここが空いている。
 
 ## 誰のための道具か
 
@@ -71,14 +79,39 @@ brief / tasks / summaries / decisions / log を置き、decisions と log は追
 **圧縮を跨いで残るのはここだけ**なので、口頭で伝えたことは残らないと考える
 （詳細は CLAUDE.md §12）。
 
-### 2. self-hosted forge（Forgejo）
+### 2. AI の作業場（Forgejo）と 出口（GitHub）
 
-**Izuna が Forgejo の API を直接叩く。** `gh` のような外部コマンドに頼らない。
+**GitHub が真実で、出口。** 手元の 19 リポジトリはすべて github.com にあり、
+Issue も最終的な PR もそこにある。Izuna はその位置づけを動かさない。
 
-- リポジトリの一覧と clone
-- セッションの成果から Pull Request を作る
-- PR / Issue の閲覧と、そこからセッションを起こす
-- Forgejo Actions の実行状況を見る
+**Forgejo は AI の作業場。** ただの push 先ではなく、**forge として使う**。
+実行役の成果はまず Forgejo で PR になり、人間はそこでまとめて見る。
+CI も自宅の鉄で回す。荒れてよく、壊れたら作り直す。
+
+| 用途 | どこ | Izuna がすること |
+| --- | --- | --- |
+| 何をやるかを決める（Issue） | **GitHub** | `gh` を呼ぶ |
+| 実行役のブランチ | **Forgejo** | `git push` |
+| **実行役の成果をレビューする PR** | **Forgejo** | **API クライアント** |
+| **CI（自宅の鉄で回す）** | **Forgejo Actions** | **API で状態を読む** |
+| 仕上がったものの PR | **GitHub** | `gh` を呼ぶ |
+
+**PR が二段になる。** ここが Izuna の形を決める。
+
+```
+実行役 A ─┐
+実行役 B ─┴→ Forgejo で PR ──[人間がまとめて見る]──→ GitHub で PR
+             荒れてよい。CI は自宅            仕上がったものだけ
+```
+
+一段目（Forgejo）は**エージェントの作業をまとめて見るための PR**で、
+何度作り直してもよい。二段目（GitHub）は**外に出る PR**で、
+一段目を通ったものだけが出る。
+
+書くコードの量は非対称になる。**GitHub 側は `gh` で済む**
+（認証済み・スコープ十分。Nimbalyst も 22 ファイルで `gh` を呼んでいた）。
+**Forgejo 側は API クライアントを自作する** —— `gh` は Forgejo に向けられない。
+つまり自作するのは Forgejo クライアント 1 本だけである。
 
 Forgejo を選ぶ理由: 単一バイナリで 512MB で動き、PR・Issue・Wiki・
 パッケージレジストリ・LFS・GitHub Actions 互換 CI が全部入る。
@@ -100,13 +133,13 @@ Electron でも本物の Ghostty の VT 実装が使える。
 
 **次の一連の流れが、Izuna から出ずに完結すること。**
 
-1. Forgejo のリポジトリ一覧から一つ選び、clone する
-2. Issue を選んで**ブレインのセッション**を起こす
+1. GitHub のリポジトリを開き、**Forgejo を作業用 remote として登録する**
+2. **GitHub の Issue** を選んで**ブレインのセッション**を起こす
 3. ブレインが作業を分解し、**worktree ごとに実行役を起こす**（2 つ以上）
 4. 実行役が手を止めたら、ブレインが結果を見て**次の指示を返す**
 5. 承認を求められたら、**人間が**差分を見て許可/拒否する
-6. Forgejo に push し、**PR を作る**
-7. worktree を畳む
+6. 実行役の成果を **Forgejo で PR** にしてまとめて見る。通ったら **GitHub に push して PR**
+7. worktree を畳み、**Forgejo 側の作業ブランチは捨てる**
 
 この 7 手が動けば v1 である。動かないうちは v1 ではない。
 
@@ -118,6 +151,8 @@ Electron でも本物の Ghostty の VT 実装が使える。
 - `pnpm verify` が緑
 - 上の 7 手を人が実際に通せる（スクリーンショットを残す）
 - 実行役 2 つを同時に走らせて、互いの worktree を壊さない
+- **GitHub に出るのは 6 の二段目だけ**。作業ブランチも一段目の PR も GitHub に漏れていない
+- Forgejo Actions が作業ブランチの CI を回し、Izuna がその状態を読める
 - **ブレイン → 実行役のメッセージが保留されずに届く**
   （権限モードのクラス不一致という既知の罠を踏んでいない。CLAUDE.md §12）
 
@@ -129,7 +164,9 @@ Electron でも本物の Ghostty の VT 実装が使える。
 
 - **Windows / Linux 対応**（macOS だけ）
 - **モバイル / 同期 / 共同編集**（Nimbalyst の領域）
-- **GitHub / GitLab 対応**（Forgejo に絞る。抽象化は 2 つ目の forge が要るまでやらない）
+- **GitLab その他の forge**（GitHub と Forgejo の 2 つで足りる）
+- **forge の共通インタフェース**（`gh` と Forgejo クライアントは役割が違う。無理に揃えない）
+- **Forgejo 側の Issue / Wiki / パッケージ**（作業場に必要なのは PR と Actions だけ）
 - **Claude Code 以外のエージェント**（Codex / Cursor / Copilot）
 - **ブレインに承認を任せること**（承認は人間が持つ。§完成の定義 5）
 - **3 階層以上のエージェント**（ブレインと実行役の 2 階層まで）
@@ -148,7 +185,7 @@ Electron でも本物の Ghostty の VT 実装が使える。
 | 2 | `/` パレット | `supportedCommands()` の一覧を補完から実行できる |
 | 3 | worktree 並列 | 人が起こした 2 セッションが同時に走る。一覧で状態が見える |
 | 4 | ブレインと実行役 | ブレインが実行役を起こし、idle を受けて指示を返す |
-| 5 | Forgejo | リポジトリ一覧・clone・PR 作成 |
+| 5 | 二段の PR | Forgejo クライアント（PR・Actions）と `gh`（Issue・最終 PR） |
 | 6 | ターミナル | ghostty-web で worktree のシェルに降りられる |
 
 段を飛ばさない。**1 が動く前に 4 を作らない。**
