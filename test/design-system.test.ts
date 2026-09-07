@@ -97,6 +97,33 @@ describe('余白もスケールに乗せる', () => {
   })
 })
 
+describe('フォーム要素を素で書かない', () => {
+  /**
+   * `<textarea>` を塗り忘れて**真っ白**が出た（2026-09-08）。
+   * ネイティブの部品は既定が明るいので、書いた本人が暗いつもりでも
+   * そこだけ明るく描かれる。`color-scheme: dark` を入れたうえで、
+   * 枠と余白は `ui.tsx` の `Input` / `TextArea` / `Check` に寄せる。
+   *
+   * `<button>` は対象にしない —— ModeSwitch のような形の違う部品があり、
+   * 既定の見た目に落ちる失敗の仕方をしない。
+   */
+  it('input / textarea / select は ui.tsx の中だけ', () => {
+    const bad: string[] = []
+    for (const { path, text } of files) {
+      if (path === UI) continue
+      for (const m of text.matchAll(/<(input|textarea|select)\b/g)) {
+        bad.push(`${path}:${text.slice(0, m.index).split('\n').length} <${m[1]}>`)
+      }
+    }
+    expect(bad).toEqual([])
+  })
+
+  it('color-scheme が宣言されている（これが無いと部品だけ明るいまま）', () => {
+    const css = readFileSync(join(ROOT, 'src/renderer/src/assets/base.css'), 'utf8')
+    expect(css).toMatch(/color-scheme:\s*dark/)
+  })
+})
+
 describe('部品を 1 箇所にまとめる', () => {
   it('ボタンや入力欄を各所で定義しない', () => {
     // 以前は 5 ファイルに 13 箇所コピペされ、padding が微妙に違っていた

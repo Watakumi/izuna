@@ -12,6 +12,7 @@ import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
+import { TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
@@ -227,9 +228,9 @@ function App(): React.JSX.Element {
               {/* 入力欄と送信を 1 つの枠に入れる。別々に置くと箱の高さが違って揃わない */}
               <div style={S.footer}>
                 <div style={S.inputBox}>
-                  <textarea
+                  <TextArea
+                    bare
                     ref={box}
-                    style={S.textarea}
                     value={active.prompt}
                     rows={2}
                     placeholder={active.ended ? 'このセッションは終了しています' : '依頼を書く'}
@@ -332,8 +333,6 @@ const S: Record<string, React.CSSProperties> = {
   footer: { padding: '12px 16px 16px', borderTop: `1px solid ${C.line}`, flexShrink: 0 },
   inputBox: { border: `1px solid ${C.line2}`, borderRadius: 7, background: C.surface,
     display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  textarea: { border: 'none', background: 'transparent', color: C.ink, outline: 'none',
-    resize: 'none', padding: '12px 12px 6px', font: `13px/1.6 ${SANS}` },
   inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 12px' },
   send: { padding: '6px 16px', borderRadius: 7, border: 'none', background: C.amber,
     color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' }

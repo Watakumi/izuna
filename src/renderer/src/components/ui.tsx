@@ -1,4 +1,5 @@
-import { C, F, MONO, R, S } from '../theme'
+import { forwardRef } from 'react'
+import { C, F, MONO, R, S, SANS } from '../theme'
 
 /**
  * 共通の部品。**ここ以外でボタンや入力欄を定義しない。**
@@ -64,6 +65,71 @@ export function Input({ style, ...rest }: React.InputHTMLAttributes<HTMLInputEle
         background: C.bg, color: C.ink, font: `${F.body}px ${MONO}`, outline: 'none', ...style
       }}
     />
+  )
+}
+
+/**
+ * 複数行の入力。
+ *
+ * **素の `<textarea>` を書かないこと。** 塗り忘れるとブラウザ既定の
+ * 白が出る（実際に出した。2026-09-08）。`color-scheme: dark` で
+ * ネイティブ側は暗くなるが、**枠と余白はここで揃える**。
+ *
+ * `bare` は、外側の箱が既に枠を持っている場合（App の入力欄）。
+ */
+export const TextArea = forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement> & { bare?: boolean }
+>(function TextArea({ bare = false, style, ...rest }, ref) {
+  return (
+    <textarea
+      ref={ref}
+      spellCheck={false}
+      {...rest}
+      style={{
+        resize: 'none',
+        outline: 'none',
+        color: C.ink,
+        font: `${F.base}px/1.6 ${SANS}`,
+        ...(bare
+          ? { border: 'none', background: 'transparent', padding: `${S.lg}px ${S.lg}px ${S.sm}px` }
+          : {
+              border: `1px solid ${C.line2}`,
+              borderRadius: R.md,
+              background: C.bg,
+              padding: `${S.md}px ${S.lg}px`
+            }),
+        ...style
+      }}
+    />
+  )
+})
+
+/**
+ * ラベル付きのチェックボックス。
+ *
+ * 箱だけ置くと、押せる範囲がラベルに届かない。`<label>` で包む。
+ */
+export function Check({
+  checked,
+  onChange,
+  disabled,
+  children
+}: {
+  checked: boolean
+  onChange: (v: boolean) => void
+  disabled?: boolean
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <label style={{
+      display: 'flex', alignItems: 'center', gap: S.md, fontSize: F.body,
+      cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
+    }}>
+      <input type="checkbox" checked={checked} disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)} />
+      {children}
+    </label>
   )
 }
 

@@ -6,7 +6,7 @@ import { branchFromIssue, branchFromText, uniqueBranch } from '../../../shared/b
 import { validateNewWorktree, worktreePathFor } from '../../../shared/worktree'
 import { belongsTo, byNewest, labelOf, type SessionSummary } from '../../../shared/sessions'
 import { C, F, MONO, R, S } from '../theme'
-import { Button, Faint, Input } from './ui'
+import { Button, Check, Faint, Input, TextArea } from './ui'
 
 /**
  * セッションを起こす（段3・段4 の入口）。
@@ -246,11 +246,10 @@ export function NewSession({
               {issues !== null && issues.length === 0 && <Faint>open な Issue はありません</Faint>}
               {issues === null && cwd.trim() !== '' && <Faint>GitHub に繋がっていません。下に直接書けます</Faint>}
 
-              <textarea
-                value={text} rows={2} spellCheck={false}
+              <TextArea
+                value={text} rows={2}
                 placeholder={issues && issues.length > 0 ? 'または、やることを直接書く' : 'やることを書く'}
                 onChange={(e) => { setText(e.target.value); setIssue(null); setBranchOverride(null) }}
-                style={{ font: `13px/1.6 inherit`, resize: 'none' }}
               />
             </Section>
           )}
@@ -270,15 +269,13 @@ export function NewSession({
 
               {showDetail && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 16 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
-                    <input type="checkbox" checked={useWorktree} disabled={!repo}
-                      onChange={(e) => setUseWorktree(e.target.checked)} />
+                  <Check checked={useWorktree} disabled={!repo} onChange={setUseWorktree}>
                     worktree を作る
-                    {!repo && <span style={{ fontSize: 11, color: C.faint }}>（git リポジトリのみ）</span>}
-                  </label>
+                    {!repo && <span style={{ fontSize: F.small, color: C.faint }}>（git リポジトリのみ）</span>}
+                  </Check>
                   {useWorktree && (
                     <>
-                      <input value={branch} spellCheck={false}
+                      <Input value={branch}
                         onChange={(e) => setBranchOverride(e.target.value)}
                         style={{ borderColor: problem ? C.red : C.line2 }} />
                       {problem
