@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { Scored } from '../../../shared/palette'
-import { originOf } from '../../../shared/palette'
+import { isDeprioritized, originOf } from '../../../shared/palette'
 import { C, MONO } from '../theme'
 
 /** 当たった文字だけ色を変える。位置は filterCommands が返したものを使う */
@@ -81,7 +81,9 @@ export function Palette({
                 <span style={{ fontSize: 10.5, color: C.faint, flexShrink: 0 }}>説明で一致</span>
               )}
               {s.command.argumentHint && (
-                <span style={{ font: `11px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                // 行では切る。全文は下の詳細に出るので失われない
+                <span style={{ font: `11px ${MONO}`, color: C.faint, flexShrink: 0,
+                  maxWidth: 210, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {s.command.argumentHint}
                 </span>
               )}
@@ -101,7 +103,12 @@ export function Palette({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ font: `12px ${MONO}`, color: C.amber }}>/{current.command.name}</span>
             {current.command.argumentHint && (
-              <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>{current.command.argumentHint}</span>
+              <span style={{ font: `11px ${MONO}`, color: C.dim2, wordBreak: 'break-word' }}>
+                {current.command.argumentHint}
+              </span>
+            )}
+            {isDeprioritized(current.command) && (
+              <span style={{ fontSize: 10.5, color: C.amber }}>内部用・廃止済み</span>
             )}
           </div>
           {current.command.description && (

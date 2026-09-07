@@ -59,6 +59,20 @@ const EXACT = 10_000
 const PREFIX = 5_000
 const DESCRIPTION = 40
 
+/**
+ * 後ろに下げるもの。**隠さない** —— 打てば出るが、探していないときに
+ * 先頭を占領させない。
+ *
+ * `__` 始まりはサーバ起動のセッション専用など、人が手で打つものではない。
+ * `(removed)` は CLI 自身が廃止と言っているもの。
+ * 空の問い合わせでは全員同点なので、これが無いと名前順で `_` が最初に来る。
+ */
+const DEPRIORITIZED = 100_000
+
+export function isDeprioritized(command: SlashCommand): boolean {
+  return command.name.startsWith('__') || /^\s*\(removed\)/i.test(command.description)
+}
+
 function best(query: string, command: SlashCommand): Scored | null {
   const names: Array<{ name: string; alias: string | null }> = [
     { name: command.name, alias: null },
@@ -88,13 +102,15 @@ function best(query: string, command: SlashCommand): Scored | null {
 
     // 別名で当たった場合は、正式名で当たったものより一段下げる
     if (scored && alias) scored = { ...scored, score: scored.score - 1 }
+    if (scored && isDeprioritized(command)) scored = { ...scored, score: scored.score - DEPRIORITIZED }
     if (scored && (!top || scored.score > top.score)) top = scored
   }
   if (top) return top
 
   // 名前で当たらなければ説明を見る。「何をするものか」で探せるように
   if (query.length >= 2 && command.description.toLowerCase().includes(query.toLowerCase())) {
-    return { command, score: DESCRIPTION, matches: [], viaDescription: true, viaAlias: null }
+    const base = DESCRIPTION - (isDeprioritized(command) ? DEPRIORITIZED : 0)
+    return { command, score: base, matches: [], viaDescription: true, viaAlias: null }
   }
   return null
 }

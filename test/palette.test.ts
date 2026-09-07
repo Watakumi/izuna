@@ -124,6 +124,36 @@ describe('入力欄の解釈', () => {
   })
 })
 
+describe('後ろに下げるもの', () => {
+  const SET2: SlashCommand[] = [
+    ...SET,
+    cmd('__remote-workflow', 'Run the workflow script delivered in this session environment'),
+    cmd('agents', '(removed) Ask Claude to create/manage subagents')
+  ]
+  const names2 = (q: string): string[] => filterCommands(q, SET2).map((s) => s.command.name)
+
+  it('空の問い合わせで内部用と廃止済みが先頭に来ない', () => {
+    // 全員同点だと名前順になり、`_` 始まりが最初に来てしまう
+    const top = filterCommands('', SET2).slice(0, 3).map((s) => s.command.name)
+    expect(top).not.toContain('__remote-workflow')
+    expect(top).not.toContain('agents')
+  })
+
+  it('隠さない。打てば出る', () => {
+    expect(names2('remote')).toContain('__remote-workflow')
+    expect(names2('agents')).toContain('agents')
+  })
+
+  it('同じ当たり方なら普通のものが上', () => {
+    // 'age' は agents（廃止済み・前方一致）と usage（部分列）の両方に当たる。
+    // 素の点数なら前方一致の agents が上に来るが、廃止済みなので下がる
+    const r = names2('age')
+    expect(r).toContain('agents')
+    expect(r).toContain('usage')
+    expect(r.indexOf('agents')).toBeGreaterThan(r.indexOf('usage'))
+  })
+})
+
 describe('出どころ', () => {
   it('名前空間つきを見分ける', () => {
     expect(originOf(cmd('everything-claude-code:code-review'))).toEqual({
