@@ -609,13 +609,57 @@ readyTasks(tasks)       // depends_on が満たされていて未着手のもの
 
 圧縮を跨いで残るのはこのフォルダだけである。口頭で伝えたことは残らない。
 
+### 実測（2026-09-07・段4 の着手前に測った）
+
+`scripts/` には残していない使い捨ての probe で、一時ディレクトリに
+ブレインを起こし「`Task` でサブエージェントを 1 つ起こしてファイルを作らせろ」
+と頼んだ結果:
+
+```
+[ブレイン] tool_use: Agent
+task_started: general-purpose / background=false
+  [実行役] tool_use: Write
+★ 承認 #1: Write / agentId=a9d98cdcaa1a7c6e6      ← ホスト（＝人間）に来た
+  [実行役] Done. Created file .../from-executor.txt
+task_notification: completed
+ファイル: "done by executor"
+```
+
+**確定した事実:**
+
+| 問い | 答え |
+| --- | --- |
+| 実行役の承認は誰に行くか | **ホストに来る。** `canUseTool` に `agentID` 付きで届く |
+| 誰の要求か区別できるか | できる。ブレイン本体は `agentID` が undefined |
+| ライフサイクル | `task_started` → `task_progress` → `task_updated` → `task_notification` |
+| 実行役の発話 | `forwardSubagentText: true` で `parent_tool_use_id` 付きで届く |
+| ツール名 | **`Agent`**（`Task` ではない。`ToolSearch` 経由で解決される deferred tool） |
+
+**GOAL.md の完成の定義 5（承認は人間が持つ）は、機構としても成立する。**
+`agentID` があっても人間に上げるのは設計判断であって、機構の都合ではない。
+
+### worktree はサブエージェントに組み込みで与えられる
+
+設定 `worktree` に **agent isolation** という一級の概念がある。
+
+```
+worktree.baseRef       'fresh'（既定・origin/<default> から）| 'head'
+worktree.bgIsolation   'worktree'（既定・EnterWorktree を呼ぶまで本体の Edit/Write を塞ぐ）| 'none'
+worktree.symlinkDirectories  node_modules 等を本体から張って容量を節約
+worktree.sparsePaths   大きな monorepo で必要な範囲だけ書き出す
+```
+
+`--worktree` / `EnterWorktree` / **agent isolation** の 3 つに効く。
+つまり **worktree を Izuna が自前で配る必要はない**（段3 で作った機構は
+「人が自分で 2 本起こす」用途として残る）。
+
 ### まだ測っていないこと
 
-- `TeammateIdle` hook が Agent SDK 経由でも発火するか
+- `TeammateIdle` hook が Agent SDK 経由でも発火するか（今回の probe では
+  `Agent` ツールが同期で完了したため、idle に入る場面が無かった）
 - `SendMessage` の宛先解決（`ListAgents` が返す名前の形）
 - `teammateMode` ごとの挙動差
-- 実行役が承認を求めたとき、それがブレインに行くのか人間に行くのか
-  （**ここは人間に来てほしい。GOAL.md の完成の定義 5**）
+- agent isolation を有効にしたときの worktree の実際の置き場所
 
 ---
 

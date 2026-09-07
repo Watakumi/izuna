@@ -34,6 +34,13 @@ export interface PermissionRequest {
   toolName: string
   input: Record<string, unknown>
   toolUseId?: string
+  /**
+   * サブエージェント（実行役）からの要求ならその id。ブレイン本体なら undefined。
+   *
+   * **これがあっても人間に上げる。** 承認をブレインに渡さないのは
+   * 設計判断であって、機構の都合ではない（docs/GOAL.md 完成の定義 5）。
+   */
+  agentId?: string
   /** CLI が用意した「次はこう許可すると楽」の候補。常に許可ボタンの中身になる */
   suggestions?: PermissionUpdate[]
   title?: string
@@ -151,6 +158,9 @@ export class ClaudeSession extends EventEmitter<Events> {
         // それらしいパスを作り話する（実測 2026-09-07）。
         systemPrompt: { type: 'preset', preset: 'claude_code' },
         includePartialMessages: true,
+        // 実行役の発話も流す。既定では tool_use / tool_result しか来ないので、
+        // 何を考えて何をしたのかが見えない（段4）
+        forwardSubagentText: true,
         settingSources: this.options.settingSources,
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
@@ -248,6 +258,7 @@ export class ClaudeSession extends EventEmitter<Events> {
       signal?: AbortSignal
       suggestions?: PermissionUpdate[]
       toolUseID?: string
+      agentID?: string
       title?: string
       description?: string
       blockedPath?: string
@@ -269,6 +280,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         toolName,
         input,
         toolUseId: opts.toolUseID,
+        agentId: opts.agentID,
         suggestions: opts.suggestions,
         title: opts.title,
         description: opts.description,
