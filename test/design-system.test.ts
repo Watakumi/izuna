@@ -124,6 +124,31 @@ describe('フォーム要素を素で書かない', () => {
   })
 })
 
+describe('CSS の外に色を渡すときは解いてから渡す', () => {
+  /**
+   * `theme.ts` の `C` は `var(--c-bg, #14161b)` の形をしている。
+   * **CSS の中でしか意味を持たない。**
+   *
+   * CSS 変数化したとき「使う側 294 箇所を 1 つも書き換えずに差し替えられる」と
+   * 書いたが、**それは CSS の中でだけ成り立つ話だった。** ターミナル
+   * （ghostty-web）は canvas に描くので `var()` を解釈できず、既定の
+   * **明るい**配色に落ちていた。しかも `var()` は黙って無視されるので
+   * 例外が出ない —— 目で見るまで気づかない壊れ方をする。
+   *
+   * **値の「中身」を変えたとき、「呼ぶ側を書き換えていない」ことは
+   * 安全の証拠にならない。** 調べていないことの証拠である。
+   */
+  it('ghostty-web には resolve() を通した色を渡す', () => {
+    const text = files.find((f) => f.path.endsWith('TerminalPane.tsx'))!.text
+    const at = text.indexOf('new Terminal(')
+    expect(at, 'new Terminal( が見つからない').toBeGreaterThan(-1)
+    const options = text.slice(at, text.indexOf('})', at))
+    expect(options, 'C.* をそのまま渡すと canvas が解決できない').not.toMatch(/\bC\.\w+/)
+    expect(options, 'MONO をそのまま渡すと canvas が解決できない').not.toMatch(/\bMONO\b/)
+    expect(options).toMatch(/resolve/)
+  })
+})
+
 describe('Fast Refresh を壊さない', () => {
   /**
    * React Fast Refresh は「**そのファイルがコンポーネントだけを export

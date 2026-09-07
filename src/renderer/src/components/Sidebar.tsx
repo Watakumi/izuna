@@ -1,5 +1,5 @@
 import type { Panel } from '../useSessions'
-import { C, MONO, ellipsis } from '../theme'
+import { F, C, MONO, ellipsis } from '../theme'
 
 /**
  * セッション一覧（段3）。
@@ -55,7 +55,7 @@ export function Sidebar({
       width: 246, flexShrink: 0, background: C.panel, borderRight: `1px solid ${C.line}`,
       display: 'flex', flexDirection: 'column'
     }}>
-      <div style={{ padding: '12px 16px 8px', fontSize: 11, letterSpacing: '0.08em',
+      <div style={{ padding: '12px 16px 8px', fontSize: F.small, letterSpacing: '0.08em',
         color: C.dim2, fontWeight: 600 }}>
         セッション {panels.length > 0 && <span style={{ color: C.faint }}>{panels.length}</span>}
       </div>
@@ -63,7 +63,7 @@ export function Sidebar({
       <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px',
         display: 'flex', flexDirection: 'column', gap: 2 }}>
         {panels.length === 0 && (
-          <div style={{ padding: '12px 8px', fontSize: 11, color: C.faint, lineHeight: 1.7 }}>
+          <div style={{ padding: '12px 8px', fontSize: F.small, color: C.faint, lineHeight: 1.7 }}>
             まだありません。<br />下の「新しいセッション」から。
           </div>
         )}
@@ -73,8 +73,8 @@ export function Sidebar({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px 4px' }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.faint}
                 strokeWidth="1.9"><path d="M4 4h11l5 5v11H4z" /></svg>
-              <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>{repo}</span>
-              <span style={{ fontSize: 10, color: C.faint }}>{group.length}</span>
+              <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>{repo}</span>
+              <span style={{ fontSize: F.micro, color: C.faint }}>{group.length}</span>
             </div>
             {group.map((p) => {
           const d = dot(p)
@@ -95,8 +95,8 @@ export function Sidebar({
                 border: d.filled ? 'none' : `1.5px solid ${d.color}`
               }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flexGrow: 1 }}>
-                <span style={{ fontSize: 12, color: on ? C.ink : C.ink2, ...ellipsis }}>{p.label}</span>
-                <span style={{ font: `10px ${MONO}`, color: p.pending ? C.amber : C.dim2,
+                <span style={{ fontSize: F.body, color: on ? C.ink : C.ink2, ...ellipsis }}>{p.label}</span>
+                <span style={{ font: `${F.micro}px ${MONO}`, color: p.pending ? C.amber : C.dim2,
                   ...ellipsis }}>
                   {p.branch ?? '(worktree なし)'} · {label(p)}
                 </span>
@@ -104,7 +104,7 @@ export function Sidebar({
               <span
                 onClick={(e) => { e.stopPropagation(); onClose(p.id) }}
                 title="このセッションを閉じる"
-                style={{ color: C.faint, fontSize: 15, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                style={{ color: C.faint, fontSize: F.title, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
               >×</span>
             </div>
           )
@@ -119,7 +119,7 @@ export function Sidebar({
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '8px 12px', borderRadius: 7, border: `1px dashed ${C.line2}`,
-            color: C.dim, fontSize: 12, cursor: 'pointer'
+            color: C.dim, fontSize: F.body, cursor: 'pointer'
           }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"

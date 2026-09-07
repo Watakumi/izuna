@@ -167,8 +167,8 @@ export function NewSession({
                       style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
                         cursor: 'pointer', borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
                         background: r.path === cwd ? C.raised : 'transparent' }}>
-                      <span style={{ fontSize: 12, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
-                      <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1,
+                      <span style={{ fontSize: F.body, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
+                      <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexGrow: 1,
                         textAlign: 'right', ...ellipsis }}>{r.group}</span>
                     </div>
                   ))}
@@ -176,7 +176,7 @@ export function NewSession({
                 </div>
               </>
             )}
-            {repoError && <span style={{ fontSize: 11, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
+            {repoError && <span style={{ fontSize: F.small, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
           </Section>
 
           {/* 2. 続きから —— 新しく始めるか、続きか。**同じ画面で選ぶ** */}
@@ -217,8 +217,8 @@ export function NewSession({
                         borderRadius: 7, cursor: 'pointer',
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
                         background: issue?.number === i.number ? C.amberBg : 'transparent' }}>
-                      <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-                      <span style={{ fontSize: 12, color: C.ink2, ...ellipsis }}>{i.title}</span>
+                      <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
+                      <span style={{ fontSize: F.body, color: C.ink2, ...ellipsis }}>{i.title}</span>
                     </div>
                   ))}
                 </div>
@@ -239,7 +239,7 @@ export function NewSession({
 
           {failure && (
             <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '8px 12px',
-              fontSize: 11, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
+              fontSize: F.small, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
           )}
         </div>
 
@@ -275,7 +275,7 @@ function Section({ label, action, children }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{label}</span>
+        <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{label}</span>
         <div style={{ flexGrow: 1 }} />
         {action}
       </div>

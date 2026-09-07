@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import type { FixId } from '../../../main/forge/setup'
-import { C, MONO } from '../theme'
+import { F, C, MONO } from '../theme'
 import { Button } from './ui'
 
 /**
@@ -69,24 +69,24 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
         <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
           display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 600 }}>Forgejo の準備</span>
-          <span style={{ fontSize: 11, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
+          <span style={{ fontSize: F.small, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
           <div style={{ flexGrow: 1 }} />
           <Button size="sm" onClick={() => void refresh()}>調べ直す</Button>
         </div>
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: 12 }}>調べています…</div>}
+          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>調べています…</div>}
           {checks?.map((c) => {
             const m = MARK[c.level]
             return (
               <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
                 padding: '12px 12px', borderRadius: 7, border: `1px solid ${C.line}` }}>
-                <span style={{ color: m.color, font: `13px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
+                <span style={{ color: m.color, font: `${F.base}px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 12 }}>{c.label}</span>
-                  <span style={{ font: `11px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
+                  <span style={{ fontSize: F.body }}>{c.label}</span>
+                  <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
                   {c.fix?.warning && (
-                    <span style={{ fontSize: 11, color: C.faint }}>押すと: {c.fix.warning}</span>
+                    <span style={{ fontSize: F.small, color: C.faint }}>押すと: {c.fix.warning}</span>
                   )}
                 </div>
                 {c.fix && (
@@ -100,7 +100,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
 
           {message && (
             <div style={{ border: `1px solid ${message.bad ? C.red : C.line2}`, borderRadius: 7,
-              padding: '12px 12px', fontSize: 12, color: message.bad ? C.red : C.ink2,
+              padding: '12px 12px', fontSize: F.body, color: message.bad ? C.red : C.ink2,
               whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{message.text}</div>
           )}
         </div>
@@ -109,16 +109,16 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`,
             display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
-              <span style={{ font: `10px ${MONO}`, color: C.faint }}>{cfg.path}</span>
-              {!cfg.exists && <span style={{ fontSize: 10, color: C.faint }}>（未作成・既定で動いています）</span>}
+              <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
+              <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{cfg.path}</span>
+              {!cfg.exists && <span style={{ fontSize: F.micro, color: C.faint }}>（未作成・既定で動いています）</span>}
             </div>
-            <span style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
+            <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.6 }}>
               Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。
               Docker で建てているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
             </span>
             {cfg.ignored.length > 0 && (
-              <span style={{ fontSize: 11, color: C.amber }}>
+              <span style={{ fontSize: F.small, color: C.amber }}>
                 読めずに既定へ倒した項目: {cfg.ignored.join(', ')}
               </span>
             )}
@@ -127,7 +127,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
           borderTop: `1px solid ${C.line}` }}>
-          <span style={{ fontSize: 12, color: ready ? C.teal : C.dim2 }}>
+          <span style={{ fontSize: F.body, color: ready ? C.teal : C.dim2 }}>
             {ready ? '準備できています' : '必須の項目が残っています（任意の項目は数えません）'}
           </span>
           <div style={{ flexGrow: 1 }} />

@@ -110,10 +110,10 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
             {pulls.map((p) => (
               <Card key={p.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
-                  <span style={{ fontSize: 12, ...ellipsis }}>{p.title}</span>
+                  <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
+                  <span style={{ fontSize: F.body, ...ellipsis }}>{p.title}</span>
                 </div>
-                <span style={{ font: `10px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
+                <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
               </Card>
             ))}
 
@@ -142,7 +142,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
           stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
-        <span style={{ fontSize: 10, color: C.faint }}>通ったものだけ</span>
+        <span style={{ fontSize: F.micro, color: C.faint }}>通ったものだけ</span>
       </div>
 
       {/* Upstream */}
@@ -152,10 +152,10 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
         {!gh?.ok && <Faint>{gh?.detail ?? '確認しています…'}</Faint>}
         {gh?.ok && branch && (
           <Card tone="attention">
-            <span style={{ font: `11px ${MONO}` }}>
+            <span style={{ font: `${F.small}px ${MONO}` }}>
               {branch} → {bases.upstream ?? '(既定ブランチ不明)'}
             </span>
-            <span style={{ fontSize: 11, color: C.dim2 }}>
+            <span style={{ fontSize: F.small, color: C.dim2 }}>
               {commits.length ? `${commits.length} コミット` : '差分がありません'}
             </span>
             <Button disabled={busy !== null || stage !== 'readyForUpstream'}
@@ -172,7 +172,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               {busy === 'gh' ? '作成中…' : 'Upstream に PR を作る'}
             </Button>
             {stage !== 'readyForUpstream' && (
-              <span style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
+              <span style={{ fontSize: F.micro, color: C.faint, lineHeight: 1.6 }}>
                 先に sandbox で見てください（{stage === 'needsSandbox' ? 'sandbox が未設定' : 'push が未了'}）
               </span>
             )}
@@ -185,8 +185,8 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
             {issues.slice(0, 4).map((i) => (
               <Card key={i.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>#{i.number}</span>
-                  <span style={{ fontSize: 12, ...ellipsis }}>{i.title}</span>
+                  <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>#{i.number}</span>
+                  <span style={{ fontSize: F.body, ...ellipsis }}>{i.title}</span>
                 </div>
               </Card>
             ))}
@@ -195,7 +195,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
       </div>
 
       {msg && (
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: 11,
+        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: F.small,
           color: msg.bad ? C.red : C.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
           {msg.text}
         </div>
@@ -209,10 +209,10 @@ function Head({ dot, title, sub, note }: { dot: string; title: string; sub: stri
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
       background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
-      <span style={{ fontWeight: 600, fontSize: 12 }}>{title}</span>
-      <span style={{ font: `10px ${MONO}`, color: C.dim2, ...ellipsis }}>{sub}</span>
+      <span style={{ fontWeight: 600, fontSize: F.body }}>{title}</span>
+      <span style={{ font: `${F.micro}px ${MONO}`, color: C.dim2, ...ellipsis }}>{sub}</span>
       <div style={{ flexGrow: 1 }} />
-      <span style={{ fontSize: 10, color: C.faint, flexShrink: 0 }}>{note}</span>
+      <span style={{ fontSize: F.micro, color: C.faint, flexShrink: 0 }}>{note}</span>
     </div>
   )
 }

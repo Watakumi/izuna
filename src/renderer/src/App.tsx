@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { PermissionMode, PermissionResult, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
 import { appendUserText, markDenied, setPermissionMode } from '../../shared/transcript'
-import { applySkin, C, MONO, READ, SANS } from './theme'
+import { F, applySkin, C, MONO, READ, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { ModeSwitch } from './components/ModeSwitch'
 import { NewSession } from './components/NewSession'
@@ -118,7 +118,7 @@ function App(): React.JSX.Element {
           <b>main プロセスが古いままです。</b>
           <span style={{ opacity: 0.85 }}>
             renderer は更新されましたが main は入れ替わっていません。
-            <code style={{ font: `11px ${MONO}`, padding: '2px 6px', background: 'rgba(0,0,0,0.25)', borderRadius: 4, margin: '0 4px' }}>
+            <code style={{ font: `${F.small}px ${MONO}`, padding: '2px 6px', background: 'rgba(0,0,0,0.25)', borderRadius: 4, margin: '0 4px' }}>
               pnpm dev
             </code>
             を起動し直してください。
@@ -190,7 +190,7 @@ function App(): React.JSX.Element {
 
         {!active ? (
           <div style={S.empty}>
-            <span style={{ color: C.dim, fontSize: 13 }}>セッションがありません</span>
+            <span style={{ color: C.dim, fontSize: F.base }}>セッションがありません</span>
             <button style={S.btn} onClick={() => setShowNew(true)}>新しいセッションを起こす</button>
           </div>
         ) : (
@@ -260,9 +260,9 @@ function App(): React.JSX.Element {
                     }}
                   />
                   <div style={S.inputFoot}>
-                    <span style={{ font: `10px ${MONO}`, color: C.faint }}>/ コマンド</span>
+                    <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>/ コマンド</span>
                     <div style={{ flexGrow: 1 }} />
-                    <span style={{ font: `10px ${MONO}`, color: C.faint }}>⌘↵</span>
+                    <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>⌘↵</span>
                     <button style={S.send} disabled={active.ended || !active.prompt.trim()} onClick={send}>
                       送信
                     </button>
@@ -277,7 +277,7 @@ function App(): React.JSX.Element {
                 {(['info', 'pr', 'branch'] as const).map((t) => (
                   <div key={t} onClick={() => setTab(t)} style={{
                     flexGrow: 1, textAlign: 'center', padding: '8px 0', cursor: 'pointer',
-                    fontSize: 11, color: tab === t ? C.ink : C.dim2,
+                    fontSize: F.small, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                   }}>
                     {t === 'info' ? '情報' : t === 'pr' ? 'PR' : 'ブランチ'}
@@ -318,24 +318,24 @@ function App(): React.JSX.Element {
 
 const S: Record<string, React.CSSProperties> = {
   app: { position: 'absolute', inset: 0, display: 'flex', background: C.bg, color: C.ink,
-    font: `13px/1.6 ${SANS}` },
+    font: `${F.base}px/1.6 ${SANS}` },
   stale: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60,
     display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-    background: C.red, color: '#fff', fontSize: 12 },
+    background: C.red, color: '#fff', fontSize: F.body },
   main: { flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   bar: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', height: 44,
     background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 },
   brand: { fontWeight: 600, letterSpacing: '0.02em' },
-  tag: { font: `11px ${MONO}`, color: C.dim2, padding: '2px 8px',
+  tag: { font: `${F.small}px ${MONO}`, color: C.dim2, padding: '2px 8px',
     border: `1px solid ${C.line2}`, borderRadius: 4 },
-  note: { fontSize: 11, color: C.dim2 },
+  note: { fontSize: F.small, color: C.dim2 },
   btn: { padding: '8px 24px', borderRadius: 7, border: 'none', background: C.amber,
-    color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' },
+    color: C.amberInk, fontWeight: 600, fontSize: F.body, cursor: 'pointer' },
   ghostSmall: { padding: '6px 12px', borderRadius: 7, border: `1px solid ${C.line2}`,
-    background: 'transparent', color: C.ink2, fontSize: 11, cursor: 'pointer' },
+    background: 'transparent', color: C.ink2, fontSize: F.small, cursor: 'pointer' },
   /** 破壊的な操作。ほかのボタンと同じ形にしない */
   danger: { padding: '6px 12px', borderRadius: 7, border: `1px solid ${C.red}`,
-    background: 'transparent', color: C.red, fontSize: 11, cursor: 'pointer' },
+    background: 'transparent', color: C.red, fontSize: F.small, cursor: 'pointer' },
   empty: { flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', gap: 16 },
   body: { flexGrow: 1, minHeight: 0, overflowY: 'auto' },
@@ -344,7 +344,7 @@ const S: Record<string, React.CSSProperties> = {
     display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   inputFoot: { display: 'flex', alignItems: 'center', gap: 12, padding: '6px 8px 8px 12px' },
   send: { padding: '6px 16px', borderRadius: 7, border: 'none', background: C.amber,
-    color: C.amberInk, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
+    color: C.amberInk, fontWeight: 600, fontSize: F.body, cursor: 'pointer' }
 }
 
 export default App

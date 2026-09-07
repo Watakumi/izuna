@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
-  mergeColors, monoFrom, parseGhosttyConfig, readingFrom, skinFrom,
+  mergeColors, monoFrom, parseGhosttyConfig, readingFrom, skinFrom, terminalTheme,
   type GhosttyConfig, type Reading, type Skin
 } from '../shared/ghostty'
 
@@ -60,6 +60,10 @@ export interface GhosttySkin {
   mono: string[]
   /** 読む面の組み */
   reading: Reading
+  /** ターミナルに渡す配色（xterm.js の ITheme と同じ形） */
+  terminal: Record<string, string>
+  /** ターミナルの字の大きさ */
+  terminalFontSize: number | null
 }
 
 export async function loadGhosttySkin(): Promise<GhosttySkin | null> {
@@ -85,6 +89,8 @@ export async function loadGhosttySkin(): Promise<GhosttySkin | null> {
     skin,
     source: { config: config.theme, theme: themeName },
     mono: monoFrom(config),
-    reading: readingFrom(config)
+    reading: readingFrom(config),
+    terminal: terminalTheme(colors),
+    terminalFontSize: config.fontSize
   }
 }

@@ -1,5 +1,5 @@
 import type { FileDiff } from '../../../shared/diff'
-import { C, MONO, ellipsis } from '../theme'
+import { F, C, MONO, ellipsis } from '../theme'
 
 /** ツールが宣言した変更をそのまま出す。承認の材料 */
 export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }): React.JSX.Element {
@@ -10,11 +10,11 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
     <div style={{ background: C.code, borderRadius: 7, overflow: 'hidden', border: `1px solid ${C.line}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
         borderBottom: `1px solid ${C.line}`, background: C.panel }}>
-        <span style={{ font: `11px ${MONO}`, color: C.ink2, ...ellipsis }}>{diff.path}</span>
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>{diff.path}</span>
         <span style={{ flexGrow: 1 }} />
-        <span style={{ font: `11px ${MONO}`, color: C.teal }}>+{diff.added}</span>
-        <span style={{ font: `11px ${MONO}`, color: C.red }}>−{diff.removed}</span>
-        {diff.whole && <span style={{ fontSize: 10, color: C.faint }}>新規／全文</span>}
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.teal }}>+{diff.added}</span>
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.red }}>−{diff.removed}</span>
+        {diff.whole && <span style={{ fontSize: F.micro, color: C.faint }}>新規／全文</span>}
       </div>
       <div style={{ overflowX: 'auto', maxHeight: 340, overflowY: 'auto' }}>
         {shown.map((l, i) => (
@@ -37,7 +37,7 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
         ))}
       </div>
       {hidden > 0 && (
-        <div style={{ padding: '8px 12px', fontSize: 11, color: C.faint, borderTop: `1px solid ${C.line}` }}>
+        <div style={{ padding: '8px 12px', fontSize: F.small, color: C.faint, borderTop: `1px solid ${C.line}` }}>
           ほか {hidden} 行
         </div>
       )}

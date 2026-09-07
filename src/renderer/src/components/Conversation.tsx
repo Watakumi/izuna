@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Draft, Item } from '../../../shared/transcript'
-import { C, MONO, READ } from '../theme'
+import { F, C, MONO, READ } from '../theme'
 import { ToolBlock } from './ToolBlock'
 import { Markdown } from './Markdown'
 
@@ -10,8 +10,8 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: C.dim2, fontSize: 11 }}>
-        <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
+        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: C.dim2, fontSize: F.small }}>
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         思考
       </div>
       {open && (
@@ -37,7 +37,7 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
   if (item.kind === 'notice') {
     return (
       <div style={{ border: `1px solid ${item.tone === 'bad' ? C.red : C.amberLine}`, borderRadius: 7,
-        padding: '12px 12px', fontSize: 12, color: item.tone === 'bad' ? C.red : C.amber }}>
+        padding: '12px 12px', fontSize: F.body, color: item.tone === 'bad' ? C.red : C.amber }}>
         {item.text}
       </div>
     )
@@ -62,7 +62,7 @@ function DraftView({ draft }: { draft: Draft }): React.JSX.Element {
   const label = draft.kind === 'thinking' ? '考えています' : draft.kind === 'tool' ? `${draft.toolName ?? 'ツール'} を組み立てています` : null
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      {label && <span style={{ fontSize: 11, color: C.dim2 }}>{label}<Dots /></span>}
+      {label && <span style={{ fontSize: F.small, color: C.dim2 }}>{label}<Dots /></span>}
       {draft.kind === 'text' && (
         <div style={{ color: C.ink2, font: READ, whiteSpace: 'pre-wrap' }}>
           {draft.text}
@@ -81,7 +81,7 @@ export function Conversation({ items, draft }: { items: Item[]; draft: Draft | n
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 24px' }}>
       {items.length === 0 && !draft && (
-        <div style={{ color: C.faint, fontSize: 12 }}>作業ディレクトリを選んで、依頼を送ってください</div>
+        <div style={{ color: C.faint, fontSize: F.body }}>作業ディレクトリを選んで、依頼を送ってください</div>
       )}
       {items.map((item) => (
         <ItemView key={item.kind === 'assistant' ? item.id : `${item.kind}-${item.id}`} item={item} />

@@ -50,9 +50,17 @@ select {
 body {
   min-height: 100vh;
   line-height: 1.6;
+  /*
+   * **`-webkit-font-smoothing: antialiased` を使わない。**
+   *
+   * 名前に反して、macOS ではこれが**字を細くする**（サブピクセルでの
+   * 描画をやめてグレースケールにするため、線が痩せる）。雛形が既定で
+   * 入れていたが、「文字が薄い」と言われた原因のひとつがこれだった。
+   *
+   * 利用者は Ghostty に `font-thicken = true` を書いている ——
+   * **太いほうを好むと明示している**のに、こちらは細くしていた。
+   */
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 
   /*
    * React が載るまでのあいだだけ見える。**theme.ts の `bg` と同じ値**にする

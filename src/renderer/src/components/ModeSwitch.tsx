@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
-import { C, MONO } from '../theme'
+import { F, C, MONO } from '../theme'
 
 /**
  * 権限モードの切り替え。`Query.setPermissionMode()` を叩く。
@@ -37,12 +37,12 @@ export function ModeSwitch({
         style={{
           display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 7,
           border: `1px solid ${current?.danger ? C.red : C.line2}`, background: 'transparent',
-          color: current?.danger ? C.red : C.ink2, font: `11px ${MONO}`,
+          color: current?.danger ? C.red : C.ink2, font: `${F.small}px ${MONO}`,
           cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
         }}
       >
         {current?.label ?? mode}
-        <span style={{ color: C.faint, fontSize: 10 }}>▾</span>
+        <span style={{ color: C.faint, fontSize: F.micro }}>▾</span>
       </button>
 
       {open && !disabled && (
@@ -63,8 +63,8 @@ export function ModeSwitch({
                   borderLeft: `2px solid ${m.value === mode ? C.amber : 'transparent'}`
                 }}
               >
-                <span style={{ fontSize: 12, color: m.danger ? C.red : C.ink }}>{m.label}</span>
-                <span style={{ fontSize: 11, color: C.dim2, lineHeight: 1.5 }}>{m.hint}</span>
+                <span style={{ fontSize: F.body, color: m.danger ? C.red : C.ink }}>{m.label}</span>
+                <span style={{ fontSize: F.small, color: C.dim2, lineHeight: 1.5 }}>{m.hint}</span>
               </div>
             ))}
           </div>

@@ -21,6 +21,10 @@ export type Skin = Record<TokenName, string>
 export interface GhosttyColors {
   background: string | null
   foreground: string | null
+  cursor: string | null
+  cursorText: string | null
+  selectionBg: string | null
+  selectionFg: string | null
   /** 0〜15。埋まっていない番号は null */
   palette: (string | null)[]
 }
@@ -40,7 +44,10 @@ export interface GhosttyConfig {
   cellHeight: number | null
 }
 
-const empty = (): GhosttyColors => ({ background: null, foreground: null, palette: Array(16).fill(null) })
+const empty = (): GhosttyColors => ({
+  background: null, foreground: null, cursor: null, cursorText: null,
+  selectionBg: null, selectionFg: null, palette: Array(16).fill(null)
+})
 
 /** `#rgb` `#rrggbb` `rrggbb` を受ける。Ghostty は `#` 無しも許す */
 export function normalizeHex(raw: string): string | null {
@@ -78,6 +85,10 @@ export function parseGhosttyConfig(text: string): GhosttyConfig {
         break
       case 'background': colors.background = normalizeHex(value); break
       case 'foreground': colors.foreground = normalizeHex(value); break
+      case 'cursor-color': colors.cursor = normalizeHex(value); break
+      case 'cursor-text': colors.cursorText = normalizeHex(value); break
+      case 'selection-background': colors.selectionBg = normalizeHex(value); break
+      case 'selection-foreground': colors.selectionFg = normalizeHex(value); break
       case 'font-family': if (value) fontFamily.push(value); break
       case 'font-size': {
         const n = Number(value)
@@ -149,6 +160,10 @@ export function mergeColors(base: GhosttyColors, over: GhosttyColors): GhosttyCo
   return {
     background: over.background ?? base.background,
     foreground: over.foreground ?? base.foreground,
+    cursor: over.cursor ?? base.cursor,
+    cursorText: over.cursorText ?? base.cursorText,
+    selectionBg: over.selectionBg ?? base.selectionBg,
+    selectionFg: over.selectionFg ?? base.selectionFg,
     palette: base.palette.map((c, i) => over.palette[i] ?? c)
   }
 }
@@ -298,4 +313,32 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
     delBg: mix(bg, red, 0.14),
     delInk: mix(fg, red, 0.7)
   }
+}
+
+/**
+ * ターミナル（ghostty-web）に渡す配色。xterm.js の `ITheme` と同じ形。
+ *
+ * **これを渡さないと真っ白で出る。** ターミナルの既定は明るい配色なので、
+ * 周りが暗いなかで 1 枚だけ紙のように光る。実際にそうなっていた（2026-09-08）。
+ *
+ * ここは**混ぜない**。端末の色は 16 色が仕様として決まっていて、
+ * 中間色を作る必要が無い。持っている色をそのまま渡す。
+ */
+const ANSI = [
+  'black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white',
+  'brightBlack', 'brightRed', 'brightGreen', 'brightYellow',
+  'brightBlue', 'brightMagenta', 'brightCyan', 'brightWhite'
+] as const
+
+export function terminalTheme(c: GhosttyColors): Record<string, string> {
+  const out: Record<string, string> = {}
+  const put = (k: string, v: string | null): void => { if (v) out[k] = v }
+  put('background', c.background)
+  put('foreground', c.foreground)
+  put('cursor', c.cursor)
+  put('cursorAccent', c.cursorText)
+  put('selectionBackground', c.selectionBg)
+  put('selectionForeground', c.selectionFg)
+  ANSI.forEach((name, i) => put(name, c.palette[i]))
+  return out
 }

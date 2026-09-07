@@ -1,6 +1,6 @@
 import type { PermissionRequest } from '../../../main/claude/session'
 import { describeToolInput, diffFromToolInput } from '../../../shared/diff'
-import { C, MONO, ellipsis } from '../theme'
+import { F, C, MONO, ellipsis } from '../theme'
 import { Button } from './ui'
 import { DiffView } from './DiffView'
 
@@ -27,20 +27,20 @@ export function PermissionBar({
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <b style={{ fontSize: 13 }}>{request.toolName}</b>
+            <b style={{ fontSize: F.base }}>{request.toolName}</b>
             {request.agentId && (
               // 実行役の要求でも人間に上げる。誰の要求かは見せる
-              <span style={{ font: `10px ${MONO}`, color: C.dim2, padding: '2px 8px',
+              <span style={{ font: `${F.micro}px ${MONO}`, color: C.dim2, padding: '2px 8px',
                 border: `1px solid ${C.amberLine}`, borderRadius: 4 }}>
                 実行役 {request.agentId.slice(0, 6)}
               </span>
             )}
-            <span style={{ font: `11px ${MONO}`, color: C.ink2, ...ellipsis }}>
+            <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>
               {describeToolInput(request.toolName, request.input)}
             </span>
           </div>
           {request.description && (
-            <span style={{ fontSize: 12, color: C.dim, lineHeight: 1.6 }}>{request.description}</span>
+            <span style={{ fontSize: F.body, color: C.dim, lineHeight: 1.6 }}>{request.description}</span>
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -52,12 +52,12 @@ export function PermissionBar({
       {diff && <DiffView diff={diff} max={200} />}
 
       {suggestion && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: C.dim2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: F.small, color: C.dim2 }}>
           <span>CLI の提案:</span>
           <Button size="sm" onClick={() => onAllow(true)}>
             このセッション中は許可
           </Button>
-          <span style={{ font: `10px ${MONO}`, color: C.faint }}>
+          <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>
             {'type' in suggestion ? String(suggestion.type) : ''}
             {'mode' in suggestion ? ` · ${String(suggestion.mode)}` : ''}
             {'destination' in suggestion ? ` · ${String(suggestion.destination)}` : ''}

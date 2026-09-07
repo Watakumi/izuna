@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
 import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
-import { C, MONO, ellipsis } from '../theme'
+import { F, C, MONO, ellipsis } from '../theme'
 import { Button, Tag } from './ui'
 
 /**
@@ -60,14 +60,14 @@ export function Worktrees({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
         background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
-        <span style={{ fontWeight: 600, fontSize: 12 }}>ブランチ</span>
-        <span style={{ fontSize: 10, color: C.faint }}>人が起こした分</span>
+        <span style={{ fontWeight: 600, fontSize: F.body }}>ブランチ</span>
+        <span style={{ fontSize: F.micro, color: C.faint }}>人が起こした分</span>
         <div style={{ flexGrow: 1 }} />
         <Button size="sm" onClick={() => void load()}>読み直す</Button>
       </div>
 
       <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {!rows && <span style={{ color: C.faint, fontSize: 11 }}>調べています…</span>}
+        {!rows && <span style={{ color: C.faint, fontSize: F.small }}>調べています…</span>}
 
         {rows?.map((row) => {
           const blocked = canRemove(row)
@@ -81,7 +81,7 @@ export function Worktrees({
                 <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
                   background: row.session?.pending ? C.amber : row.session ? C.teal : 'transparent',
                   border: row.session ? 'none' : `1.5px solid ${C.faint}` }} />
-                <span style={{ font: `11px ${MONO}`, color: C.ink, ...ellipsis }}>
+                <span style={{ font: `${F.small}px ${MONO}`, color: C.ink, ...ellipsis }}>
                   {row.branch ?? '(detached)'}
                 </span>
                 {row.main && <Tag>本体</Tag>}
@@ -89,7 +89,7 @@ export function Worktrees({
               </div>
 
               {row.status && (
-                <div style={{ display: 'flex', gap: 12, fontSize: 11 }}>
+                <div style={{ display: 'flex', gap: 12, fontSize: F.small }}>
                   <span style={{ color: C.teal }}>+{row.status.added}</span>
                   <span style={{ color: C.red }}>−{row.status.removed}</span>
                   <span style={{ color: C.dim2 }}>{row.status.changed} ファイル</span>
@@ -100,7 +100,7 @@ export function Worktrees({
               {confirming === row.path ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: C.amberBg,
                   border: `1px solid ${C.amberLine}`, borderRadius: 7, padding: '8px 12px' }}>
-                  <span style={{ fontSize: 11, color: C.ink2, lineHeight: 1.6 }}>
+                  <span style={{ fontSize: F.small, color: C.ink2, lineHeight: 1.6 }}>
                     {unpushed ? '未 push の変更があります。畳むと戻せません' : '畳みます。ディレクトリは消えます'}
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
@@ -117,7 +117,7 @@ export function Worktrees({
                     <Button kind="primary" onClick={() => onOpen(row)}>ここで起こす</Button>
                   )}
                   {!blocked && <Button  onClick={() => setConfirming(row.path)}>畳む</Button>}
-                  {blocked && <span style={{ fontSize: 10, color: C.faint, alignSelf: 'center' }}>{blocked}</span>}
+                  {blocked && <span style={{ fontSize: F.micro, color: C.faint, alignSelf: 'center' }}>{blocked}</span>}
                 </div>
               )}
             </div>
@@ -126,7 +126,7 @@ export function Worktrees({
       </div>
 
       {msg && (
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: 11,
+        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: F.small,
           color: msg.bad ? C.red : C.ink2 }}>{msg.text}</div>
       )}
     </div>

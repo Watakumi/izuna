@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FitAddon, Terminal, init } from 'ghostty-web'
-import { C, MONO, ellipsis } from '../theme'
+import { F, C, MONO, ellipsis, resolve, resolveMono } from '../theme'
 
 /**
  * worktree のシェル（段6）。
@@ -37,14 +37,21 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
         await ensureReady()
         if (disposed || !host.current) return
 
+        // **利用者の Ghostty の配色をそのまま渡す。** 端末の色は 16 色が
+        // 仕様として決まっているので、アプリ側のように混ぜて作る必要が無い
+        const g = await window.izuna.ghosttySkin().catch(() => null)
+
         term = new Terminal({
-          fontSize: 12,
-          fontFamily: MONO,
+          fontSize: g?.terminalFontSize ?? F.body,
+          // canvas は var() を解けない。**必ず解いてから渡す**（theme.ts の註）
+          fontFamily: resolveMono(),
           cursorBlink: true,
           scrollback: 5000,
-          theme: {
-            background: C.code, foreground: C.ink2, cursor: C.amber,
-            selectionBackground: C.raised
+          theme: g?.terminal ?? {
+            background: resolve('code'),
+            foreground: resolve('ink2'),
+            cursor: resolve('amber'),
+            selectionBackground: resolve('raised')
           }
         })
         fit = new FitAddon()
@@ -96,22 +103,22 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
         borderBottom: `1px solid ${C.line}`, background: C.panel, flexShrink: 0 }}>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.dim2}
           strokeWidth="2" strokeLinecap="round"><path d="M4 17l6-6-6-6M12 19h8" /></svg>
-        <span style={{ fontSize: 11, letterSpacing: '0.06em', color: C.dim2, fontWeight: 600 }}>
+        <span style={{ fontSize: F.small, letterSpacing: '0.06em', color: C.dim2, fontWeight: 600 }}>
           ターミナル
         </span>
-        <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1, ...ellipsis }}>{cwd}</span>
+        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexGrow: 1, ...ellipsis }}>{cwd}</span>
         {exited !== null && (
-          <span style={{ fontSize: 10, color: exited === 0 ? C.dim2 : C.red }}>
+          <span style={{ fontSize: F.micro, color: exited === 0 ? C.dim2 : C.red }}>
             終了 ({exited})
           </span>
         )}
-        <span style={{ font: `10px ${MONO}`, color: C.faint }}>ghostty-web</span>
+        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>ghostty-web</span>
         <span onClick={onClose} title="閉じる"
-          style={{ color: C.faint, fontSize: 15, lineHeight: 1, cursor: 'pointer' }}>×</span>
+          style={{ color: C.faint, fontSize: F.title, lineHeight: 1, cursor: 'pointer' }}>×</span>
       </div>
 
       {error ? (
-        <div style={{ padding: '16px 16px', fontSize: 12, color: C.red, lineHeight: 1.7 }}>{error}</div>
+        <div style={{ padding: '16px 16px', fontSize: F.body, color: C.red, lineHeight: 1.7 }}>{error}</div>
       ) : (
         <div ref={host} style={{ flexGrow: 1, minHeight: 0, padding: 6 }} />
       )}
