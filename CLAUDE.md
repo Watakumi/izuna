@@ -769,6 +769,23 @@ provider     : firstParty
 | **他人の環境で壊れる** | Forgejo のパス、`brew`、探索先、remote 名 | `~/.izuna/config.json` で上書きできるようにした |
 | **自分も踏むバグ** | `base: 'main'` の決め打ち、`origin/HEAD` | **検出に変えた**（下） |
 
+### 置き場所が 2 つある（混同しやすい）
+
+| 何 | どこ | 理由 |
+| --- | --- | --- |
+| 設定・共有フォルダ | `~/.izuna/config.json`、`~/.izuna/teams/` | 人が開いて編集するもの。見える場所に置く |
+| **Forgejo のトークン** | **`app.getPath('userData')/forge-token.bin`** | `safeStorage` で暗号化する。人が触るものではない |
+
+macOS の実体は `~/Library/Application Support/izuna/forge-token.bin`。
+**`~/.izuna/` を見てもトークンは無い**（実際にここで一度間違えて
+「未発行」と報告した）。`safeStorage` が使えない環境では**保管を拒む** ——
+平文で置くくらいなら毎回入れてもらうほうがよい。
+
+`userData` の名前は開発時が `package.json` の `name`（`izuna`）、
+配布時が `electron-builder.yml` の `productName`（`Izuna`）で**食い違う**。
+macOS の既定のファイルシステムは大小を区別しないので同じ場所になるが、
+大小を区別するボリュームでは別扱いになる（**未検証**）。
+
 ### `~/.izuna/config.json`
 
 無くても動く。**他の環境に合わせるための逃げ道**であって、用意しないと
