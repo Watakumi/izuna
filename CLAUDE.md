@@ -292,6 +292,26 @@ type PermissionResult =
   | `--bare` | **消える**（0 B） | 認証が `ANTHROPIC_API_KEY` 固定。この環境は OAuth（`apiKeySource: "none"`）なので送信時に落ちる見込み（**未検証**） |
 
   **hook だけを落とす手段は見つかっていない。**
+- **SDK は `systemPrompt` を省略すると Claude Code の既定プロンプトを使わない**
+  （2026-09-07 に実地で踏んだ）。作業ディレクトリも auto-memory も git status も、
+  Claude Code の振る舞いの指示そのものも入らない。症状は分かりにくい ——
+  エージェントは**自分がどこにいるか知らないまま、それらしいパスを作り話する**。
+
+  実測: 一時ディレクトリで起動し「cwd はどこか、ツールを使わずに答えよ」と
+  聞くと `I do not know.` が返る。画面上は、存在しない
+  `/Users/<別人>/dev/<知らないプロジェクト>/notes.txt` に書こうとして
+  `EACCES` で失敗し、そのあと `pwd` を撃って正しい場所に書き直す、という
+  挙動として現れた。
+
+  対処: `systemPrompt: { type: 'preset', preset: 'claude_code' }` を渡す。
+  多人数で prompt cache を共有したい場合のみ `excludeDynamicSections: true`
+  を検討する（cwd などが system ではなく最初の user メッセージに移る）。
+- **拒否は結果の文面から判定してはいけない**（同日、自分で作り込んだバグ）。
+  `EACCES: permission denied` を `/permission/i` で拾い、**ファイルシステムの
+  失敗を人間の拒否として表示していた**。SDK の `user` メッセージには
+  `tool_result_meta.non_execution_kind` が来ない（生の NDJSON にはある）ので、
+  **拒否した側が `tool_use_id` を覚える**のが唯一正しい
+  （`transcript.ts` の `markDenied`）。
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)

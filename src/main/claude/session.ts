@@ -144,6 +144,11 @@ export class ClaudeSession extends EventEmitter<Events> {
         permissionMode: this.options.permissionMode,
         resume: this.options.resume,
         forkSession: this.options.forkSession,
+        // **省略すると Claude Code の既定プロンプトが一切入らない。**
+        // 作業ディレクトリも auto-memory も git status も振る舞いの指示も
+        // 無い状態になり、エージェントは自分がどこにいるか知らないまま
+        // それらしいパスを作り話する（実測 2026-09-07）。
+        systemPrompt: { type: 'preset', preset: 'claude_code' },
         includePartialMessages: true,
         settingSources: this.options.settingSources,
         pathToClaudeCodeExecutable,

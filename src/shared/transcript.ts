@@ -61,13 +61,21 @@ export interface Transcript {
   costUsd: number | null
   /** message_start で覚えた直近の id。draft を紐づけるためだけに持つ */
   streamingMessageId: string | null
+  /**
+   * 人間が拒否した tool_use_id。
+   *
+   * **結果の文面から判定しない。** `EACCES: permission denied` のような
+   * ファイルシステムのエラーを人間の拒否と取り違える（実際にやらかした）。
+   * 拒否したのは自分なので、自分で覚えるのが唯一正しい。
+   */
+  deniedToolUseIds: string[]
 }
 
 export function emptyTranscript(): Transcript {
   return {
     items: [], draft: null, sessionId: null, model: null,
     slashCommands: [], permissionMode: 'default', state: 'idle',
-    running: false, costUsd: null, streamingMessageId: null
+    running: false, costUsd: null, streamingMessageId: null, deniedToolUseIds: []
   }
 }
 
@@ -75,6 +83,12 @@ export function emptyTranscript(): Transcript {
  * 人間の発話は SDK のストリームに戻ってこない（`--replay-user-messages` を
  * 使っていないため）。送った側で足すこと。
  */
+/** 人間が拒否したときに呼ぶ。tool_use_id が分かる場合だけ意味がある */
+export function markDenied(t: Transcript, toolUseId: string | undefined): Transcript {
+  if (!toolUseId || t.deniedToolUseIds.includes(toolUseId)) return t
+  return { ...t, deniedToolUseIds: [...t.deniedToolUseIds, toolUseId] }
+}
+
 export function setPermissionMode(t: Transcript, permissionMode: PermissionMode): Transcript {
   return { ...t, permissionMode }
 }
@@ -107,7 +121,7 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
       return { ...t, items: appendBlocks(t.items, m.message.id, m.message.content as RawBlock[]) }
 
     case 'user':
-      return { ...t, items: attachResults(t.items, m.message.content) }
+      return { ...t, items: attachResults(t.items, m.message.content, t.deniedToolUseIds) }
 
     case 'result':
       return {
@@ -216,7 +230,7 @@ function textOf(content: unknown): string {
 }
 
 /** tool_result を、対応する tool ブロックに畳み込む */
-function attachResults(items: Item[], content: unknown): Item[] {
+function attachResults(items: Item[], content: unknown, denied: string[]): Item[] {
   if (!Array.isArray(content)) return items
   const results = (content as ResultBlock[]).filter((c) => c.type === 'tool_result')
   if (results.length === 0) return items
@@ -230,9 +244,12 @@ function attachResults(items: Item[], content: unknown): Item[] {
       if (!r) return b
       touched = true
       const text = textOf(r.content)
-      // 承認を拒否したときも is_error で返る。理由が本文に入っている
-      const denied = r.is_error === true && /permission|承認|granted/i.test(text)
-      return { ...b, state: r.is_error ? (denied ? 'denied' : 'error') : 'done', result: text } as Block
+      const wasDenied = denied.includes(b.id)
+      return {
+        ...b,
+        state: wasDenied ? 'denied' : r.is_error ? 'error' : 'done',
+        result: text
+      } as Block
     })
     return touched ? { ...item, blocks } : item
   })

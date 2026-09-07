@@ -8,6 +8,7 @@ import {
   appendUserText,
   buildTranscript,
   emptyTranscript,
+  markDenied,
   plainText,
   setPermissionMode,
   type Block,
@@ -125,6 +126,48 @@ describe('人間の発話', () => {
     const withUser = appendUserText(emptyTranscript(), 'やって', 'u1')
     expect(withUser.items).toEqual([{ kind: 'user', id: 'u1', text: 'やって' }])
     expect(withUser.running).toBe(true)
+  })
+})
+
+describe('拒否の判定', () => {
+  const toolId = 'toolu_x'
+  const userMsg = (isError: boolean, text: string): SDKMessage => ({
+    type: 'user',
+    message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolId, content: text, is_error: isError }] },
+    parent_tool_use_id: null, session_id: 's', uuid: 'u'
+  } as unknown as SDKMessage)
+  const withTool = (): ReturnType<typeof emptyTranscript> =>
+    applyMessage(emptyTranscript(), {
+      type: 'assistant', parent_tool_use_id: null, session_id: 's', uuid: 'u',
+      message: { id: 'm1', model: 'x', role: 'assistant', stop_reason: null,
+        content: [{ type: 'tool_use', id: toolId, name: 'Write', input: {} }] }
+    } as unknown as SDKMessage)
+
+  const stateOf = (t: ReturnType<typeof emptyTranscript>): string => {
+    const a = t.items.find((i) => i.kind === 'assistant')
+    const b = a && a.kind === 'assistant' ? a.blocks[0] : undefined
+    return b && b.kind === 'tool' ? b.state : '?'
+  }
+
+  it('EACCES はファイルシステムの失敗であって、人間の拒否ではない', () => {
+    // 文面の /permission/i で当てていたときはここが denied になっていた
+    const t2 = applyMessage(withTool(), userMsg(true, "EACCES: permission denied, mkdir '/Users/x'"))
+    expect(stateOf(t2)).toBe('error')
+  })
+
+  it('自分が拒否したものだけ denied になる', () => {
+    const t2 = applyMessage(markDenied(withTool(), toolId), userMsg(true, '拒否しました'))
+    expect(stateOf(t2)).toBe('denied')
+  })
+
+  it('成功は done', () => {
+    expect(stateOf(applyMessage(withTool(), userMsg(false, 'ok')))).toBe('done')
+  })
+
+  it('markDenied は同じ id を重ねない', () => {
+    const once = markDenied(emptyTranscript(), toolId)
+    expect(markDenied(once, toolId).deniedToolUseIds).toEqual([toolId])
+    expect(markDenied(once, undefined)).toEqual(once)
   })
 })
 

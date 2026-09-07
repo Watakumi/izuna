@@ -6,6 +6,7 @@ import {
   appendUserText,
   applyMessage,
   emptyTranscript,
+  markDenied,
   setPermissionMode,
   type Transcript
 } from '../../shared/transcript'
@@ -91,6 +92,11 @@ function App(): React.JSX.Element {
 
   const respond = (result: PermissionResult): void => {
     if (!id || !pending) return
+    // 拒否は自分で覚える。結果の文面から当てない（transcript.ts の註）
+    if (result.behavior === 'deny') {
+      const toolUseId = pending.toolUseId
+      setT((prev) => markDenied(prev, toolUseId))
+    }
     void window.izuna.respondPermission({ id, requestId: pending.id, result })
     setPending(null)
   }
