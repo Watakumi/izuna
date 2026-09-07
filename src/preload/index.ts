@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { CH, type IzunaApi, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../shared/ipc'
+import { CH, type IzunaApi, type TerminalEvent, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../shared/ipc'
 
 /**
  * renderer に出す面はここだけ。`contextIsolation` は既定のまま維持し、
@@ -23,6 +23,15 @@ const izuna: IzunaApi = {
   isPushed: (cwd, r, b) => ipcRenderer.invoke(CH.isPushed, cwd, r, b),
   push: (cwd, r, b) => ipcRenderer.invoke(CH.push, cwd, r, b),
   commitsSince: (cwd, base) => ipcRenderer.invoke(CH.commitsSince, cwd, base),
+  openTerminal: (input) => ipcRenderer.invoke(CH.openTerminal, input),
+  writeTerminal: (id, data) => ipcRenderer.invoke(CH.writeTerminal, id, data),
+  resizeTerminal: (id, cols, rows) => ipcRenderer.invoke(CH.resizeTerminal, id, cols, rows),
+  closeTerminal: (id) => ipcRenderer.invoke(CH.closeTerminal, id),
+  onTerminal: (handler: (event: TerminalEvent) => void) => {
+    const listener = (_e: unknown, event: TerminalEvent): void => handler(event)
+    ipcRenderer.on(CH.terminalEvent, listener)
+    return () => { ipcRenderer.off(CH.terminalEvent, listener) }
+  },
   repo: (cwd: string) => ipcRenderer.invoke(CH.repo, cwd),
   createWorktree: (cwd: string, branch: string) => ipcRenderer.invoke(CH.createWorktree, cwd, branch),
   removeWorktree: (cwd: string, path: string, force?: boolean) =>

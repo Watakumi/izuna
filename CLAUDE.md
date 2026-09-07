@@ -58,12 +58,17 @@ Tauri より Electron。
 - **Flutter** — `flutter_ghostty` が 8 commits / 2 stars で実用外
 - **Rust + GPUI（Zed）** — Zed 外の採用実績がほぼなく、詰まったとき助けがない
 
-**libghostty は `ghostty-web` で使う（2026-09-07 に方針変更）。** 当初は
+**libghostty は `ghostty-web` で使っている（段6 で実装済み）。** 当初は
 「Electron から使う道が細い」と判断して見送ったが、Nimbalyst のソースを読んで
 実用経路が判明した。`ghostty-web`（coder 製）は **libghostty-vt の公式 WASM
 ビルド**で、xterm.js 互換 API・Canvas レンダラ・Kitty graphics・OSC 8 を持つ。
 Nimbalyst は `ghostty-vt.wasm` を同梱し `node-pty` と組み合わせている。
-当初の企画趣旨（libghostty を使う）はこれで果たせる。段 5 で入れる。
+当初の企画趣旨（libghostty を使う）はこれで果たした。
+
+実装して分かったこと: **WASM は base64 で ESM に埋め込まれている**ので、
+`ghostty-vt.wasm` を別途配る必要がない（Nimbalyst は同梱している）。
+`init()` を呼ぶだけで済む。代償は renderer のバンドルが約 650KB 増えること
+（元の wasm が 416KB、base64 で約 555KB）。
 
 以前ここで検討して落としたのは `libghostty-vt-node`（2★ / 9 commits・
 パースのみ）と Restty（WebGPU・early-release）。
@@ -101,6 +106,7 @@ src/main/claude/session.ts  双方向 stream-json で claude を飼うセッシ�
 src/main/claude/locate.ts   claude 本体とログインシェル環境の解決
 scripts/smoke-session.ts    人が目で見る疎通確認。実 API を呼ぶ
 scripts/smoke-permission.ts 権限承認の握手が成立するかを見る。実 API を呼ぶ
+src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
 scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
 test/protocol.test.ts       録画に対する門。網も費用も要らない
 test/auth.test.ts           認証経路（Pro プランか API キーか）と SDK/CLI の版の門

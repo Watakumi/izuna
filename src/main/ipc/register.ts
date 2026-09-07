@@ -7,6 +7,7 @@ import { applyFix, gatherFacts, type FixId } from '../forge/setup'
 import { createPull, ensureRepo, listPulls, listRepos } from '../forge/client'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
+import * as term from '../terminal'
 import { ClaudeSession } from '../claude/session'
 import {
   createWorktree,
@@ -67,6 +68,12 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.isPushed, (_e, cwd: string, r: string, b: string) => remote.isPushed(cwd, r, b))
   ipcMain.handle(CH.push, (_e, cwd: string, r: string, b: string) => remote.push(cwd, r, b))
   ipcMain.handle(CH.commitsSince, (_e, cwd: string, base: string) => remote.commitsSince(cwd, base))
+
+  ipcMain.handle(CH.openTerminal, (_e, input: { cwd: string; cols: number; rows: number }) =>
+    term.openTerminal(getWindow, CH.terminalEvent, input))
+  ipcMain.handle(CH.writeTerminal, (_e, id: string, data: string) => term.writeTerminal(id, data))
+  ipcMain.handle(CH.resizeTerminal, (_e, id: string, c: number, r: number) => term.resizeTerminal(id, c, r))
+  ipcMain.handle(CH.closeTerminal, (_e, id: string) => term.closeTerminal(id))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {
@@ -143,6 +150,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
  * 終われないアプリよりましである。
  */
 export async function stopAllSessions(timeoutMs = 3000): Promise<void> {
+  // シェルも取り残さない。PTY は同期で閉じられるので待ちに含めない
+  term.closeAllTerminals()
   const all = [...sessions.values()]
   sessions.clear()
   if (all.length === 0) return

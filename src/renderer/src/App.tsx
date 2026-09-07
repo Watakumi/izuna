@@ -12,6 +12,7 @@ import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
+import { TerminalPane } from './components/TerminalPane'
 import { useSessions } from './useSessions'
 
 /**
@@ -26,6 +27,7 @@ function App(): React.JSX.Element {
   const [showNew, setShowNew] = useState(false)
   const [showForge, setShowForge] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
+  const [showTerm, setShowTerm] = useState(false)
   const [picked, setPicked] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -126,6 +128,11 @@ function App(): React.JSX.Element {
           {active && (
             <button style={S.ghostSmall} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
           )}
+          {active && (
+            <button style={S.ghostSmall} onClick={() => setShowTerm((v) => !v)}>
+              {showTerm ? 'ターミナルを閉じる' : 'ターミナル'}
+            </button>
+          )}
           {active && <button style={S.ghostSmall} onClick={() => setShowForge(true)}>Forge</button>}
           <button style={S.ghostSmall} onClick={() => setShowSetup(true)}>設定</button>
         </div>
@@ -154,6 +161,12 @@ function App(): React.JSX.Element {
                 </div>
               )}
             </div>
+
+            {showTerm && (
+              <div style={{ height: 300, flexShrink: 0, borderTop: `1px solid ${C.line}` }}>
+                <TerminalPane cwd={active.cwd} onClose={() => setShowTerm(false)} />
+              </div>
+            )}
 
             <div style={{ position: 'relative', flexShrink: 0 }}>
               {paletteOpen && (

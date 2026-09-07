@@ -67,6 +67,15 @@ export interface IzunaApi {
   isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
   push(cwd: string, remote: string, branch: string): Promise<string>
   commitsSince(cwd: string, base: string): Promise<string[]>
+
+  // ── 段6: ターミナル ──────────────────────────────────────
+  /** worktree のシェルを開く。VT の解釈と描画は renderer の ghostty-web */
+  openTerminal(input: { cwd: string; cols: number; rows: number }): Promise<string>
+  writeTerminal(id: string, data: string): Promise<void>
+  resizeTerminal(id: string, cols: number, rows: number): Promise<void>
+  closeTerminal(id: string): Promise<void>
+  /** PTY からの出力。返り値を呼ぶと購読をやめる */
+  onTerminal(handler: (event: TerminalEvent) => void): () => void
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
   createWorktree(cwd: string, branch: string): Promise<{ path: string; branch: string }>
@@ -91,6 +100,10 @@ export type SessionEvent =
   | { kind: 'error'; id: SessionId; message: string }
   | { kind: 'exit'; id: SessionId }
 
+export type TerminalEvent =
+  | { id: string; kind: 'data'; data: string }
+  | { id: string; kind: 'exit'; code: number }
+
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
   forgeFacts: 'izuna:forge:facts',
@@ -109,6 +122,11 @@ export const CH = {
   isPushed: 'izuna:git:is-pushed',
   push: 'izuna:git:push',
   commitsSince: 'izuna:git:commits',
+  openTerminal: 'izuna:term:open',
+  writeTerminal: 'izuna:term:write',
+  resizeTerminal: 'izuna:term:resize',
+  closeTerminal: 'izuna:term:close',
+  terminalEvent: 'izuna:term:event',
   repo: 'izuna:repo',
   createWorktree: 'izuna:worktree:create',
   removeWorktree: 'izuna:worktree:remove',

@@ -3,6 +3,9 @@
 allowBuilds:
   electron: true
   esbuild: true
+  # PTY のネイティブモジュール。Electron 向けの再ビルドは postinstall の
+  # electron-builder install-app-deps が面倒を見る
+  node-pty: true
   # Windows 向けインストーラ。§8 で Windows は「やらない」ので走らせない。
   electron-winstaller: false
 minimumReleaseAgeExclude:
