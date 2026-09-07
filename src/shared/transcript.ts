@@ -218,13 +218,34 @@ function appendBlocks(items: Item[], messageId: string, raw: RawBlock[]): Item[]
 
 type ResultBlock = { type: string; tool_use_id?: string; content?: unknown; is_error?: boolean }
 
+/**
+ * 端末のエスケープシーケンスを落とす。
+ *
+ * Claude Code の Bash は TTY 無しで動くので、たいていのツールは自分で色を
+ * 落とす（録画でも 0 行だった）。だが `color.ui=always` や `FORCE_COLOR=1`
+ * があると混ざり、素の <pre> では `^[[31m` がそのまま見えてしまう。
+ *
+ * **段6 で ghostty-web を入れたら、落とさずに描く。** それまでの安全側。
+ */
+export function stripAnsi(text: string): string {
+  return text
+    // CSI（色・カーソル移動）
+    .replace(/\u001B\[[0-9;?]*[ -/]*[@-~]/g, '')
+    // OSC（タイトル・ハイパーリンク）
+    .replace(/\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)/g, '')
+    // 単発のエスケープ
+    .replace(/\u001B[@-Z\\-_]/g, '')
+}
+
 function textOf(content: unknown): string {
-  if (typeof content === 'string') return content
+  if (typeof content === 'string') return stripAnsi(content)
   if (Array.isArray(content)) {
-    return content
-      .map((c) => (c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : ''))
-      .filter(Boolean)
-      .join('\n')
+    return stripAnsi(
+      content
+        .map((c) => (c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : ''))
+        .filter(Boolean)
+        .join('\n')
+    )
   }
   return ''
 }

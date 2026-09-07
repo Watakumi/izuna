@@ -14,6 +14,9 @@ import { C, MONO, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { PermissionBar } from './components/PermissionBar'
 import { ModeSwitch } from './components/ModeSwitch'
+import { Palette } from './components/Palette'
+import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
+import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 
 /**
  * 段1 の画面。1 セッションを動かし、承認と差分が見える。
@@ -29,7 +32,16 @@ function App(): React.JSX.Element {
   const [t, setT] = useState<Transcript>(emptyTranscript)
   const [pending, setPending] = useState<PermissionRequest | null>(null)
   const [prompt, setPrompt] = useState('')
+  const [commands, setCommands] = useState<SlashCommand[]>([])
+  const [picked, setPicked] = useState(0)
+  const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLTextAreaElement>(null)
+
+  // `/` で始まる 1 行目だけをコマンドとして扱う。本文の途中の / には反応しない
+  const slash = parseSlashInput(prompt)
+  const results = slash && !dismissed ? filterCommands(slash.name, commands) : []
+  const paletteOpen = slash !== null && !dismissed && commands.length > 0
 
   const notice = useCallback((text: string, tone: 'warn' | 'bad') => {
     setT((prev) => ({
@@ -63,7 +75,10 @@ function App(): React.JSX.Element {
     setT(emptyTranscript())
     try {
       localStorage.setItem('izuna.cwd', cwd)
-      setId(await window.izuna.start({ cwd: cwd.trim() }))
+      const started = await window.izuna.start({ cwd: cwd.trim() })
+      setId(started)
+      // 一覧は init を待たずに取れる（CLAUDE.md §5）
+      setCommands(await window.izuna.slashCommands(started))
     } catch (err) {
       notice(`起動に失敗しました: ${String(err)}`, 'bad')
     } finally {
@@ -71,11 +86,18 @@ function App(): React.JSX.Element {
     }
   }
 
+  const complete = (command: SlashCommand): void => {
+    setPrompt(applyCompletion(command, slash?.args ?? ''))
+    setDismissed(true)
+    box.current?.focus()
+  }
+
   const send = (): void => {
     const text = prompt.trim()
     if (!id || !text) return
     setT((prev) => appendUserText(prev, text, `u${prev.items.length}`))
     setPrompt('')
+    setDismissed(false)
     void window.izuna.send(id, text)
   }
 
@@ -154,22 +176,47 @@ function App(): React.JSX.Element {
         )}
       </div>
 
-      <div style={S.footer}>
-        <textarea
-          style={S.textarea}
-          value={prompt}
-          rows={2}
-          placeholder={id ? '依頼を書く（⌘↵ で送信）' : '先に起動してください'}
-          disabled={!id}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              send()
-            }
-          }}
-        />
-        <button style={S.btn} disabled={!id || !prompt.trim()} onClick={send}>送信</button>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        {paletteOpen && (
+          <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 16, right: 16, zIndex: 20 }}>
+            <Palette
+              results={results}
+              total={commands.length}
+              selected={Math.min(picked, Math.max(results.length - 1, 0))}
+              onSelect={setPicked}
+              onChoose={(hit) => complete(hit.command)}
+            />
+          </div>
+        )}
+        <div style={S.footer}>
+          <textarea
+            ref={box}
+            style={S.textarea}
+            value={prompt}
+            rows={2}
+            placeholder={id ? '依頼を書く（/ でコマンド、⌘↵ で送信）' : '先に起動してください'}
+            disabled={!id}
+            onChange={(e) => {
+              setPrompt(e.target.value)
+              setPicked(0)
+              if (e.target.value.startsWith('/')) setDismissed(false)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                send()
+                return
+              }
+              if (!paletteOpen || results.length === 0) return
+              const at = Math.min(picked, results.length - 1)
+              if (e.key === 'ArrowDown') { e.preventDefault(); setPicked((at + 1) % results.length) }
+              else if (e.key === 'ArrowUp') { e.preventDefault(); setPicked((at - 1 + results.length) % results.length) }
+              else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); complete(results[at].command) }
+              else if (e.key === 'Escape') { e.preventDefault(); setDismissed(true) }
+            }}
+          />
+          <button style={S.btn} disabled={!id || !prompt.trim()} onClick={send}>送信</button>
+        </div>
       </div>
     </div>
   )

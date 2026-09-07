@@ -10,6 +10,7 @@ import {
   emptyTranscript,
   markDenied,
   plainText,
+  stripAnsi,
   setPermissionMode,
   type Block,
   type Item
@@ -197,6 +198,27 @@ describe('権限モードと稼働状態', () => {
       type: 'system', subtype: 'session_state_changed', state: 'requires_action',
       uuid: 'u', session_id: 's'
     } as unknown as SDKMessage).state).toBe('requires_action')
+  })
+})
+
+describe('端末のエスケープシーケンス', () => {
+  it('色を落とす', () => {
+    // git -c color.ui=always が実際に吐く形
+    expect(stripAnsi('\u001B[31m??\u001B[m src/a.ts')).toBe('?? src/a.ts')
+  })
+
+  it('OSC（タイトル・ハイパーリンク）も落とす', () => {
+    expect(stripAnsi('\u001B]8;;https://x\u0007link\u001B]8;;\u0007')).toBe('link')
+  })
+
+  it('普通の文字列は触らない', () => {
+    expect(stripAnsi('hello izuna\n2 passed')).toBe('hello izuna\n2 passed')
+  })
+
+  it('録画には元々入っていない（Bash は TTY 無しで動くため）', () => {
+    // 段6 で ghostty-web を入れたら、落とさずに描くようにする
+    const raw = readFileSync(FIXTURE, 'utf8')
+    expect(/\\u001[bB]/.test(raw)).toBe(false)
   })
 })
 
