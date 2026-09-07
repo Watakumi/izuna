@@ -674,8 +674,31 @@ worktree.sparsePaths   大きな monorepo で必要な範囲だけ書き出す
 ```
 
 `--worktree` / `EnterWorktree` / **agent isolation** の 3 つに効く。
-つまり **worktree を Izuna が自前で配る必要はない**（段3 で作った機構は
-「人が自分で 2 本起こす」用途として残る）。
+
+> **⚠ ここに「worktree を Izuna が自前で配る必要はない」と書いていたが、
+> 誤読だった**（2026-09-08 に実測して訂正）。`bgIsolation` の説明は
+> 「背景**セッション**の Edit/Write を `EnterWorktree` が呼ばれるまで**塞ぐ**」
+> であって、**作るとは書いていない**。下の実測を見よ。
+
+### 実測（2026-09-08）——「誰が worktree を作るのか」
+
+一時リポジトリに `.claude/settings.json` で
+`{ worktree: { baseRef: 'head', bgIsolation: 'worktree' } }` を置いて測った。
+
+| 経路 | 結果 |
+| --- | --- |
+| **サブエージェントを背景で起こす** | **worktree は作られない。** 本体の作業ツリーに直接書いた（`background_tasks_changed` は出ているので背景では走っている） |
+| **エージェントが `EnterWorktree` を呼ぶ** | **作られる。** `<project>/.claude/worktrees/<名前>`、ブランチは `worktree-<名前>`、`locked`。本体にファイルは出来ない |
+
+**結論: worktree を作るのはエージェントだが、勝手にはやらない。**
+`EnterWorktree` を呼ばせる必要がある。**人に選ばせるものではない**
+（人が考えるのは「この Issue をやりたい」であって worktree ではない）。
+
+**置き場所が食い違っている。** CLI は `<project>/.claude/worktrees/`、
+Izuna は `~/.izuna/worktrees/<repo>/<branch>` に作っている。
+`worktree.location` の設定はあるが、型定義に
+「CLI（`--worktree` / `EnterWorktree` / agent isolation）はまだ読まない」と
+明記されているので、**設定で寄せることはできない**。どちらかに決める必要がある。
 
 ### まだ測っていないこと
 
@@ -683,7 +706,9 @@ worktree.sparsePaths   大きな monorepo で必要な範囲だけ書き出す
   `Agent` ツールが同期で完了したため、idle に入る場面が無かった）
 - `SendMessage` の宛先解決（`ListAgents` が返す名前の形）
 - `teammateMode` ごとの挙動差
-- agent isolation を有効にしたときの worktree の実際の置き場所
+- ~~agent isolation を有効にしたときの worktree の実際の置き場所~~ → **測った（上）**
+- `EnterWorktree` を実行役（サブエージェント）が呼べるか。
+  上の実測はブレイン本体が呼んだもの
 
 ---
 
