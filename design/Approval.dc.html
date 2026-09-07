@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #e8a33d; } a:hover { color: #f5bd68; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.85; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #14161b; color: #e6e8ee; font-size: 13px; overflow: hidden;">
+
+  <div style="height: 38px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #101216; border-bottom: 1px solid #242832;">
+    <div style="display: flex; gap: 8px;">
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+    </div>
+    <span style="margin-left: 6px; font-weight: 600;">承認</span>
+    <span class="mono" style="color: #7d8598; font-size: 11px;">feat/palette · #12</span>
+    <div style="flex-grow: 1;"></div>
+    <span style="font-size: 12px; color: #e8a33d;">1 / 1</span>
+  </div>
+
+  <!-- request banner -->
+  <div style="flex-shrink: 0; margin: 18px 22px 0; border: 1px solid #3d3527; background: linear-gradient(180deg,#1c1810 0%,#181a20 100%); border-radius: 11px; padding: 16px 18px; display: flex; align-items: flex-start; gap: 14px;">
+    <div style="width: 34px; height: 34px; border-radius: 8px; background: #2a2313; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e8a33d" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1; min-width: 0;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-weight: 600;">Edit</span>
+        <span class="mono" style="color: #c8cddb; font-size: 12px;">src/renderer/src/Palette.tsx</span>
+      </div>
+      <span style="font-size: 12px; color: #8b93a6; line-height: 1.6;">fuzzy 絞り込みを 316 件に耐えるよう仮想化し、argumentHint を右寄せで描く</span>
+    </div>
+    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+      <div style="padding: 8px 16px; border-radius: 7px; background: #e8a33d; color: #16130c; font-weight: 600; font-size: 12.5px;">許可 <span class="mono" style="font-size: 11px; opacity: 0.6;">⌘↵</span></div>
+      <div style="padding: 8px 16px; border-radius: 7px; border: 1px solid #3d3527; color: #c8cddb; font-size: 12.5px;">拒否 <span class="mono" style="font-size: 11px; color: #7d8598;">⌘⌫</span></div>
+    </div>
+  </div>
+
+  <!-- suggestion row -->
+  <div style="flex-shrink: 0; margin: 10px 22px 0; display: flex; align-items: center; gap: 9px; font-size: 12px;">
+    <span style="color: #6c7488;">CLI の提案:</span>
+    <span style="padding: 5px 11px; border-radius: 6px; border: 1px solid #2c3140; color: #c8cddb;">このセッション中は編集を自動承認</span>
+    <span style="padding: 5px 11px; border-radius: 6px; border: 1px solid #2c3140; color: #9aa2b4;">このリポジトリで常に許可</span>
+    <span class="mono" style="font-size: 10.5px; color: #4a5164;">setMode · acceptEdits · session</span>
+  </div>
+
+  <!-- diff -->
+  <div style="flex-grow: 1; margin: 16px 22px 22px; border: 1px solid #242832; border-radius: 11px; overflow: hidden; display: flex; flex-direction: column; min-height: 0;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 11px 15px; background: #101216; border-bottom: 1px solid #242832;">
+      <span class="mono" style="font-size: 12px; color: #c8cddb;">src/renderer/src/Palette.tsx</span>
+      <span class="mono" style="font-size: 11px; color: #4fc4b0;">+34</span>
+      <span class="mono" style="font-size: 11px; color: #e06c75;">−8</span>
+      <div style="flex-grow: 1;"></div>
+      <span style="font-size: 11px; color: #6c7488;">左: いま  右: 提案</span>
+    </div>
+
+    <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #0d0f13; min-height: 0;">
+
+      <div class="mono" style="padding: 13px 0; border-right: 1px solid #1c2029; color: #8b93a6; overflow: hidden;">
+        <div style="padding: 0 15px; color: #4a5164;">  const shown = all.filter(</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−   (c) =&gt; c.name.includes(q)</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">− )</div>
+        <div style="padding: 0 15px; color: #4a5164;">  return (</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−   &lt;ul&gt;</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−     {shown.map((c) =&gt; (</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−       &lt;li key={c.name}&gt;</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−         /{c.name}</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−       &lt;/li&gt;</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−     ))}</div>
+        <div style="padding: 0 15px; background: #2a1518; color: #e0a0a6;">−   &lt;/ul&gt;</div>
+        <div style="padding: 0 15px; color: #4a5164;">  )</div>
+      </div>
+
+      <div class="mono" style="padding: 13px 0; color: #8b93a6; overflow: hidden;">
+        <div style="padding: 0 15px; color: #4a5164;">  const shown = all.filter(</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+   (c) =&gt; score(q, c) &gt; 0</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+ ).sort(byScore)</div>
+        <div style="padding: 0 15px; color: #4a5164;">  return (</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+   &lt;Virtual rows={shown} h={38}&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+     {(c) =&gt; (</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+       &lt;Row key={c.name}&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+         &lt;Name value={c.name} q={q} /&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+         &lt;Desc&gt;{c.description}&lt;/Desc&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+         &lt;Hint&gt;{c.argumentHint}&lt;/Hint&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+       &lt;/Row&gt;</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+     )}</div>
+        <div style="padding: 0 15px; background: #14261c; color: #96d3ab;">+   &lt;/Virtual&gt;</div>
+        <div style="padding: 0 15px; color: #4a5164;">  )</div>
+      </div>
+
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; padding: 10px 15px; background: #101216; border-top: 1px solid #242832; font-size: 11px; color: #4a5164;">
+      <span class="mono" style="font-size: 11px;">j / k 次の塊へ</span>
+      <span class="mono" style="font-size: 11px;">⌥↵ 一部だけ許可</span>
+      <div style="flex-grow: 1;"></div>
+      <span>拒否のときは理由をエージェントに返す</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

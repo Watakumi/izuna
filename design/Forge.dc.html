@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #e8a33d; } a:hover { color: #f5bd68; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #14161b; color: #e6e8ee; font-size: 13px; overflow: hidden;">
+
+  <div style="height: 38px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: #101216; border-bottom: 1px solid #242832;">
+    <div style="display: flex; gap: 8px;">
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+      <div style="width: 11px; height: 11px; border-radius: 50%; background: #3d424f;"></div>
+    </div>
+    <span style="margin-left: 6px; font-weight: 600;">Forge</span>
+    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9aa2b4;">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #4fc4b0;"></span>
+      <span class="mono">forge.home.lan</span>
+    </span>
+    <div style="flex-grow: 1;"></div>
+    <span class="mono" style="font-size: 11px; color: #4a5164;">Forgejo 13.0 · 自宅サーバ</span>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; min-height: 0;">
+
+    <!-- repo list -->
+    <div style="width: 268px; flex-shrink: 0; background: #101216; border-right: 1px solid #242832; display: flex; flex-direction: column;">
+      <div style="padding: 14px 14px 10px; font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">リポジトリ</div>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 0 8px;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px; background: #1c2029; border-left: 2px solid #e8a33d;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e8a33d" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="mono" style="font-size: 12px;">watakumi/izuna</span>
+            <span style="font-size: 10.5px; color: #7d8598;">クローン済み · 2 セッション</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d6478" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="mono" style="font-size: 12px; color: #c8cddb;">watakumi/notes-api</span>
+            <span style="font-size: 10.5px; color: #7d8598;">クローン済み · 1 セッション</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d6478" stroke-width="1.8"><path d="M4 4h11l5 5v11H4z"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <span class="mono" style="font-size: 12px; color: #8b93a6;">watakumi/dotfiles</span>
+            <span style="font-size: 10.5px; color: #4a5164;">未クローン</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div style="padding: 12px; border-top: 1px solid #242832;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 7px; border: 1px dashed #333947; color: #9aa2b4; font-size: 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          クローンする
+        </div>
+      </div>
+    </div>
+
+    <!-- issue / pr -->
+    <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+      <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 22px; padding: 0 20px; border-bottom: 1px solid #242832;">
+        <span style="font-weight: 600; padding-bottom: 2px; border-bottom: 2px solid #e8a33d;">Issue <span style="color: #7d8598; font-weight: 400;">4</span></span>
+        <span style="color: #8b93a6;">Pull Request <span style="color: #7d8598;">2</span></span>
+        <span style="color: #8b93a6;">Actions</span>
+        <div style="flex-grow: 1;"></div>
+        <span class="mono" style="font-size: 11px; color: #4a5164;">watakumi/izuna</span>
+      </div>
+
+      <div style="flex-grow: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 9px; overflow: hidden;">
+
+        <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start; background: #171a21;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4fc4b0" stroke-width="1.9" style="margin-top: 2px; flex-shrink: 0;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="mono" style="font-size: 12px; color: #7d8598;">#12</span>
+              <span style="font-weight: 500;">/ パレットの補完を仮想化する</span>
+              <span style="font-size: 10.5px; padding: 2px 8px; border-radius: 10px; background: #2a2313; color: #e8a33d;">進行中</span>
+            </div>
+            <span style="font-size: 12px; color: #8b93a6; line-height: 1.6;">316 件を素で描くと入力が詰まる。fuzzy の重み付けと合わせて直す。</span>
+            <span class="mono" style="font-size: 10.5px; color: #4a5164;">feat/palette · セッション実行中</span>
+          </div>
+          <div style="padding: 6px 13px; border-radius: 6px; border: 1px solid #2c3140; color: #9aa2b4; font-size: 12px; flex-shrink: 0;">開く</div>
+        </div>
+
+        <div style="border: 1px solid #242832; border-radius: 9px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5d6478" stroke-width="1.9" style="margin-top: 2px; flex-shrink: 0;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="mono" style="font-size: 12px; color: #7d8598;">#15</span>
+              <span style="color: #c8cddb;">worktree を畳むときに未 push を警告する</span>
+            </div>
+            <span style="font-size: 12px; color: #7d8598; line-height: 1.6;">消してから気づくと戻せない。</span>
+          </div>
+          <div style="padding: 6px 13px; border-radius: 6px; background: #e8a33d; color: #16130c; font-weight: 600; font-size: 12px; flex-shrink: 0;">セッションを起こす</div>
+        </div>
+
+        <div style="border: 1px solid #242832; border-radius: 9px; padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5d6478" stroke-width="1.9" style="margin-top: 2px; flex-shrink: 0;"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 6px; flex-grow: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="mono" style="font-size: 12px; color: #7d8598;">#16</span>
+              <span style="color: #c8cddb;">承認待ちを macOS の通知に出す</span>
+            </div>
+            <span style="font-size: 12px; color: #7d8598; line-height: 1.6;">並列で走らせると埋もれる。</span>
+          </div>
+          <div style="padding: 6px 13px; border-radius: 6px; border: 1px solid #2c3140; color: #9aa2b4; font-size: 12px; flex-shrink: 0;">セッションを起こす</div>
+        </div>
+
+        <div style="margin-top: 8px; font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">この worktree から作れる PR</div>
+
+        <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; background: #131620;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e8a33d" stroke-width="1.9" style="flex-shrink: 0;"><path d="M6 3v12M6 21a3 3 0 100-6 3 3 0 000 6zM6 6a3 3 0 100-6 3 3 0 000 6zM18 9a3 3 0 100-6 3 3 0 000 6zM18 9c0 6-6 4-6 9"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 5px; flex-grow: 1; min-width: 0;">
+            <span class="mono" style="font-size: 12px; color: #e6e8ee;">feat/palette → main</span>
+            <span style="font-size: 11.5px; color: #8b93a6;">3 コミット · 5 ファイル · <span style="color: #4fc4b0;">+128</span> <span style="color: #e06c75;">−41</span></span>
+          </div>
+          <div style="padding: 7px 15px; border-radius: 6px; background: #e8a33d; color: #16130c; font-weight: 600; font-size: 12px; flex-shrink: 0;">push して PR を作る</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

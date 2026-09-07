@@ -8,6 +8,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 
 - リポジトリ: `~/work/personal/izuna`
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
+- 画面設計: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元ファイルは `design/`）
 - 現状: セッション層（Agent SDK 経由）+ 権限承認の握手 + 検証の土台まで。UI は未着手
 - **`pnpm verify` は緑**（14件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
@@ -57,11 +58,15 @@ Tauri より Electron。
 - **Flutter** — `flutter_ghostty` が 8 commits / 2 stars で実用外
 - **Rust + GPUI（Zed）** — Zed 外の採用実績がほぼなく、詰まったとき助けがない
 
-**libghostty は当面使わない。** 当初は libghostty 組み込みが企画の中心だったが、
-Electron から使う道は `libghostty-vt-node`（2★ / 9 commits・パースのみ・
-レンダリングしない）か Restty（libghostty-vt を WASM で動かし WebGPU で描く・
-early-release・406★）しかなく、いずれも「ネイティブに組み込む」当初の趣旨から
-離れる。ターミナルペインが必要になった段階で再判断する（§8）。
+**libghostty は `ghostty-web` で使う（2026-09-07 に方針変更）。** 当初は
+「Electron から使う道が細い」と判断して見送ったが、Nimbalyst のソースを読んで
+実用経路が判明した。`ghostty-web`（coder 製）は **libghostty-vt の公式 WASM
+ビルド**で、xterm.js 互換 API・Canvas レンダラ・Kitty graphics・OSC 8 を持つ。
+Nimbalyst は `ghostty-vt.wasm` を同梱し `node-pty` と組み合わせている。
+当初の企画趣旨（libghostty を使う）はこれで果たせる。段 5 で入れる。
+
+以前ここで検討して落としたのは `libghostty-vt-node`（2★ / 9 commits・
+パースのみ）と Restty（WebGPU・early-release）。
 
 なお libghostty は Mitchell Hashimoto 本人が **API はアルファで安定保証なし**と
 明言しており、将来 Swift フレームワークが公式提供される予定。現時点で深く

@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #e8a33d; } a:hover { color: #f5bd68; }
+    .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+    .box { border: 1.5px dashed #454b5a; border-radius: 8px; }
+    .fill { background: #1e222b; border-radius: 5px; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; display: flex; flex-direction: column; background: #16181d; color: #9aa2b4; font-size: 13px; overflow: hidden; padding: 26px; box-sizing: border-box; gap: 18px;">
+  <div style="display: flex; align-items: baseline; gap: 14px; flex-shrink: 0;">
+    <span style="font-size: 19px; font-weight: 600; color: #e6e8ee;">盤面</span>
+    <span style="font-size: 13px; color: #7d8598;">全 worktree をタイルで一望する。会話は各タイルの中。切り替えずに全部見える</span>
+    <div style="flex-grow: 1;"></div>
+    <span class="mono" style="font-size: 11px; color: #4a5164;">DirectionB · 低精度</span>
+  </div>
+  <div style="flex-grow: 1; display: flex; gap: 14px; min-height: 0;">
+      <div class="box" style="border-color: #5a4a2c; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 13px; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #e8a33d;"></span>
+          <span style="color: #c8cddb; font-size: 12.5px;">/ パレットの補完</span>
+        </div>
+        <span class="mono" style="font-size: 11px; color: #636b7e;">feat/palette</span>
+        <div class="fill" style="height: 11px; width: 88%;"></div>
+        <div class="fill" style="height: 11px; width: 64%;"></div>
+        <div class="fill" style="height: 46px;"></div>
+        <div class="fill" style="height: 11px; width: 74%;"></div>
+        <div style="flex-grow: 1;"></div>
+        <div style="display:flex;gap:7px;"><div style="flex-grow:1;height:26px;border-radius:5px;background:#e8a33d;"></div><div class="box" style="flex-grow:1;height:26px;"></div></div>
+      </div>
+      <div class="box" style="border-color: #454b5a; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 13px; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4fc4b0;"></span>
+          <span style="color: #c8cddb; font-size: 12.5px;">Forgejo クライアント</span>
+        </div>
+        <span class="mono" style="font-size: 11px; color: #636b7e;">feat/forge</span>
+        <div class="fill" style="height: 11px; width: 88%;"></div>
+        <div class="fill" style="height: 11px; width: 64%;"></div>
+        <div class="fill" style="height: 46px;"></div>
+        <div class="fill" style="height: 11px; width: 74%;"></div>
+        <div style="flex-grow: 1;"></div>
+        <div class="fill" style="height: 11px; width: 40%;"></div>
+      </div>
+      <div class="box" style="border-color: #454b5a; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 13px; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4a5164;"></span>
+          <span style="color: #c8cddb; font-size: 12.5px;">差分ビューの整形</span>
+        </div>
+        <span class="mono" style="font-size: 11px; color: #636b7e;">feat/diff</span>
+        <div class="fill" style="height: 11px; width: 88%;"></div>
+        <div class="fill" style="height: 11px; width: 64%;"></div>
+        <div class="fill" style="height: 46px;"></div>
+        <div class="fill" style="height: 11px; width: 74%;"></div>
+        <div style="flex-grow: 1;"></div>
+        <div class="fill" style="height: 11px; width: 40%;"></div>
+      </div>
+      <div class="box" style="border-color: #454b5a; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 13px; min-width: 0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #4a5164;"></span>
+          <span style="color: #c8cddb; font-size: 12.5px;">認証まわりの整理</span>
+        </div>
+        <span class="mono" style="font-size: 11px; color: #636b7e;">fix/auth · notes-api</span>
+        <div class="fill" style="height: 11px; width: 88%;"></div>
+        <div class="fill" style="height: 11px; width: 64%;"></div>
+        <div class="fill" style="height: 46px;"></div>
+        <div class="fill" style="height: 11px; width: 74%;"></div>
+        <div style="flex-grow: 1;"></div>
+        <div class="fill" style="height: 11px; width: 40%;"></div>
+      </div>
+    </div>
+    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding-top: 4px;">
+      <span style="font-size: 12px; color: #7d8598;">利点: 全部が同時に見える。承認の取りこぼしが起きにくい</span>
+      <div style="flex-grow: 1;"></div>
+      <span style="font-size: 12px; color: #6c7488;">難点: 1つに集中しづらい。4つを超えると狭い</span>
+    </div>
+</div>
+</x-dc>
+</body>
+</html>
