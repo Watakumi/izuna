@@ -425,3 +425,85 @@ cwd の 2 箇所のみ。**`--safe-mode` でも `slash_commands` は空になら
 - 既存文書の推敲（§2・§6・§8 に長すぎる文が 3 件ある）
 - renderer、IPC、`/` パレット、差分ビュー
 - **`ClaudeSession.interrupt()` の SIGINT 疑い（§9-5）**。録画とは無関係なので触っていない
+
+---
+
+## 12. ブレインと実行役の協調（2026-09-07 調査）
+
+GOAL.md の段 4。**自前で作る部分は少ない。Claude Code に組み込みの機構がある。**
+
+### 使えるツール（実測）
+
+`--safe-mode` の素の状態でも、`system:init` の `tools` に全部入っていた。
+プラグインもスキルも要らない。
+
+```
+Task  SendMessage  ListAgents
+TaskCreate  TaskList  TaskUpdate  TaskStop  TaskOutput
+EnterWorktree  ExitWorktree
+```
+
+### 三つの層
+
+| 層 | 中身 | 使えるか |
+| --- | --- | --- |
+| `Task` サブエージェント | 1 セッション内で完結。使い捨て | **不足**。往復も反省もできず worktree も分かれない |
+| セッション間メッセージング | `SendMessage` が別セッションに届く（Remote Control 経由なら別マシンにも） | **本命** |
+| 管理されたチームメイト | lead の `Task` 呼び出しを横取りし、独立した `query()` として起こす | 最も自由。Nimbalyst がこれ |
+
+Nimbalyst の `TeammateManager.ts` の要点:
+
+```
+const agentType = taskInput.subagent_type || 'general-purpose'
+```
+
+`Task` を横取りして独立セッションを spawn する。`agentId` は `name@teamName`。
+lead → チームメイトは `query.streamInput()` で差し込み、逆向きは
+`pendingTeammateToLeadMessages` のキューで流す。idle になっても
+`sessionId` を保持して resume できるようにしている。
+
+### 反省ループの起点は hook
+
+`HOOK_EVENTS` に、この用途の穴が開いている。
+
+| hook | 使いどころ |
+| --- | --- |
+| `TeammateIdle` | 実行役が手を止めた瞬間。**ブレインが結果を見て指示を返す起点** |
+| `TaskCreated` / `TaskCompleted` | 作業単位の受け渡し |
+| `SubagentStart` / `SubagentStop` | 起動と終了 |
+| `WorktreeCreate` / `WorktreeRemove` | worktree の生成と回収 |
+
+設定 `teammateMode: 'auto' | 'tmux' | 'iterm2' | 'in-process'` で実行形態を選べる。
+
+### 罠: 権限モードのクラス不一致でメッセージが黙って保留される
+
+SDK の設定 `crossSessionInbound` の説明より（原文の要約ではなく趣旨）:
+
+> `'accept'` は配送、`'hold'` は本人の確認待ちで保留、`'refuse'` は拒否。
+> **未設定の場合はモード同値で判定**され、送信側と受信側の権限モードのクラスが
+> 一致するとき（bypass↔bypass または prompting↔prompting）だけ自動配送される。
+> 不一致の送信者のメッセージは承認待ちで保留される。
+
+**ブレインを承認モード、実行役を bypass にすると、指示が黙って止まる。**
+「送ったのに動かない」の典型的な原因になる。Izuna 側で両者のモードクラスを
+揃えるか、`crossSessionInbound: 'accept'` を明示すること。
+
+関連して `isolatePeerMachines`（Remote Control で別マシンの peer に届く前に
+明示承認を求める）がある。
+
+### コンテキストは共有されない
+
+**ブレインと実行役は別セッションなのでコンテキストウィンドウを共有しない。**
+共有されるのはメッセージとファイルシステムだけ。
+
+これは利点である（実行役が窓を使い切ってもブレインの文脈は汚れない）。
+設計上の要点は「何を書き出して共有するか」で、口頭ではなくファイルに
+落とす前提で組むこと。
+
+### まだ測っていないこと
+
+- `TeammateIdle` hook が Agent SDK 経由でも発火するか
+- `SendMessage` の宛先解決（`ListAgents` が返す名前の形）
+- `teammateMode` ごとの挙動差
+- 実行役が承認を求めたとき、それがブレインに行くのか人間に行くのか
+  （**ここは人間に来てほしい。GOAL.md の完成の定義 5**）
