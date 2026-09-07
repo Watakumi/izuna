@@ -4,7 +4,8 @@ import type { FoundRepo } from '../../../main/repos'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { branchFromIssue, branchFromText, uniqueBranch } from '../../../shared/branch'
 import { validateNewWorktree, worktreePathFor } from '../../../shared/worktree'
-import { C, MONO } from '../theme'
+import { belongsTo, byNewest, labelOf, type SessionSummary } from '../../../shared/sessions'
+import { C, F, MONO, R, S } from '../theme'
 import { Button, Faint, Input } from './ui'
 
 /**
@@ -25,6 +26,8 @@ export interface StartInput {
   team: string
   /** 起こしたあとに最初に送る依頼。空なら送らない */
   initialPrompt: string
+  /** 続きから起こすときの claude 側のセッション id */
+  resume?: string
 }
 
 export function NewSession({
@@ -46,6 +49,7 @@ export function NewSession({
   const [issue, setIssue] = useState<GitHubIssue | null>(null)
   const [text, setText] = useState('')
 
+  const [showAllPast, setShowAllPast] = useState(false)
   const [showDetail, setShowDetail] = useState(false)
   const [branchOverride, setBranchOverride] = useState<string | null>(null)
   const [useWorktree, setUseWorktree] = useState(true)
@@ -53,7 +57,12 @@ export function NewSession({
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
 
+  const [past, setPast] = useState<SessionSummary[] | null>(null)
+
   useEffect(() => { void window.izuna.findRepos().then(setFound).catch(() => setFound([])) }, [])
+
+  // 過去のセッション（§18）。**保存層は無い** —— claude が書いた記録を走査している
+  useEffect(() => { void window.izuna.listSessions().then(setPast).catch(() => setPast([])) }, [])
 
   // リポジトリが決まったら、やることの候補（Issue）を引く
   useEffect(() => {
@@ -92,12 +101,37 @@ export function NewSession({
     ? `GitHub の Issue #${issue.number}「${issue.title}」に取り組んでください。\n${issue.url}`
     : text.trim()
 
+  // この画面で選んだリポジトリのもの。**worktree のセッションも同じ束**にする
+  const resumable = (past ?? [])
+    .filter((p) => cwd.trim() !== '' && belongsTo(p, cwd.trim(), (repo?.worktrees ?? []).map((w) => w.path)))
+    .sort(byNewest)
+
   const problem = repo && useWorktree && branch
     ? validateNewWorktree(repo.worktrees, branch, worktreePathFor('', repo.name, branch))
     : null
   const ready = !busy && cwd.trim() !== '' && prompt !== '' && (!useWorktree || (branch !== '' && !problem))
 
-  const start = async (): Promise<void> => {
+  /**
+   * 続きから起こすときは worktree を作らない。**その worktree は既にある。**
+   * 作り直すと、同じブランチで 2 つ目を作ろうとして落ちる。
+   */
+  const start = async (resume?: SessionSummary): Promise<void> => {
+    if (resume) {
+      setBusy(true)
+      setFailure(null)
+      try {
+        const at = resume.cwd ?? cwd.trim()
+        await onStart({
+          cwd: at, label: labelOf(resume).slice(0, 40), branch: resume.branch ?? null,
+          team: at.split('/').filter(Boolean).pop() ?? 'default',
+          initialPrompt: '', resume: resume.id
+        })
+      } catch (e) {
+        setFailure(String(e).replace(/^Error:\s*/, ''))
+        setBusy(false)
+      }
+      return
+    }
     if (!ready) return
     setBusy(true)
     setFailure(null)
@@ -163,7 +197,35 @@ export function NewSession({
             {repoError && <span style={{ fontSize: 11, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
           </Section>
 
-          {/* 2. 何をするか —— ここが本題 */}
+          {/* 2. 続きから —— 新しく始めるか、続きか。**同じ画面で選ぶ** */}
+          {resumable.length > 0 && (
+            <Section label="続きから" action={
+              resumable.length > 4
+                ? <Button size="sm" onClick={() => setShowAllPast((v) => !v)}>
+                    {showAllPast ? '畳む' : `ほか ${resumable.length - 4} 件`}
+                  </Button>
+                : undefined
+            }>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
+                {(showAllPast ? resumable : resumable.slice(0, 4)).map((p) => (
+                  <div key={p.id} onClick={() => void start(p)}
+                    style={{ display: 'flex', alignItems: 'baseline', gap: S.md, padding: '8px 12px',
+                      borderRadius: R.md, cursor: busy ? 'default' : 'pointer',
+                      border: `1px solid ${C.line}`, opacity: busy ? 0.5 : 1 }}>
+                    <span style={{ fontSize: F.body, color: C.ink2, minWidth: 0, flexGrow: 1,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {labelOf(p)}
+                    </span>
+                    <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                      {ago(p.updatedAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* 3. 何をするか —— ここが本題 */}
           {cwd.trim() !== '' && (
             <Section label="何をするか">
               {issues && issues.length > 0 && (
@@ -251,6 +313,14 @@ export function NewSession({
       </div>
     </div>
   )
+}
+
+/** 経過時間。**日時をそのまま出さない** —— 一覧で見たいのは「どれが新しいか」 */
+function ago(at: number): string {
+  const m = Math.max(0, Math.round((Date.now() - at) / 60_000))
+  if (m < 60) return `${m}分前`
+  if (m < 60 * 24) return `${Math.round(m / 60)}時間前`
+  return `${Math.round(m / 60 / 24)}日前`
 }
 
 function Section({ label, action, children }: {

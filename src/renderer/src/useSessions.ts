@@ -90,9 +90,17 @@ export function useSessions(): Sessions {
       resume: input.resume, team: input.team
     })
     const commands = await window.izuna.slashCommands(id)
+
+    // 続きから起こしたときは、**記録から会話を戻す**（CLAUDE.md §18）。
+    // 戻さないと、resume したのに真っ白な画面から始まって
+    // 「本当に続いているのか」が分からない。
+    const prior = input.resume
+      ? await window.izuna.replaySession(input.resume).catch(() => null)
+      : null
+
     setPanels((prev) => [...prev, {
       id, label: input.label, cwd: input.cwd, branch: input.branch, team: input.team,
-      transcript: emptyTranscript(), pending: null, prompt: '', commands, ended: false
+      transcript: prior ?? emptyTranscript(), pending: null, prompt: '', commands, ended: false
     }])
     setActiveId(id)
 
