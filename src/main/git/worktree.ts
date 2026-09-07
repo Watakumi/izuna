@@ -29,9 +29,28 @@ async function git(cwd: string, args: string[]): Promise<string> {
     }
 }
 
+/** git リポジトリかどうか。**失敗を例外にしない** —— 呼び出し側で分岐する */
+export async function isRepo(cwd: string): Promise<boolean> {
+  try {
+    await git(cwd, ['rev-parse', '--git-dir'])
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** cwd を含むリポジトリの本体。worktree の中から呼んでも本体を返す */
 export async function repoRoot(cwd: string): Promise<string> {
-  const common = (await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir'])).trim()
+  let common: string
+  try {
+    common = (await git(cwd, ['rev-parse', '--path-format=absolute', '--git-common-dir'])).trim()
+  } catch (err) {
+    // git の生の文言（fatal: not a git repository...）は何をすべきか言わない
+    if (/not a git repository/i.test(String(err))) {
+      throw new Error(`${cwd} は git リポジトリではありません。リポジトリのパスを入れるか、worktree を使わずに起こしてください`)
+    }
+    throw err
+  }
   // <root>/.git → <root>。bare の場合はそのまま
   return common.replace(/\/\.git\/?$/, '')
 }

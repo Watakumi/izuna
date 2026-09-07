@@ -35,7 +35,12 @@ export function NewSession({
     const timer = setTimeout(() => {
       window.izuna.repo(path)
         .then((r) => { if (alive) { setRepo(r); setRepoError(null) } })
-        .catch((e) => { if (alive) { setRepo(null); setRepoError(String(e).replace(/^Error:\s*/, '')) } })
+        .catch((e) => {
+          if (!alive) return
+          setRepo(null)
+          setRepoError(String(e).replace(/^Error:\s*/, ''))
+          setUseWorktree(false)
+        })
     }, 350)
     return () => { alive = false; clearTimeout(timer) }
   }, [cwd])
@@ -47,13 +52,22 @@ export function NewSession({
   const problem = repo && useWorktree && branch.trim()
     ? validateNewWorktree(repo.worktrees, branch.trim(), worktreePathFor('', repo.name, branch))
     : null
-  const ready = !!repo && !busy && (!useWorktree || (branch.trim() !== '' && !problem))
+  // **git リポジトリでなくてもセッションは起こせる。** worktree だけが git を要る
+  const ready = !busy && cwd.trim() !== '' && (
+    repo ? (!useWorktree || (branch.trim() !== '' && !problem)) : !useWorktree
+  )
 
   const start = async (): Promise<void> => {
-    if (!repo || !ready) return
+    if (!ready) return
     setBusy(true)
     setFailure(null)
     try {
+      if (!repo) {
+        // git でない場所。worktree は作れないが、会話はできる
+        const name = cwd.trim().split('/').filter(Boolean).pop() ?? cwd.trim()
+        await onStart({ cwd: cwd.trim(), label: name, branch: null, team: name })
+        return
+      }
       if (useWorktree) {
         const created = await window.izuna.createWorktree(repo.root, branch.trim())
         await onStart({ cwd: created.path, label: created.branch, branch: created.branch, team: created.branch })
@@ -85,7 +99,14 @@ export function NewSession({
             <span style={LABEL}>リポジトリ</span>
             <input autoFocus value={cwd} spellCheck={false} placeholder="リポジトリの絶対パス"
               onChange={(e) => setCwd(e.target.value)} style={INPUT} />
-            {repoError && <span style={{ fontSize: 11.5, color: C.red }}>{repoError}</span>}
+            {repoError && (
+              <span style={{ fontSize: 11.5, color: /git リポジトリではありません/.test(repoError) ? C.amber : C.red,
+                lineHeight: 1.6 }}>
+                {repoError}
+                {/git リポジトリではありません/.test(repoError) &&
+                  ' — このまま「直接」で起こすこともできます'}
+              </span>
+            )}
             {repo && (
               <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>
                 {repo.name} · worktree {repo.worktrees.length} 本
@@ -98,11 +119,14 @@ export function NewSession({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             <span style={LABEL}>作業する場所</span>
-            <label style={ROW}>
-              <input type="radio" checked={useWorktree} onChange={() => setUseWorktree(true)} />
+            <label style={{ ...ROW, opacity: repo ? 1 : 0.45 }}>
+              <input type="radio" checked={useWorktree && !!repo} disabled={!repo}
+                onChange={() => setUseWorktree(true)} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <span style={{ fontSize: 12.5 }}>新しい worktree を作る</span>
-                <span style={{ fontSize: 11, color: C.dim2 }}>並列に走らせるならこちら。互いに干渉しない</span>
+                <span style={{ fontSize: 11, color: C.dim2 }}>
+                  {repo ? '並列に走らせるならこちら。互いに干渉しない' : 'git リポジトリでのみ使えます'}
+                </span>
               </div>
             </label>
             <label style={ROW}>
