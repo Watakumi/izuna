@@ -1,0 +1,124 @@
+/**
+ * git remote の解釈（段5）。
+ *
+ * 純粋関数。二段の PR（docs/GOAL.md 柱2）を成り立たせる要で、
+ * **どの remote が作業場でどれが出口か**をここで決める。
+ *
+ * ```
+ * forgejo  http://localhost:4649/watakumi/gh-radar.git   作業場
+ * origin   git@github.com:Watakumi/gh-radar.git          出口
+ * ```
+ */
+
+export type RemoteRole = 'workshop' | 'exit' | 'other'
+
+export interface RemoteRef {
+  name: string
+  url: string
+  host: string | null
+  owner: string | null
+  repo: string | null
+  role: RemoteRole
+}
+
+/**
+ * `git remote -v` の 1 行を読む。
+ * ssh 形式（`git@host:owner/repo.git`）と http(s) 形式の両方。
+ */
+export function parseRemoteUrl(url: string): { host: string; owner: string; repo: string } | null {
+  const trimmed = url.trim()
+  if (!trimmed) return null
+
+  // git@host:owner/repo.git / ssh://git@host[:port]/owner/repo.git
+  const ssh = /^(?:ssh:\/\/)?(?:[^@/]+@)?([^:/]+)(?::\d+)?[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/.exec(trimmed)
+  if (ssh && !/^https?:/.test(trimmed)) {
+    return { host: ssh[1], owner: ssh[2], repo: ssh[3] }
+  }
+
+  try {
+    const u = new URL(trimmed)
+    const parts = u.pathname.replace(/^\//, '').replace(/\.git$/, '').split('/').filter(Boolean)
+    if (parts.length < 2) return null
+    // owner/repo は末尾 2 つ。Forgejo は sub path に置けるため
+    return { host: u.host, owner: parts.at(-2)!, repo: parts.at(-1)! }
+  } catch {
+    return null
+  }
+}
+
+const GITHUB_HOSTS = ['github.com', 'www.github.com']
+
+/**
+ * 役割を決める。
+ *
+ * **ホスト名で決める。remote の名前では決めない** —— `origin` が
+ * どちらを指しているかは人によって違い、名前を信じると取り違える。
+ */
+export function roleOf(host: string | null, forgeHost: string | null): RemoteRole {
+  if (!host) return 'other'
+  if (GITHUB_HOSTS.includes(host.toLowerCase())) return 'exit'
+  if (forgeHost && host.toLowerCase() === forgeHost.toLowerCase()) return 'workshop'
+  return 'other'
+}
+
+/** `git remote -v` の出力をまとめて読む。fetch/push の重複は畳む */
+export function parseRemotes(output: string, forgeRootUrl: string | null): RemoteRef[] {
+  const forgeHost = hostOf(forgeRootUrl)
+  const seen = new Map<string, RemoteRef>()
+
+  for (const line of output.split('\n')) {
+    const m = /^(\S+)\s+(\S+)\s+\((?:fetch|push)\)$/.exec(line.trim())
+    if (!m) continue
+    const [, name, url] = m
+    if (seen.has(name)) continue
+    const parsed = parseRemoteUrl(url)
+    seen.set(name, {
+      name,
+      url,
+      host: parsed?.host ?? null,
+      owner: parsed?.owner ?? null,
+      repo: parsed?.repo ?? null,
+      role: roleOf(parsed?.host ?? null, forgeHost)
+    })
+  }
+  return [...seen.values()]
+}
+
+export function hostOf(url: string | null): string | null {
+  if (!url) return null
+  try {
+    return new URL(url).host
+  } catch {
+    return null
+  }
+}
+
+/** 作業場と出口を取り出す。無ければ null */
+export function rolesIn(remotes: RemoteRef[]): { workshop: RemoteRef | null; exit: RemoteRef | null } {
+  return {
+    workshop: remotes.find((r) => r.role === 'workshop') ?? null,
+    exit: remotes.find((r) => r.role === 'exit') ?? null
+  }
+}
+
+/** 作業場の remote をこれから足すときの URL */
+export function workshopRemoteUrl(forgeRootUrl: string, owner: string, repo: string): string {
+  return `${forgeRootUrl.replace(/\/$/, '')}/${owner}/${repo}.git`
+}
+
+/**
+ * 二段の PR のどの段にいるか。画面の出し分けに使う。
+ *
+ * - `needsWorkshop` 作業場の remote が無い。まず用意する
+ * - `needsPush`     作業場に push していない
+ * - `readyForExit`  作業場では見た。GitHub に出せる
+ */
+export function stageOf(input: {
+  remotes: RemoteRef[]
+  pushedToWorkshop: boolean
+}): 'needsWorkshop' | 'needsPush' | 'readyForExit' {
+  const { workshop } = rolesIn(input.remotes)
+  if (!workshop) return 'needsWorkshop'
+  if (!input.pushedToWorkshop) return 'needsPush'
+  return 'readyForExit'
+}
