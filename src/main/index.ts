@@ -75,14 +75,38 @@ app.on('window-all-closed', () => {
   }
 })
 
-// 取り残すと claude が孤児プロセスとして残る。終了は待ってから通す。
+/**
+ * 終了時の後片付け。
+ *
+ * 取り残すと claude が孤児プロセスとして残るので待つ。ただし
+ * **待ちが終わらないせいで終了できなくなってはいけない**（一度やらかした）。
+ * `stopAllSessions` は上限付きで必ず返り、さらにここでも保険をかける。
+ */
 let quitting = false
+
+function shutdown(): void {
+  if (quitting) return
+  quitting = true
+  // 何があっても落ちる。片付けが返らなくても待たない
+  const hardStop = setTimeout(() => process.exit(0), 5000)
+  hardStop.unref?.()
+  void stopAllSessions().finally(() => {
+    clearTimeout(hardStop)
+    app.exit(0)
+  })
+}
+
 app.on('before-quit', (event) => {
   if (quitting) return
   event.preventDefault()
-  quitting = true
-  void stopAllSessions().finally(() => app.quit())
+  shutdown()
 })
+
+// **Ctrl+C は before-quit を通らない。** `pnpm dev` を止められるように
+// SIGINT / SIGTERM も自分で受ける。
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, shutdown)
+}
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

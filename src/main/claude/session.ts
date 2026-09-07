@@ -11,6 +11,7 @@ import {
   type SlashCommand,
   type SettingSource
 } from '@anthropic-ai/claude-agent-sdk'
+import { settle } from '../../shared/wait'
 import { locateClaude, loginShellEnv } from './locate'
 
 /**
@@ -217,8 +218,11 @@ export class ClaudeSession extends EventEmitter<Events> {
       resolve({ behavior: 'deny', message: 'セッションが終了しました' })
     }
     this.#pending.clear()
-    await this.#query?.return(undefined)
+    // 返らないことがある。片付けのために終了できなくなるのは本末転倒なので、
+    // 上限を切って諦める（shared/wait.ts の註）
+    const query = this.#query
     this.#query = undefined
+    if (query) await settle(Promise.resolve(query.return(undefined)), 2000)
   }
 
   async #consume(): Promise<void> {

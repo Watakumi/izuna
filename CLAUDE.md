@@ -312,6 +312,19 @@ type PermissionResult =
   `tool_result_meta.non_execution_kind` が来ない（生の NDJSON にはある）ので、
   **拒否した側が `tool_use_id` を覚える**のが唯一正しい
   （`transcript.ts` の `markDenied`）。
+- **`before-quit` で無制限に待つと、アプリが終了できなくなる**（2026-09-07 に踏んだ）。
+  後片付けのために `event.preventDefault()` して `stopAllSessions()` を待つ実装に
+  していたが、待ちが返らないと `Ctrl+C` を何度押しても Electron が落ちない。
+  さらに **`Ctrl+C`（SIGINT）は `before-quit` を通らない**ので、
+  そもそもハンドラが効いていない経路もある。
+
+  対処は 3 段:
+  1. `shared/wait.ts` の `settle()` で、片付けの待ちに必ず上限を切る
+  2. `process.on('SIGINT' | 'SIGTERM')` を自分で受ける
+  3. それでも駄目なとき用に `process.exit(0)` の保険を置く
+
+  **孤児が 1 つ残るほうが、終われないアプリよりましである。**
+  詰まったら `pkill -f 'izuna/node_modules/.pnpm/electron'`。
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)

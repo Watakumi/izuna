@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
+import { settle } from '../../shared/wait'
 import { ClaudeSession } from '../claude/session'
 import { CH, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
 
@@ -74,9 +75,17 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   })
 }
 
-/** アプリ終了時に取り残さない。放置すると claude が孤児プロセスになる */
-export async function stopAllSessions(): Promise<void> {
+/**
+ * アプリ終了時に取り残さない。放置すると claude が孤児プロセスになる。
+ *
+ * **必ず返る。** 後片付けが終わらないせいでアプリが終了できない、という
+ * 事態を作らない（実際にやらかして Ctrl+C が効かなくなった）。
+ * 上限を過ぎたら諦めて先へ進む —— 孤児が 1 つ残るほうが、
+ * 終われないアプリよりましである。
+ */
+export async function stopAllSessions(timeoutMs = 3000): Promise<void> {
   const all = [...sessions.values()]
   sessions.clear()
-  await Promise.all(all.map((s) => s.stop().catch(() => undefined)))
+  if (all.length === 0) return
+  await settle(Promise.all(all.map((s) => s.stop())), timeoutMs)
 }
