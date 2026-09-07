@@ -637,3 +637,41 @@ readyTasks(tasks)       // depends_on が満たされていて未着手のもの
 
 段2（`/` パレット）で「読み込む範囲」をセッションごとに選べるようにするなら、
 `SessionOptions.settingSources` は既に口が空いているので、UI を足すだけで済む。
+
+---
+
+## 14. 課金と枠（2026-09-07 実測）
+
+**Izuna は Pro プランの OAuth で動く。API キーは使わない。**
+SDK 経由（＝ Izuna が実際に通る経路）で録ったデータより:
+
+```
+apiKeySource : "none"        claude.ai の OAuth ログイン
+ANTHROPIC_API_KEY            未設定
+rateLimitType: five_hour     サブスクリプションのレート制限
+windows      : five_hour 3% / seven_day 5%
+overageStatus: allowed / isUsingOverage: false
+costBasis    : "list"        定価換算。請求額ではない
+provider     : firstParty
+```
+
+### 枠はターミナルの Claude Code と共有
+
+`five_hour` / `seven_day` は同じサブスクリプションの窓である。
+**Izuna を回すと、ターミナルの Claude Code と同じ枠を食う。別枠は増えない。**
+
+実行役を並列で走らせる設計（段3・段4）なので、ここは効いてくる。
+`rate_limit_event` の `unifiedWindows` を UI に出して、
+枠の残りが見えるようにすること。
+
+### 金額表示は「目安」と明示する
+
+`costBasis: "list"` は定価換算であって請求額ではない。
+そのまま `$0.0145` と出すと課金されているように読めるので、
+「目安」と添える（`App.tsx` の註）。
+
+### これを壊さないための門
+
+`test/auth.test.ts` が `apiKeySource` を検査している。
+`ANTHROPIC_API_KEY` を設定した環境で fixture を録り直すと落ちる。
+落ちたら、従量課金の経路に切り替わっていないかを疑うこと。

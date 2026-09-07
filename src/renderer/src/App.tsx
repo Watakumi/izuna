@@ -110,7 +110,13 @@ function App(): React.JSX.Element {
         <div style={{ flexGrow: 1 }} />
         {t.state === 'running' && <span style={{ ...S.note, color: C.teal }}>実行中</span>}
         {pending && <span style={{ ...S.note, color: C.amber }}>承認待ち</span>}
-        {t.costUsd !== null && <span style={S.note}>${t.costUsd.toFixed(4)}</span>}
+        {t.costUsd !== null && (
+          // costBasis は "list"。定価換算の目安であって請求額ではない。
+          // Pro プランの OAuth で動いており、枠はターミナルの Claude Code と共有。
+          <span style={S.note} title="定価換算の目安です。Pro プランの枠で動いているため、この額が請求されるわけではありません">
+            目安 ${t.costUsd.toFixed(4)}
+          </span>
+        )}
         <span style={{ ...S.note, color: id ? C.teal : C.faint }}>
           {id ? `${t.slashCommands.length} コマンド` : '未起動'}
         </span>
