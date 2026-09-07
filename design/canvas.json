@@ -1,27 +1,141 @@
 {
   "pages": [
-    { "id": "page-1", "name": "画面" },
-    { "id": "page-2", "name": "方向性の候補" }
+    {
+      "id": "page-1",
+      "name": "画面"
+    },
+    {
+      "id": "page-2",
+      "name": "方向性の候補"
+    }
   ],
   "artboards": [
-    { "file": "Main.dc.html",       "x": 0,    "y": 0,    "w": 1440, "h": 900, "page": "page-1", "title": "メイン" },
-    { "file": "Palette.dc.html",    "x": 1560, "y": 0,    "w": 1440, "h": 900, "page": "page-1", "title": "/ パレット" },
-    { "file": "Approval.dc.html",   "x": 3120, "y": 0,    "w": 1440, "h": 900, "page": "page-1", "title": "承認と差分" },
-    { "file": "Forge.dc.html",      "x": 0,    "y": 1080, "w": 1440, "h": 900, "page": "page-1", "title": "Forgejo" },
-    { "file": "Worktrees.dc.html",  "x": 1560, "y": 1080, "w": 1440, "h": 900, "page": "page-1", "title": "worktree 並列" },
-    { "file": "Brain.dc.html",      "x": 3120, "y": 1080, "w": 1440, "h": 900, "page": "page-1", "title": "ブレインと実行役" },
-    { "file": "DirectionB.dc.html", "x": 0,    "y": 0,    "w": 1440, "h": 900, "page": "page-2", "title": "候補B 盤面" },
-    { "file": "DirectionC.dc.html", "x": 1560, "y": 0,    "w": 1440, "h": 900, "page": "page-2", "title": "候補C 単一の流れ" }
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "メイン"
+    },
+    {
+      "file": "Palette.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "/ パレット"
+    },
+    {
+      "file": "Approval.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "承認と差分"
+    },
+    {
+      "file": "Forge.dc.html",
+      "x": 0,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "Forgejo"
+    },
+    {
+      "file": "Worktrees.dc.html",
+      "x": 1560,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "worktree（人が起こす分）"
+    },
+    {
+      "file": "Setup.dc.html",
+      "x": 4680,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "Forgejo の準備"
+    },
+    {
+      "file": "Brain.dc.html",
+      "x": 3120,
+      "y": 1080,
+      "w": 1440,
+      "h": 900,
+      "page": "page-1",
+      "title": "ブレインと実行役"
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2",
+      "title": "候補B 盤面"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "page": "page-2",
+      "title": "候補C 単一の流れ"
+    }
   ],
   "annotations": [
-    { "id": "note-goal", "x": 0, "y": -168, "w": 620, "page": "page-1",
-      "text": "Izuna / 採用案「端末の血を引くワークベンチ」\n暗色・高密度・等幅寄り。狐火のアンバーは「人間の判断を待っている箇所」だけに使う。\nv1 の完成条件（7手）: Forgejo から clone → ブレインを起こす → 実行役を worktree ごとに起こす →\nidle を受けて指示を返す → 人間が承認 → PR → worktree を畳む。" },
-    { "id": "note-share", "x": 3120, "y": 912, "w": 520, "page": "page-1",
-      "text": "共有はフォルダで行う\nブレインと実行役はコンテキストの窓を共有しない。\n~/.izuna/teams/<team>/ を全員に --add-dir で渡し、\nbrief / tasks / summaries / decisions / log を置く。\ndecisions と log は追記のみ ―― 黙って書き換えない。\n圧縮を跨いで残るのはここだけ。" },
-    { "id": "note-amber", "x": 3120, "y": -168, "w": 460, "page": "page-1",
-      "text": "アンバーの規律\nアクセント色は「承認待ち」だけに割り当てる。\n並列で一番壊れるのは承認の取りこぼしなので、\n色が意味を持つようにして、装飾には使わない。" },
-    { "id": "note-alts", "x": 0, "y": -140, "w": 620, "page": "page-2",
-      "text": "採用案は「サイドバー + 会話 + インスペクタ」。\nこの2つは棄却した候補ではなく、まだ選べる分岐。\nどちらかに寄せたい場合は言ってください。" }
+    {
+      "id": "note-share",
+      "x": 3120,
+      "y": 912,
+      "w": 520,
+      "page": "page-1",
+      "text": "共有はフォルダで行う\nブレインと実行役はコンテキストの窓を共有しない。\n~/.izuna/teams/<team>/ を全員に --add-dir で渡し、\nbrief / tasks / summaries / decisions / log を置く。\ndecisions と log は追記のみ ―― 黙って書き換えない。\n圧縮を跨いで残るのはここだけ。"
+    },
+    {
+      "id": "note-amber",
+      "x": 3120,
+      "y": -168,
+      "w": 460,
+      "page": "page-1",
+      "text": "アンバーの規律\nアクセント色は「承認待ち」だけに割り当てる。\n並列で一番壊れるのは承認の取りこぼしなので、\n色が意味を持つようにして、装飾には使わない。"
+    },
+    {
+      "id": "note-alts",
+      "x": 0,
+      "y": -140,
+      "w": 620,
+      "page": "page-2",
+      "text": "採用案は「サイドバー + 会話 + インスペクタ」。\nこの2つは棄却した候補ではなく、まだ選べる分岐。\nどちらかに寄せたい場合は言ってください。"
+    },
+    {
+      "id": "note-goal",
+      "x": 0,
+      "y": -196,
+      "w": 700,
+      "page": "page-1",
+      "text": "Izuna / 採用案「端末の血を引くワークベンチ」\n暗色・高密度・等幅寄り。狐火のアンバーは「人間の判断を待っている箇所」だけに使う。\nv1 の完成条件（7手）: GitHub の Issue → ブレイン → 実行役 → idle を受けて指示 →\n人間が承認 → 作業場(Forgejo)の PR → 出口(GitHub)の PR → worktree を畳む。"
+    },
+    {
+      "id": "note-updated",
+      "x": 4680,
+      "y": -196,
+      "w": 560,
+      "page": "page-1",
+      "text": "2026-09-07 更新: 段1〜5 の実装で分かったことを反映した\n・実行役は別セッションではなく Agent ツールのサブエージェント\n・worktree は Claude Code の agent isolation が配る\n・金額は出さない（請求額ではないため）。枠の使用率に置換\n・権限モードの切り替えと Forgejo の準備画面を追加\n・承認は専用画面ではなく会話内インライン"
+    }
   ],
-  "launch": { "view": "canvas", "page": "page-1" }
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
 }

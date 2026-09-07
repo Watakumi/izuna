@@ -172,48 +172,60 @@
     </div>
 
     <!-- 実行役の状態 -->
+    <!-- 実行役。**別セッションではなくサブエージェント**（実測で確定） -->
     <div style="width: 268px; flex-shrink: 0; background: #101216; border-left: 1px solid #242832; display: flex; flex-direction: column;">
-      <div style="padding: 15px 16px 11px; font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">実行役</div>
+      <div style="padding: 15px 16px 11px; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">実行役</span>
+        <span class="mono" style="font-size: 10.5px; color: #4a5164;">2 人 · 1 実行中</span>
+      </div>
 
       <div style="display: flex; flex-direction: column; gap: 10px; padding: 0 14px;">
         <div style="border: 1px solid #3d3527; border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #1a1710;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="width: 7px; height: 7px; border-radius: 50%; background: #e8a33d;"></span>
-            <span class="mono" style="font-size: 11.5px; color: #e6e8ee;">A@izuna</span>
+            <span style="font-size: 12.5px; font-weight: 500;">general-purpose</span>
           </div>
-          <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/wt/izuna-palette</span>
-          <div style="display: flex; gap: 11px; font-size: 11px;">
-            <span style="color: #4fc4b0;">+34</span><span style="color: #e06c75;">−8</span><span class="mono" style="color: #4a5164;">18.4k</span>
+          <span style="font-size: 11.5px; color: #9aa2b4; line-height: 1.5;">一覧を仮想化する</span>
+          <div style="display: flex; gap: 11px; font-size: 11px; align-items: center;">
+            <span class="mono" style="color: #7d8598;">Write</span>
+            <span class="mono" style="color: #4a5164;">18.4k</span>
+            <div style="flex-grow: 1;"></div>
+            <span style="color: #e8a33d;">承認待ち</span>
           </div>
-          <div style="height: 3px; background: #232936; border-radius: 2px;"><div style="width: 12%; height: 3px; background: #4fc4b0; border-radius: 2px;"></div></div>
         </div>
 
         <div style="border: 1px solid #2c3140; border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="width: 7px; height: 7px; border-radius: 50%; background: #4fc4b0;"></span>
-            <span class="mono" style="font-size: 11.5px; color: #c8cddb;">B@izuna</span>
+            <span style="font-size: 12.5px; color: #c8cddb;">general-purpose</span>
           </div>
-          <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/wt/izuna-score</span>
-          <div style="display: flex; gap: 11px; font-size: 11px;">
-            <span style="color: #4fc4b0;">+61</span><span style="color: #e06c75;">−3</span><span class="mono" style="color: #4a5164;">52.7k</span>
+          <span style="font-size: 11.5px; color: #9aa2b4; line-height: 1.5;">あいまい検索の重み付け</span>
+          <div style="display: flex; gap: 11px; font-size: 11px; align-items: center;">
+            <span class="mono" style="color: #7d8598;">Bash</span>
+            <span class="mono" style="color: #4a5164;">52.7k</span>
+            <div style="flex-grow: 1;"></div>
+            <span style="color: #4fc4b0;">実行中</span>
           </div>
-          <div style="height: 3px; background: #232936; border-radius: 2px;"><div style="width: 34%; height: 3px; background: #4fc4b0; border-radius: 2px;"></div></div>
-        </div>
-
-        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; border-radius: 8px; border: 1px dashed #333947; color: #9aa2b4; font-size: 12px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          実行役を足す
         </div>
       </div>
 
       <div style="flex-grow: 1;"></div>
+
+      <div style="padding: 14px 16px; border-top: 1px solid #242832; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">実行役の正体</span>
+        <div style="font-size: 11px; color: #7d8598; line-height: 1.7;">
+          別セッションではなく <b class="mono" style="color: #c8cddb; font-weight: 400;">Agent</b> ツールのサブエージェント。
+          <b style="color: #9aa2b4; font-weight: 500;">承認は agentId 付きで人間に届く</b>（実測）。
+          worktree は Claude Code の agent isolation が配るので、Izuna が自前で配らない。
+        </div>
+      </div>
 
       <div style="padding: 14px 16px; border-top: 1px solid #242832; display: flex; flex-direction: column; gap: 9px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6c7488" stroke-width="1.8"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
           <span style="font-size: 11px; letter-spacing: 0.08em; color: #6c7488; font-weight: 600;">共有フォルダ</span>
         </div>
-        <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/.izuna/teams/izuna-12/</span>
+        <span class="mono" style="font-size: 10.5px; color: #7d8598;">~/.izuna/teams/feat-palette/</span>
         <div class="mono" style="font-size: 10.5px; line-height: 1.95; color: #8b93a6;">
           <div><span style="color: #4a5164;">├</span> brief.md</div>
           <div><span style="color: #4a5164;">├</span> tasks/<span style="color: #636b7e;"> 3</span></div>
@@ -221,7 +233,7 @@
           <div><span style="color: #4a5164;">├</span> decisions.md <span style="color: #e8a33d;">追記のみ</span></div>
           <div><span style="color: #4a5164;">└</span> log.md <span style="color: #e8a33d;">追記のみ</span></div>
         </div>
-        <div style="font-size: 11px; color: #4a5164; line-height: 1.65; padding-top: 2px;">コンテキストの窓は共有しない。<b style="color: #7d8598; font-weight: 500;">圧縮を跨いで残るのはここだけ。</b></div>
+        <div style="font-size: 11px; color: #4a5164; line-height: 1.65;">--add-dir で全員に渡す。<b style="color: #7d8598; font-weight: 500;">圧縮を跨いで残るのはここだけ。</b></div>
       </div>
     </div>
 
