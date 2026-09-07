@@ -33,6 +33,21 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  /**
+   * **アプリの窓が外部サイトに置き換わるのを防ぐ。**
+   *
+   * 会話の本文には LLM が書いたリンクが出る。`target="_blank"` なら上の
+   * ハンドラを通って既定のブラウザに逃げるが、素の `<a href>` は
+   * **この窓ごと遷移する**。そうなると戻る手段が無い（メニューも無い）。
+   * 自前の画面（dev サーバと file://）以外への遷移は止めて、外に出す。
+   */
+  win.webContents.on('will-navigate', (event, url) => {
+    const here = win.webContents.getURL()
+    if (new URL(url).origin === new URL(here).origin) return
+    event.preventDefault()
+    void shell.openExternal(url)
+  })
+
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

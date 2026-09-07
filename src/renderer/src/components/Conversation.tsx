@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Draft, Item } from '../../../shared/transcript'
 import { C, MONO } from '../theme'
 import { ToolBlock } from './ToolBlock'
+import { Markdown } from './Markdown'
 
 function Thinking({ text }: { text: string }): React.JSX.Element {
   // 思考は既定で畳む。読みたい人だけ開ける
@@ -48,7 +49,8 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
         if (b.kind === 'thinking') return <Thinking key={i} text={b.text} />
         if (b.kind === 'tool') return <ToolBlock key={i} block={b} />
         return (
-          <div key={i} style={{ color: C.ink2, lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{b.text}</div>
+          // **確定した本文だけ markdown にする。** 途中の draft は下で素のまま出す
+          <div key={i} style={{ color: C.ink2 }}><Markdown text={b.text} /></div>
         )
       })}
     </div>
