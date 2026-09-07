@@ -4,6 +4,7 @@ import {
   missingScopes,
   parseAppIni,
   readyForForge,
+  reachableFromContainer,
   type ForgeFacts
 } from '../src/shared/forge'
 
@@ -22,6 +23,7 @@ RUN_MODE = prod
 
 [server]
 DOMAIN = localhost
+HTTP_ADDR = 127.0.0.1
 HTTP_PORT = 4649
 ROOT_URL = http://localhost:4649/
 
@@ -42,7 +44,7 @@ const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   binary: '/opt/homebrew/bin/forgejo',
   version: '16.0.3',
   config: { path: '/x/app.ini', rootUrl: 'http://localhost:4649/', httpPort: 4649,
-    installLocked: true, actionsEnabled: false },
+    httpAddr: '127.0.0.1', installLocked: true, actionsEnabled: false },
   reachable: true,
   tokenScopes: ['read:user', 'write:repository'],
   tokenWorks: true,
@@ -58,6 +60,7 @@ describe('app.ini を読む', () => {
 
   it('実物から要る値を拾う', () => {
     expect(c.httpPort).toBe(4649)
+    expect(c.httpAddr).toBe('127.0.0.1')
     expect(c.rootUrl).toBe('http://localhost:4649/')
     expect(c.installLocked).toBe(true)
   })
@@ -77,6 +80,38 @@ describe('app.ini を読む', () => {
     expect(empty.httpPort).toBeNull()
     expect(empty.rootUrl).toBeNull()
     expect(empty.installLocked).toBe(false)
+  })
+})
+
+describe('runner から届くか', () => {
+  it('loopback は届かない', () => {
+    // macOS では runner を Docker で回すしかない。コンテナはホストの
+    // 127.0.0.1 に届かないので、ここが loopback だと Actions は必ず失敗する
+    for (const a of ['127.0.0.1', 'localhost', '::1', ' 127.0.0.1 ']) {
+      expect(reachableFromContainer(a), a).toBe(false)
+    }
+  })
+
+  it('開いていれば届く', () => {
+    expect(reachableFromContainer('0.0.0.0')).toBe(true)
+    expect(reachableFromContainer('192.168.1.10')).toBe(true)
+  })
+
+  it('未設定は Forgejo の既定（0.0.0.0）とみなす', () => {
+    expect(reachableFromContainer(null)).toBe(true)
+  })
+
+  it('Actions が無効なら、この検査は出さない（関係ないので）', () => {
+    const off = diagnose(facts({}))
+    expect(off.find((c) => c.id === 'reachableFromRunner')).toBeUndefined()
+  })
+
+  it('Actions が有効で loopback なら警告する', () => {
+    const on = { ...facts({}).config!, actionsEnabled: true, httpAddr: '127.0.0.1' }
+    const c = diagnose(facts({ config: on })).find((x) => x.id === 'reachableFromRunner')
+    expect(c?.level).toBe('warn')
+    // 押すと外から見えるようになることを、押す前に伝える
+    expect(c?.fix?.warning).toContain('他の端末')
   })
 })
 

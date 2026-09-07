@@ -165,7 +165,12 @@ describe('パースの端', () => {
   })
 })
 
-describe('手元の CLI', () => {
+/**
+ * ここだけは**手元の環境**を見る検査で、コードの検査ではない。
+ * CI（コンテナ）に claude は無いので走らせない。`IZUNA_CI=1` で外す。
+ * ローカルの `pnpm verify` では必ず走る —— claude が無いことを緑で通さない。
+ */
+describe.skipIf(process.env.IZUNA_CI === '1')('手元の CLI', () => {
   it('実測した版と同じ claude が入っている', () => {
     const r = spawnSync('claude', ['--version'], { encoding: 'utf8' })
     // izuna は claude が無いと動かない。無いことを緑で通さない。

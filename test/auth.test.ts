@@ -50,7 +50,8 @@ describe('認証経路', () => {
   })
 })
 
-describe('SDK と CLI の版', () => {
+// 手元の環境を見る検査。CI には claude が無いので走らせない（protocol.test.ts の註）
+describe.skipIf(process.env.IZUNA_CI === '1')('SDK と CLI の版', () => {
   it('パッチ番号が揃っている', () => {
     // SDK 0.3.263 ↔ CLI 2.1.263 のように、末尾が連動している。
     // ずれたまま使うと、SDK が知らないイベントを CLI が吐く。

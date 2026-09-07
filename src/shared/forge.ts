@@ -9,7 +9,9 @@
  * 利用者の Forgejo 設定を黙って書き換えない。
  */
 
-export type CheckId = 'installed' | 'configured' | 'running' | 'token' | 'actions' | 'runner'
+export type CheckId =
+  | 'installed' | 'configured' | 'running' | 'token'
+  | 'actions' | 'reachableFromRunner' | 'runner'
 export type Level = 'ok' | 'warn' | 'ng' | 'unknown'
 
 export interface Check {
@@ -42,8 +44,22 @@ export interface ForgeConfig {
   path: string
   rootUrl: string | null
   httpPort: number | null
+  /** listen アドレス。127.0.0.1 だと Docker の runner から届かない */
+  httpAddr: string | null
   installLocked: boolean
   actionsEnabled: boolean
+}
+
+/**
+ * Docker のコンテナから届くアドレスか。
+ *
+ * macOS では runner を Docker で回すしかない（リリースに darwin の
+ * バイナリが無く linux-amd64 / linux-arm64 だけ）。コンテナはホストの
+ * 127.0.0.1 に届かないので、ここが loopback だと Actions は必ず失敗する。
+ */
+export function reachableFromContainer(addr: string | null): boolean {
+  if (!addr) return true // 未設定なら Forgejo の既定（0.0.0.0）
+  return !['127.0.0.1', 'localhost', '::1'].includes(addr.trim())
 }
 
 /** Izuna が要るスコープ。足りないものを見せるために持つ */
@@ -58,11 +74,13 @@ export function parseAppIni(text: string): Omit<ForgeConfig, 'path'> {
     return m ? m[1] : null
   }
   const port = value('HTTP_PORT')
+  const addr = value('HTTP_ADDR')
   // [actions] の ENABLED だけを見る。ほかの節にも ENABLED はある
   const actions = /^\s*\[actions\][^[]*?^\s*ENABLED\s*=\s*(\w+)/ms.exec(text)
   return {
     rootUrl: value('ROOT_URL'),
     httpPort: port && /^\d+$/.test(port) ? Number(port) : null,
+    httpAddr: addr,
     installLocked: (value('INSTALL_LOCK') ?? '').toLowerCase() === 'true',
     // 節が無ければ既定で有効。明示的に false のときだけ無効
     actionsEnabled: actions ? actions[1].toLowerCase() !== 'false' : true
@@ -130,6 +148,17 @@ export function diagnose(facts: ForgeFacts): Check[] {
         fix: { label: '有効にする', warning: 'app.ini を書き換えて Forgejo を再起動します' } })
 
   if (cfg?.actionsEnabled) {
+    // macOS では runner を Docker で回すしかないので、loopback だと必ず失敗する。
+    // Actions を有効にした人にだけ見せる（無効なら関係ない）
+    checks.push(reachableFromContainer(cfg.httpAddr)
+      ? { id: 'reachableFromRunner', label: 'runner から Forgejo に届く（任意）', level: 'ok',
+          detail: `HTTP_ADDR = ${cfg.httpAddr ?? '(既定)'}`, fix: null }
+      : { id: 'reachableFromRunner', label: 'runner から Forgejo に届く（任意）', level: 'warn',
+          detail: `HTTP_ADDR = ${cfg.httpAddr} は Docker のコンテナから届きません。` +
+            'macOS では runner を Docker で回すため、Actions を使うなら開く必要があります',
+          fix: { label: '0.0.0.0 で待ち受ける',
+            warning: 'app.ini を書き換えて再起動します。**同じネットワークの他の端末からも見えるようになります**' } })
+
     checks.push((facts.runners ?? 0) > 0
       ? { id: 'runner', label: 'runner が登録されている（任意）', level: 'ok',
           detail: `${facts.runners} 台`, fix: null }

@@ -1,0 +1,36 @@
+# 自宅の Forgejo Actions で回す検査。
+#
+# Forgejo は .forgejo/workflows/ を読み、無ければ .github/workflows/ に落ちる。
+# macOS には runner のバイナリが無い（リリースは linux-amd64 / linux-arm64 だけ）ので、
+# runner は Docker で回す。詳しくは docs/ACTIONS.md。
+name: verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: docker
+    container:
+      image: node:24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: pnpm を用意する
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.22.0 --activate
+
+      - name: 依存を入れる
+        # Electron のバイナリは検査に要らない。落とさないぶん速い
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: pnpm install --frozen-lockfile
+
+      - name: 型と検査
+        # IZUNA_CI=1 は「手元の環境を見る検査」を外す。
+        # claude CLI はコンテナに無く、それはコードの問題ではない（CLAUDE.md §15）
+        env:
+          IZUNA_CI: '1'
+        run: pnpm verify
