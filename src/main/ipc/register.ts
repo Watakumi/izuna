@@ -17,7 +17,7 @@ import {
   repoRoot,
   worktreeStatus
 } from '../git/worktree'
-import { CH, type PermissionAnswer, type RepoInfo, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
+import { CH, IPC_VERSION, type PermissionAnswer, type RepoInfo, type SessionEvent, type SessionId, type StartSessionInput } from '../../shared/ipc'
 
 /**
  * ClaudeSession を renderer に橋渡しする。
@@ -76,6 +76,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.closeTerminal, (_e, id: string) => term.closeTerminal(id))
   ipcMain.handle(CH.forgeFix, (_e, id: FixId) => applyFix(id))
 
+  ipcMain.handle(CH.ipcVersion, () => IPC_VERSION)
   ipcMain.handle(CH.teamPath, (_e, name: string) => teamPathFor(name))
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {

@@ -16,6 +16,7 @@ import { TerminalPane } from './components/TerminalPane'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
 import { useSessions } from './useSessions'
+import { IPC_VERSION } from '../../shared/ipc'
 
 /**
  * Izuna の画面（段3 まで）。
@@ -31,6 +32,15 @@ function App(): React.JSX.Element {
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
   const [showTrees, setShowTrees] = useState(false)
+  const [stale, setStale] = useState(false)
+
+  // main は HMR で入れ替わらない。食い違ったまま動くと、原因を指さない
+  // 「No handler registered」に化ける（実際に 5 時間古い main で踏んだ）
+  useEffect(() => {
+    window.izuna.ipcVersion()
+      .then((v) => setStale(v !== IPC_VERSION))
+      .catch(() => setStale(true))
+  }, [])
   const [picked, setPicked] = useState(0)
   const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
@@ -96,6 +106,18 @@ function App(): React.JSX.Element {
 
   return (
     <div style={S.app}>
+      {stale && (
+        <div style={S.stale}>
+          <b>main プロセスが古いままです。</b>
+          <span style={{ opacity: 0.85 }}>
+            renderer は更新されましたが main は入れ替わっていません。
+            <code style={{ font: `11px ${MONO}`, padding: '1px 5px', background: 'rgba(0,0,0,0.25)', borderRadius: 3, margin: '0 4px' }}>
+              pnpm dev
+            </code>
+            を起動し直してください。
+          </span>
+        </div>
+      )}
       <Sidebar
         panels={sessions.panels}
         activeId={sessions.activeId}
@@ -248,6 +270,9 @@ function App(): React.JSX.Element {
 const S: Record<string, React.CSSProperties> = {
   app: { position: 'absolute', inset: 0, display: 'flex', background: C.bg, color: C.ink,
     font: `13px/1.6 ${SANS}` },
+  stale: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60,
+    display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
+    background: C.red, color: '#fff', fontSize: 12 },
   main: { flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' },
   bar: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', height: 44,
     background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 },

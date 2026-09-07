@@ -76,6 +76,8 @@ export interface IzunaApi {
   closeTerminal(id: string): Promise<void>
   /** PTY からの出力。返り値を呼ぶと購読をやめる */
   onTerminal(handler: (event: TerminalEvent) => void): () => void
+  /** main 側の IPC 版。renderer 側と食い違っていたら再起動が要る */
+  ipcVersion(): Promise<number>
   /** 共有フォルダの場所。renderer は homedir を知らない */
   teamPath(name: string): Promise<string>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
@@ -106,6 +108,17 @@ export type TerminalEvent =
   | { id: string; kind: 'data'; data: string }
   | { id: string; kind: 'exit'; code: number }
 
+/**
+ * renderer と main の版。**両方に同じ値が焼かれる。**
+ *
+ * `pnpm dev` は renderer を HMR で更新するが、**main の再起動は別**である。
+ * 食い違ったまま動くと `No handler registered for '...'` のような、
+ * 原因を指さないエラーになる（実際に 5 時間古い main で踏んだ）。
+ *
+ * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
+ */
+export const IPC_VERSION = 3
+
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
   forgeFacts: 'izuna:forge:facts',
@@ -129,6 +142,7 @@ export const CH = {
   resizeTerminal: 'izuna:term:resize',
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
+  ipcVersion: 'izuna:ipc-version',
   teamPath: 'izuna:team:path',
   repo: 'izuna:repo',
   createWorktree: 'izuna:worktree:create',

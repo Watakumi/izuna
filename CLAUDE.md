@@ -331,6 +331,14 @@ type PermissionResult =
 
   **孤児が 1 つ残るほうが、終われないアプリよりましである。**
   詰まったら `pkill -f 'izuna/node_modules/.pnpm/electron'`。
+- **`pnpm dev` は main プロセスを入れ替えない**（2026-09-07 に踏んだ）。
+  renderer は HMR で更新されるが main はそのまま残る。IPC の口を足した直後は
+  食い違い、`No handler registered for 'izuna:repo'` のような**原因を指さない
+  エラー**になる。実際に 5 時間前に起動した main で踏んだ。
+
+  対処: `shared/ipc.ts` の `IPC_VERSION` を、**口を足したら上げる**。
+  renderer が起動時に main へ問い合わせ、食い違っていたら赤い帯を出す。
+  詰まったら `pkill -f 'izuna/node_modules/.pnpm/electron'` して `pnpm dev`。
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
