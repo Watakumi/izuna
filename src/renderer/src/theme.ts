@@ -139,12 +139,29 @@ export const S = {
 
 /**
  * 欧文の書体と、汎用の指定。**この 2 つのあいだに日本語の書体を挟む。**
- * 挟む位置が要点で、前後どちらに置いても効かない（`shared/ghostty.ts` 参照）。
+ *
+ * **入っていない書体を先頭に置かない。** ここは `'IBM Plex Sans'` だったが、
+ * この環境に **1 つも入っていなかった**（2026-09-08 実測）。すると次の候補、
+ * つまり日本語の書体が**欧文まで描く** —— BIZ UDGothic の欧文は細く幅広なので、
+ * 「日本語は見やすいが英語が見にくい」という形で出た。
+ *
+ * 実測（40px で幅を比較。同じ幅＝同じ書体）:
+ *
+ * | 組み | 欧文 | 仮名 |
+ * | --- | --- | --- |
+ * | `'BIZ UDGothic'`（比較用） | 360.0 | 280.0 |
+ * | **`system-ui, 'BIZ UDGothic'`** | **305.8**（SF Pro が取る） | **280.0**（BIZ が取る） |
+ * | `'SF Pro Text', 'BIZ UDGothic'` | 360.0 ← 名前が解決せず BIZ に落ちる | 280.0 |
+ * | `-apple-system, 'BIZ UDGothic'` | 360.0 ← 同上 | 280.0 |
+ *
+ * **`system-ui` だけが期待どおりに振る舞う。** 書体名で指すのではなく、
+ * OS に「UI の書体」を聞く形にしておくこと。
  */
-const LATIN = "'IBM Plex Sans'"
-const GENERIC = 'system-ui, -apple-system, sans-serif'
+const LATIN = 'system-ui'
+const GENERIC = '-apple-system, sans-serif'
 
-const MONO_BASE = "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace"
+// 同じ理由で `'IBM Plex Mono'` を外した。入っていない書体は書かない
+const MONO_BASE = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 export const MONO = `var(--font-mono, ${MONO_BASE})`
 
 /**

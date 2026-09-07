@@ -93,6 +93,20 @@ async function main(): Promise<void> {
   check(await page.locator('table').count() > 0, '表が要素になっていない')
   check(prose.includes('現状'), '見出しが出ていない')
 
+  /**
+   * **欧文が日本語の書体で描かれていないか。**
+   *
+   * 「日本語は見やすいが英語が見にくい」と言われて分かった ——
+   * 指定していた `'IBM Plex Sans'` がこの環境に 1 つも入っておらず、
+   * 次の候補である BIZ UDGothic が**欧文まで描いていた**。
+   * 書体名を書いただけでは、入っているかどうかは分からない。
+   */
+  const latin = (await page.evaluate(
+    readFileSync(join(ROOT, 'scripts/latin.js'), 'utf8')
+  )) as { body: string; actual: number; japaneseOnly: number; parts: string[] }
+  check(Math.abs(latin.actual - latin.japaneseOnly) > 1,
+    `欧文が日本語の書体で描かれている（${latin.parts[0]} が入っていない）: ${latin.body}`)
+
   // 本文の色と書体
   const strong = await page.locator('strong').first()
   check(await strong.count() > 0, '強調が要素になっていない')
