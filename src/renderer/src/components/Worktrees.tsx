@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
 import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 import { Button, Tag } from './ui'
 
 /**
@@ -81,8 +81,7 @@ export function Worktrees({
                 <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
                   background: row.session?.pending ? C.amber : row.session ? C.teal : 'transparent',
                   border: row.session ? 'none' : `1.5px solid ${C.faint}` }} />
-                <span style={{ font: `11px ${MONO}`, color: C.ink, minWidth: 0,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ font: `11px ${MONO}`, color: C.ink, ...ellipsis }}>
                   {row.branch ?? '(detached)'}
                 </span>
                 {row.main && <Tag>本体</Tag>}

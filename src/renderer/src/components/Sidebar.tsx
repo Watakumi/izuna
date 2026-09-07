@@ -1,5 +1,5 @@
 import type { Panel } from '../useSessions'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 
 /**
  * セッション一覧（段3）。
@@ -95,10 +95,9 @@ export function Sidebar({
                 border: d.filled ? 'none' : `1.5px solid ${d.color}`
               }} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flexGrow: 1 }}>
-                <span style={{ fontSize: 12, color: on ? C.ink : C.ink2, overflow: 'hidden',
-                  textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label}</span>
+                <span style={{ fontSize: 12, color: on ? C.ink : C.ink2, ...ellipsis }}>{p.label}</span>
                 <span style={{ font: `10px ${MONO}`, color: p.pending ? C.amber : C.dim2,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  ...ellipsis }}>
                   {p.branch ?? '(worktree なし)'} · {label(p)}
                 </span>
               </div>

@@ -201,10 +201,6 @@ export function Tag({ children, tone }: {
 }
 
 /** 一行に収まらない文字を切る。UI 全体で同じ切り方にする */
-export const ellipsis: React.CSSProperties = {
-  minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-}
-
 /** 使用率のメーター。7 割を超えたら注意の色に変わる */
 export function Meter({ label, value }: { label: string; value: number }): React.JSX.Element {
   const pct = Math.round(value * 100)

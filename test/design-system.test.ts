@@ -124,6 +124,42 @@ describe('フォーム要素を素で書かない', () => {
   })
 })
 
+describe('Fast Refresh を壊さない', () => {
+  /**
+   * React Fast Refresh は「**そのファイルがコンポーネントだけを export
+   * している**」ことを前提に、状態を保ったまま差し替える。値が混ざると
+   * モジュールごと捨てて読み直すので、**編集のたびに画面の状態が飛ぶ**。
+   *
+   * ```
+   * hmr invalidate /src/components/ui.tsx
+   * Could not Fast Refresh ("ellipsis" export is incompatible)
+   * ```
+   *
+   * 実際に `ellipsis`（CSS の値）を混ぜて踏んだ。値は `theme.ts` に置く。
+   */
+  it('ui.tsx はコンポーネントだけを出す', () => {
+    const text = files.find((f) => f.path === UI)!.text
+    const bad = [...text.matchAll(/^export (?:function|const) (\w+)/gm)]
+      .map((m) => m[1])
+      .filter((name) => !/^[A-Z]/.test(name))
+    expect(bad).toEqual([])
+  })
+})
+
+describe('繰り返す書き方をまとめる', () => {
+  /**
+   * `minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+   * whiteSpace: 'nowrap'` を **17 箇所**手書きしていた。
+   * `ellipsis` という部品を作っておきながら、**当てるのを忘れていた**。
+   */
+  it("溢れを「…」にする書き方は theme.ts の ellipsis を使う", () => {
+    const bad = files
+      .filter((f) => f.path !== THEME && /textOverflow: 'ellipsis'/.test(f.text))
+      .map((f) => f.path)
+    expect(bad).toEqual([])
+  })
+})
+
 describe('部品を 1 箇所にまとめる', () => {
   it('ボタンや入力欄を各所で定義しない', () => {
     // 以前は 5 ファイルに 13 箇所コピペされ、padding が微妙に違っていた

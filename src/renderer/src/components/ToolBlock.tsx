@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Block } from '../../../shared/transcript'
 import { describeToolInput, diffFromToolInput } from '../../../shared/diff'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 import { DiffView } from './DiffView'
 
 type Tool = Extract<Block, { kind: 'tool' }>
@@ -29,8 +29,7 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
         style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer' }}>
         <span style={{ font: `11px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
         <span style={{ fontWeight: 500, fontSize: 12 }}>{block.name}</span>
-        <span style={{ font: `11px ${MONO}`, color: C.dim2, flexGrow: 1, minWidth: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ font: `11px ${MONO}`, color: C.dim2, flexGrow: 1, ...ellipsis }}>
           {describeToolInput(block.name, block.input)}
         </span>
         {exitCode !== null && (

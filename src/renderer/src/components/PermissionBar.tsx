@@ -1,6 +1,6 @@
 import type { PermissionRequest } from '../../../main/claude/session'
 import { describeToolInput, diffFromToolInput } from '../../../shared/diff'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 import { Button } from './ui'
 import { DiffView } from './DiffView'
 
@@ -35,8 +35,7 @@ export function PermissionBar({
                 実行役 {request.agentId.slice(0, 6)}
               </span>
             )}
-            <span style={{ font: `11px ${MONO}`, color: C.ink2, overflow: 'hidden',
-              textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ font: `11px ${MONO}`, color: C.ink2, ...ellipsis }}>
               {describeToolInput(request.toolName, request.input)}
             </span>
           </div>

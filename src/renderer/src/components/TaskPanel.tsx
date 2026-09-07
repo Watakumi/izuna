@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Block, TaskRun } from '../../../shared/transcript'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 import { ToolBlock } from './ToolBlock'
 
 /**
@@ -37,8 +37,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
         <span style={{ fontSize: 12, fontWeight: 500, flexShrink: 0 }}>
           {task.subagentType ?? '実行役'}
         </span>
-        <span style={{ fontSize: 12, color: C.dim2, flexGrow: 1, minWidth: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 12, color: C.dim2, flexGrow: 1, ...ellipsis }}>
           {task.description}
         </span>
         {task.lastTool && task.status === 'running' && (

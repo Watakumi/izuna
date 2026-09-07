@@ -3,7 +3,7 @@ import type { RepoInfo } from '../../../shared/ipc'
 import type { FoundRepo } from '../../../main/repos'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { belongsTo, byNewest, labelOf, type SessionSummary } from '../../../shared/sessions'
-import { C, F, MONO, R, S } from '../theme'
+import { C, F, MONO, R, S, ellipsis } from '../theme'
 import { Button, Faint, Input, TextArea } from './ui'
 
 /**
@@ -169,8 +169,7 @@ export function NewSession({
                         background: r.path === cwd ? C.raised : 'transparent' }}>
                       <span style={{ fontSize: 12, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
                       <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1,
-                        textAlign: 'right', minWidth: 0, overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.group}</span>
+                        textAlign: 'right', ...ellipsis }}>{r.group}</span>
                     </div>
                   ))}
                   {matches.length === 0 && <Faint style={{ padding: '12px 12px' }}>当たるものがありません</Faint>}
@@ -195,8 +194,7 @@ export function NewSession({
                     style={{ display: 'flex', alignItems: 'baseline', gap: S.md, padding: '8px 12px',
                       borderRadius: R.md, cursor: busy ? 'default' : 'pointer',
                       border: `1px solid ${C.line}`, opacity: busy ? 0.5 : 1 }}>
-                    <span style={{ fontSize: F.body, color: C.ink2, minWidth: 0, flexGrow: 1,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: F.body, color: C.ink2, flexGrow: 1, ...ellipsis }}>
                       {labelOf(p)}
                     </span>
                     <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
@@ -220,8 +218,7 @@ export function NewSession({
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
                         background: issue?.number === i.number ? C.amberBg : 'transparent' }}>
                       <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-                      <span style={{ fontSize: 12, color: C.ink2, minWidth: 0, overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
+                      <span style={{ fontSize: 12, color: C.ink2, ...ellipsis }}>{i.title}</span>
                     </div>
                   ))}
                 </div>

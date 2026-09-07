@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ForgejoPull } from '../../../main/forge/client'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
-import { C, F, MONO, S } from '../theme'
+import { C, F, MONO, S, ellipsis } from '../theme'
 import { Button, Card, Faint } from './ui'
 
 /**
@@ -111,8 +111,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               <Card key={p.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
-                  <span style={{ fontSize: 12, minWidth: 0, overflow: 'hidden',
-                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+                  <span style={{ fontSize: 12, ...ellipsis }}>{p.title}</span>
                 </div>
                 <span style={{ font: `10px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
               </Card>
@@ -187,8 +186,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
               <Card key={i.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `11px ${MONO}`, color: C.dim2 }}>#{i.number}</span>
-                  <span style={{ fontSize: 12, minWidth: 0, overflow: 'hidden',
-                    textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
+                  <span style={{ fontSize: 12, ...ellipsis }}>{i.title}</span>
                 </div>
               </Card>
             ))}
@@ -212,8 +210,7 @@ function Head({ dot, title, sub, note }: { dot: string; title: string; sub: stri
       background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       <span style={{ fontWeight: 600, fontSize: 12 }}>{title}</span>
-      <span style={{ font: `10px ${MONO}`, color: C.dim2, minWidth: 0, overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>
+      <span style={{ font: `10px ${MONO}`, color: C.dim2, ...ellipsis }}>{sub}</span>
       <div style={{ flexGrow: 1 }} />
       <span style={{ fontSize: 10, color: C.faint, flexShrink: 0 }}>{note}</span>
     </div>

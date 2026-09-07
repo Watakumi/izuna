@@ -3,7 +3,7 @@ import type { WorktreeStatus } from '../../../main/git/worktree'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 import { Meter } from './ui'
 
 /**
@@ -85,8 +85,7 @@ export function Inspector({
           issues.slice(0, 2).map((i) => (
             <div key={i.number} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ font: `11px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-              <span style={{ fontSize: 11, color: C.ink2, minWidth: 0, overflow: 'hidden',
-                textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.title}</span>
+              <span style={{ fontSize: 11, color: C.ink2, ...ellipsis }}>{i.title}</span>
             </div>
           ))
         )}

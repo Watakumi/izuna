@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { Scored } from '../../../shared/palette'
 import { isDeprioritized, originOf } from '../../../shared/palette'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 
 /** 当たった文字だけ色を変える。位置は filterCommands が返したものを使う */
 function Highlighted({ text, matches }: { text: string; matches: number[] }): React.JSX.Element {
@@ -68,8 +68,7 @@ export function Palette({
                 color: i === selected ? C.ink : C.ink2 }}>
                 /<Highlighted text={s.command.name} matches={s.matches} />
               </span>
-              <span style={{ fontSize: 12, color: C.dim2, flexGrow: 1, minWidth: 0,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, color: C.dim2, flexGrow: 1, ...ellipsis }}>
                 {s.command.description}
               </span>
               {s.viaAlias && (
@@ -83,7 +82,7 @@ export function Palette({
               {s.command.argumentHint && (
                 // 行では切る。全文は下の詳細に出るので失われない
                 <span style={{ font: `11px ${MONO}`, color: C.faint, flexShrink: 0,
-                  maxWidth: 210, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  maxWidth: 210, ...ellipsis }}>
                   {s.command.argumentHint}
                 </span>
               )}

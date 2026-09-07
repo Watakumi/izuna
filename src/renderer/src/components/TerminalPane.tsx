@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FitAddon, Terminal, init } from 'ghostty-web'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 
 /**
  * worktree のシェル（段6）。
@@ -99,8 +99,7 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
         <span style={{ fontSize: 11, letterSpacing: '0.06em', color: C.dim2, fontWeight: 600 }}>
           ターミナル
         </span>
-        <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1, minWidth: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cwd}</span>
+        <span style={{ font: `10px ${MONO}`, color: C.faint, flexGrow: 1, ...ellipsis }}>{cwd}</span>
         {exited !== null && (
           <span style={{ fontSize: 10, color: exited === 0 ? C.dim2 : C.red }}>
             終了 ({exited})

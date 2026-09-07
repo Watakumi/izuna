@@ -1,5 +1,5 @@
 import type { FileDiff } from '../../../shared/diff'
-import { C, MONO } from '../theme'
+import { C, MONO, ellipsis } from '../theme'
 
 /** ツールが宣言した変更をそのまま出す。承認の材料 */
 export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }): React.JSX.Element {
@@ -10,8 +10,7 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
     <div style={{ background: C.code, borderRadius: 7, overflow: 'hidden', border: `1px solid ${C.line}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
         borderBottom: `1px solid ${C.line}`, background: C.panel }}>
-        <span style={{ font: `11px ${MONO}`, color: C.ink2, overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{diff.path}</span>
+        <span style={{ font: `11px ${MONO}`, color: C.ink2, ...ellipsis }}>{diff.path}</span>
         <span style={{ flexGrow: 1 }} />
         <span style={{ font: `11px ${MONO}`, color: C.teal }}>+{diff.added}</span>
         <span style={{ font: `11px ${MONO}`, color: C.red }}>−{diff.removed}</span>

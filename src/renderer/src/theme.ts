@@ -107,3 +107,18 @@ export const SANS = "'IBM Plex Sans', system-ui, -apple-system, sans-serif"
 export const mono = (size: keyof typeof F = 'small'): string => `${F[size]}px ${MONO}`
 export const sans = (size: keyof typeof F = 'base', lineHeight = 1.6): string =>
   `${F[size]}px/${lineHeight} ${SANS}`
+
+/**
+ * 1 行に収めて溢れたら「…」にする。
+ *
+ * **`ui.tsx` ではなく、ここに置く。** これはコンポーネントではなく値で、
+ * コンポーネント以外を混ぜると React Fast Refresh が効かなくなる
+ * （`hmr invalidate ... "ellipsis" export is incompatible`）。
+ * 編集のたびに画面の状態が飛ぶので、実害がある。
+ */
+export const ellipsis = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap'
+} as const

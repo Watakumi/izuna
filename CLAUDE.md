@@ -984,10 +984,29 @@ Preflight がフォーム要素を親から継承させるが、こちらは 294
 `S.ghostSmall` / `S.danger` のように、**App.tsx の中にボタンの定義が 6 つ残っている**
 （Inspector と ModeSwitch にも各 1 つ）。§17 の穴はまだ塞ぎ切れていない。
 
+### コンポーネント以外を `ui.tsx` に置かない（2026-09-08 に踏んだ）
+
+```
+hmr invalidate /src/components/ui.tsx
+Could not Fast Refresh ("ellipsis" export is incompatible)
+```
+
+React Fast Refresh は「**そのファイルがコンポーネントだけを export して
+いる**」ことを前提に、状態を保ったまま差し替える。値が混ざるとモジュール
+ごと捨てて読み直すので、**編集のたびに画面の状態が飛ぶ**。警告に見えるが
+実害がある。
+
+`ellipsis`（CSS の値）を `ui.tsx` に置いていた。値は `theme.ts` に移した。
+
+ついでに分かったこと: **`ellipsis` はどこからも使われていなかった。**
+一方で同じ 4 プロパティが **17 箇所**に手書きされていた。
+部品を作って**当てるのを忘れていた**ので、寄せた。
+
 ### 門
 
 `test/design-system.test.ts` がスケール外の値・部品の重複定義・生の色・
-**生のフォーム要素・`color-scheme` の宣言**を検出して落とす。
+生のフォーム要素・`color-scheme` の宣言・**`ui.tsx` の非コンポーネント
+export・手書きの `textOverflow: 'ellipsis'`** を検出して落とす。
 **「とりあえず許可リストに足す」をしない。**
 落ちたら値を直すか、スケール自体を見直す。
 
