@@ -349,6 +349,24 @@ type PermissionResult =
   `'wasm-unsafe-eval'` は WASM のコンパイルだけを許す狭い許可で、こちらを使う。
   WASM は base64 の `data:` URL として埋め込まれているので、`connect-src` にも
   `data:` が要る（fetch がそこを読む）。
+- **無視してよい macOS のログが 2 つある**（2026-09-08）。原因を探しに行かないこと。
+
+  ```
+  Electron[...] representedObject is not a WeakPtrToElectronMenuModelAsNSObject
+  Electron[...] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+  ```
+
+  前者は Electron の macOS メニュー実装。アプリのメニューを設定していないので
+  既定メニューが使われるが、そこに **macOS 自身が差し込む項目**（サービス・
+  音声入力・絵文字と記号）が混ざり、Electron が自前のラッパーでないものを
+  見たときに吐く。起動時に 1 回。
+
+  後者は Input Method Kit、つまり**日本語入力**。macOS のシステムログで、
+  Chrome や VS Code でも出る。入力欄に最初にフォーカスが入るときに出る。
+
+  **症状が出ていれば別**（変換候補が出ない・確定した字が消える・メニューが
+  反応しない・繰り返し出る）。そのときはログではなく症状を追うこと。
+
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
