@@ -122,6 +122,34 @@ export function luminance(hex: string): number {
 
 export const isDark = (hex: string): boolean => luminance(hex) < 0.5
 
+/** WCAG のコントラスト比。1（同じ）〜21（黒と白） */
+export function contrast(a: string, b: string): number {
+  const [x, y] = [luminance(a), luminance(b)]
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+/**
+ * `from` から `to` へ寄せて、**目標のコントラスト比になる色**を返す。
+ *
+ * 係数（「地から 0.66」）で決めるのをやめた理由: 係数はテーマによって
+ * 意味が変わる。地と文字の差が小さいテーマでは、同じ 0.66 でも読めない色になる。
+ * **読めるかどうかは比で決まる**ので、比を目標にして解く。
+ *
+ * 目標に届かないとき（利用者が低コントラストの文字色を選んでいるとき）は
+ * `to` をそのまま返す。**利用者の選んだ色より濃くはしない。**
+ */
+export function atContrast(bg: string, from: string, to: string, target: number): string {
+  if (contrast(bg, to) <= target) return to
+  let lo = 0
+  let hi = 1
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2
+    if (contrast(bg, mix(from, to, mid)) < target) lo = mid
+    else hi = mid
+  }
+  return mix(from, to, hi)
+}
+
 /** 2 色のうち、地に対して読めるほう */
 export function readableOn(bg: string, a: string, b: string): string {
   const l = luminance(bg)
@@ -153,10 +181,12 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
   if (!bg || !fg) return null
 
   const dark = isDark(bg)
-  /** 地から文字へ寄せる */
+  /** 地から文字へ寄せる（面や枠のように、読む対象でないもの） */
   const up = (t: number): string => mix(bg, fg, t)
   /** 地から更に離す（暗いテーマでは暗く、明るいテーマでは明るく） */
   const away = (t: number): string => mix(bg, dark ? '#000000' : '#ffffff', t)
+  /** **読む字は比で決める。** 目標に届かなければ文字色そのまま */
+  const text = (target: number): string => atContrast(bg, bg, fg, target)
 
   const pick = (...ns: number[]): string | null => {
     for (const n of ns) if (colors.palette[n]) return colors.palette[n]
@@ -174,14 +204,23 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
     raised: up(0.1),
     code: away(0.22),
 
+    // **本文は利用者が選んだ色そのもの。** 勝手に薄めない ——
+    // `foreground` は「長く読んで目が楽な色」として既に選ばれている。
+    // 強調は色ではなく字の太さで付ける（Notion 自身がそうしている）。
     ink: fg,
-    ink2: up(0.88),
-    dim: up(0.66),
-    dim2: up(0.52),
-    faint: up(0.34),
+    ink2: fg,
+    // 以下は比を目標にして解く。7.0 が AAA、4.5 が AA の境目。
+    //
+    // **`faint` を 4.5 未満にしない。** 数えたら 10px の字に 13 箇所
+    // 使っていた（キーヒント・時刻・補助ラベル）。装飾ではなく情報を
+    // 持っているので、AA を割ると読めない。以前は 2.3 だった。
+    dim: text(8),
+    dim2: text(6),
+    faint: text(4.5),
 
-    line: up(0.12),
-    line2: up(0.2),
+    // 枠は読む対象ではないが、**見えないと箱が消える**
+    line: atContrast(bg, bg, fg, 1.6),
+    line2: atContrast(bg, bg, fg, 2.2),
 
     amber,
     // 札の上に載る字。**地と文字のうち読めるほうを選ぶ**（黄は明るいので普通は地）

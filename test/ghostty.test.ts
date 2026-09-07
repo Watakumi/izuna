@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  isDark, luminance, mergeColors, mix, normalizeHex,
+  atContrast, contrast, isDark, luminance, mergeColors, mix, normalizeHex,
   parseGhosttyConfig, readableOn, skinFrom, type GhosttyColors
 } from '../src/shared/ghostty'
 
@@ -115,8 +115,30 @@ describe('トークンへの割り当て', () => {
     expect(skin.amberInk).toBe('#191919')
   })
 
+  /**
+   * ここが今回の指摘（「字がグレーすぎる」）に対する門である。
+   * **目分量で係数を置くと必ず薄くなる。** 比で縛る。
+   */
+  it('読む字が AA を割らない', () => {
+    expect(contrast(skin.bg, skin.ink)).toBeGreaterThanOrEqual(7)
+    expect(contrast(skin.bg, skin.ink2)).toBeGreaterThanOrEqual(7)
+    expect(contrast(skin.bg, skin.dim)).toBeGreaterThanOrEqual(7)
+    expect(contrast(skin.bg, skin.dim2)).toBeGreaterThanOrEqual(5.5)
+    // faint は 10px の字に 13 箇所使っている。装飾ではない
+    expect(contrast(skin.bg, skin.faint)).toBeGreaterThanOrEqual(4.4)
+  })
+
+  it('本文は利用者が選んだ文字色そのもの（勝手に薄めない）', () => {
+    expect(skin.ink2).toBe('#cfcecc')
+  })
+
+  it('枠は見える（以前は 1.2 で箱が消えていた）', () => {
+    expect(contrast(skin.bg, skin.line)).toBeGreaterThanOrEqual(1.5)
+  })
+
   it('地と文字のあいだに段階ができる', () => {
-    const steps = [skin.bg, skin.line, skin.faint, skin.dim2, skin.dim, skin.ink2, skin.ink]
+    // `ink2` は `ink` と同じ（本文＝利用者の選んだ色）なので段には入れない
+    const steps = [skin.bg, skin.line, skin.line2, skin.faint, skin.dim2, skin.dim, skin.ink]
     const ls = steps.map(luminance)
     for (let i = 1; i < ls.length; i++) expect(ls[i]).toBeGreaterThan(ls[i - 1])
   })
@@ -125,6 +147,13 @@ describe('トークンへの割り当て', () => {
     const light = skinFrom({ background: '#fdf6e3', foreground: '#3b3b32', palette: Array(16).fill(null) })!
     expect(luminance(light.ink)).toBeLessThan(luminance(light.dim))
     expect(luminance(light.dim)).toBeLessThan(luminance(light.bg))
+  })
+
+  it('低コントラストの文字色を選んでいたら、それより濃くしない', () => {
+    // 地に近い文字色。目標 8.0 には届かないので、文字色そのままで止める
+    const s2 = skinFrom({ background: '#191919', foreground: '#6a6a6a', palette: Array(16).fill(null) })!
+    expect(s2.dim).toBe('#6a6a6a')
+    expect(atContrast('#191919', '#191919', '#6a6a6a', 8)).toBe('#6a6a6a')
   })
 
   it('地か文字が無ければ当てない（中途半端に当てるより既定がよい）', () => {
