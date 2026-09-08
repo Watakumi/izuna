@@ -183,27 +183,70 @@ export function formatLogEntry(e: LogEntry): string {
   return [e.at, `${e.from}→${e.to}`, e.kind, e.target, e.note].join('\t')
 }
 
+/** `./src/` と `src` を同じものとして扱う。先頭の `./` と末尾の `/` を落とす */
+function normalizePath(p: string): string {
+  return p.trim().replace(/^(\.\/)+/, '').replace(/\/+$/, '')
+}
+
 /**
- * 同時に走らせてよいかを見る。
+ * 2 つのパスが同じ場所を指しうるか。
+ *
+ * **完全一致では足りない。** `paths` は「触ってよいパス」なのでディレクトリで
+ * 書かれることが多く、`src/` と `src/a.ts` は同じファイルを触りうる。
+ * 片方がもう片方の接頭辞（区切り単位）なら重なるとみなす。
+ * `src` と `src2` は重ならない。
+ */
+export function pathsOverlap(a: string, b: string): boolean {
+  const x = normalizePath(a)
+  const y = normalizePath(b)
+  if (x === '' || y === '') return true // 空は「どこでも」
+  return x === y || x.startsWith(y + '/') || y.startsWith(x + '/')
+}
+
+const live = (t: Task): boolean => t.status === 'doing' || t.status === 'idle'
+
+/** 2 つの札のあいだで重なるパス。両方の書き方を並べて返す（どちらが広いか分かるように） */
+function overlapOf(a: Task, b: Task): string[] {
+  const out: string[] = []
+  for (const p of a.paths) for (const q of b.paths) {
+    if (!pathsOverlap(p, q)) continue
+    for (const s of p === q ? [p] : [p, q]) if (!out.includes(s)) out.push(s)
+  }
+  return out
+}
+
+/**
+ * 同時に走っていて、同じ場所を触りうる組。
  *
  * **並列で最も壊れるのは、2 つの実行役が同じファイルを触ること。**
- * `paths` が重なる task を同時に `doing` にしてはいけない。
- * ここは実行前に必ず通す。
+ * これは**事後の検出**である —— 両方が `doing` になってから鳴る。
+ * 実行前に止めるのは `readyTasks` の側（走っているものと重なる札を出さない）。
+ * 実行役を起こすのはブレインであって Izuna ではないので、どちらも助言に留まる。
  */
 export function pathCollisions(tasks: Task[]): Array<{ a: string; b: string; paths: string[] }> {
-  const live = tasks.filter((t) => t.status === 'doing' || t.status === 'idle')
+  const running = tasks.filter(live)
   const out: Array<{ a: string; b: string; paths: string[] }> = []
-  for (let i = 0; i < live.length; i++) {
-    for (let j = i + 1; j < live.length; j++) {
-      const shared = live[i].paths.filter((p) => live[j].paths.includes(p))
-      if (shared.length) out.push({ a: live[i].id, b: live[j].id, paths: shared })
+  for (let i = 0; i < running.length; i++) {
+    for (let j = i + 1; j < running.length; j++) {
+      const shared = overlapOf(running[i], running[j])
+      if (shared.length) out.push({ a: running[i].id, b: running[j].id, paths: shared })
     }
   }
   return out
 }
 
-/** 依存が満たされていて、まだ着手していないもの */
+/**
+ * いま着手してよいもの。依存が満たされていて、未着手で、
+ * **走っている札と触る場所が重ならない**もの。
+ *
+ * 重なるものを出さないのが「実行前に通す」の実体である。
+ * 出さないだけで止めはしない（Izuna は実行役を起こさない）。
+ */
 export function readyTasks(tasks: Task[]): Task[] {
   const done = new Set(tasks.filter((t) => t.status === 'done').map((t) => t.id))
-  return tasks.filter((t) => t.status === 'todo' && t.depends_on.every((d) => done.has(d)))
+  const running = tasks.filter(live)
+  return tasks.filter((t) =>
+    t.status === 'todo' &&
+    t.depends_on.every((d) => done.has(d)) &&
+    running.every((r) => overlapOf(t, r).length === 0))
 }

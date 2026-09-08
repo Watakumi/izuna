@@ -10,6 +10,7 @@ import {
   parseSummary,
   parseTask,
   pathCollisions,
+  pathsOverlap,
   readyTasks,
   serializeTask,
   type Task
@@ -123,6 +124,28 @@ describe('並列させてよいかの判定', () => {
     ])).toEqual([])
   })
 
+  it('**ディレクトリとその中のファイルは重なる**（`paths` はディレクトリで書かれることが多い）', () => {
+    const c = pathCollisions([
+      task({ id: '01', status: 'doing', paths: ['src/'] }),
+      task({ id: '02', status: 'doing', paths: ['src/a.ts'] })
+    ])
+    expect(c).toEqual([{ a: '01', b: '02', paths: ['src/', 'src/a.ts'] }])
+  })
+
+  it('書き方の違いで取り違えない（`./` と末尾の `/`）', () => {
+    expect(pathCollisions([
+      task({ id: '01', status: 'doing', paths: ['./src/a.ts'] }),
+      task({ id: '02', status: 'doing', paths: ['src/a.ts'] })
+    ])).toHaveLength(1)
+  })
+
+  it('接頭辞は区切り単位。`src` と `src2` は別', () => {
+    expect(pathsOverlap('src', 'src2')).toBe(false)
+    expect(pathsOverlap('src', 'src/x')).toBe(true)
+    expect(pathsOverlap('src/', './src')).toBe(true)
+    expect(pathsOverlap('', 'a')).toBe(true)
+  })
+
   it('走っていないものは衝突に数えない', () => {
     // todo と done は誰も触っていないので、重なっていても問題にならない
     expect(pathCollisions([
@@ -154,6 +177,23 @@ describe('次に着手できるもの', () => {
     const ts = [
       task({ id: '01', status: 'done' }),
       task({ id: '02', status: 'todo', depends_on: ['01'] })
+    ]
+    expect(readyTasks(ts).map((t) => t.id)).toEqual(['02'])
+  })
+
+  it('**走っている札と触る場所が重なるものは出さない**（実行前に通す、の実体）', () => {
+    const ts = [
+      task({ id: '01', status: 'doing', paths: ['src/'] }),
+      task({ id: '02', status: 'todo', paths: ['src/a.ts'] }),
+      task({ id: '03', status: 'todo', paths: ['docs/'] })
+    ]
+    expect(readyTasks(ts).map((t) => t.id)).toEqual(['03'])
+  })
+
+  it('走っているものが終われば出る', () => {
+    const ts = [
+      task({ id: '01', status: 'done', paths: ['src/'] }),
+      task({ id: '02', status: 'todo', paths: ['src/a.ts'] })
     ]
     expect(readyTasks(ts).map((t) => t.id)).toEqual(['02'])
   })
