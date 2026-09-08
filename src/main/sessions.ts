@@ -1,6 +1,6 @@
 import { open, readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import {
   persistedOutputPath, replay, replayTask, summarize, withPersistedOutput,
   type SessionSummary
@@ -111,13 +111,18 @@ export async function scanSessions(): Promise<SessionSummary[]> {
  * 逃がされたツール出力を、実際の中身に差し替える。
  *
  * **無いファイルは印のまま残す。** 消すと「出力が空だった」と読めてしまう。
+ *
+ * **読むのは記録の置き場の中だけ。** 印はツールの出力に書かれるので、
+ * エージェントが偽の印を書けば Izuna に任意のファイルを読ませられる（§26）。
+ * 本物の逃がし先は必ず `~/.claude/projects/` の下にある。
  */
 async function fillPersistedOutputs(lines: string[]): Promise<string[]> {
+  const inside = resolve(claudeProjectsDir()) + '/'
   return Promise.all(
     lines.map(async (line) => {
       if (!line.includes('persisted-output')) return line
       const path = persistedOutputPath(line)
-      if (!path) return line
+      if (!path || !resolve(path).startsWith(inside)) return line
       try {
         // JSON の文字列に埋める。生のまま入れると行が壊れる
         const body = await readFile(path.replace(/\\n$/, ''), 'utf8')

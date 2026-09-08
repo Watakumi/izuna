@@ -135,6 +135,26 @@ describe('サイドカーを読む', () => {
     expect(JSON.stringify(await replaySession(SID))).toContain('persisted-output')
   })
 
+  it('**記録の置き場の外は読まない**（偽の印で任意のファイルを読ませられる。§26）', async () => {
+    const outside = join(tmpdir(), `izuna-outside-${process.pid}.txt`)
+    writeFileSync(outside, '外にある秘密')
+    try {
+      put('-a', SID,
+        line({ type: 'assistant', cwd: '/a', message: { id: 'm1', content: [
+          { type: 'tool_use', id: 't1', name: 'Bash', input: {} }
+        ] } }) +
+        line({ type: 'user', cwd: '/a', message: { content: [{
+          type: 'tool_result', tool_use_id: 't1',
+          content: `<persisted-output> Full output saved to: ${outside} </persisted-output>`
+        }] } }))
+      const text = JSON.stringify(await replaySession(SID))
+      expect(text).not.toContain('外にある秘密')
+      expect(text).toContain('persisted-output')
+    } finally {
+      rmSync(outside, { force: true })
+    }
+  })
+
   it('実行役の記録を読む', async () => {
     put('-a', SID, line({ type: 'user', cwd: '/a', message: { content: 'やって' } }))
     sidecar('subagents/agent-abc123.jsonl',
