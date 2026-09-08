@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ForgejoPull } from '../../../main/forge/client'
-import type { GitHubIssue } from '../../../main/forge/github'
+import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
 import { C, F, MONO, S, ellipsis } from '../theme'
 import { Button, Card, Faint } from './ui'
@@ -15,6 +15,32 @@ import { Button, Card, Faint } from './ui'
  * **モーダルにしない。** 会話と行き来しながら使う画面なので、
  * 横に並べて見られる必要がある。狭い縦の柱なので上下に積む。
  */
+/**
+ * 一度読んだものは覚えておく。
+ *
+ * タブを行き来するたびに畳まれて作り直されるので、**そのたびに
+ * 「読んでいます…」が出ていた**。中身はほとんど変わらないのに、
+ * 毎回 git と 2 つの API を待たせるのは筋が悪い。
+ *
+ * **覚えたものを先に出し、裏で取り直す。** 古い値が一瞬見えるのは、
+ * 「読んでいます…」より害が小さい —— それは嘘ではなく、**少し前の事実**である。
+ * 何か操作したあとは `load()` が走るので、結果はすぐ新しくなる。
+ *
+ * 画面を閉じたら消える（module の寿命）。ディスクには置かない。
+ */
+interface Snapshot {
+  remotes: RemoteRef[]
+  branch: string | null
+  pushed: boolean
+  pulls: ForgejoPull[]
+  issues: GitHubIssue[]
+  ghPulls: GitHubPull[]
+  gh: { ok: boolean; detail: string } | null
+  commits: string[]
+  bases: { sandbox: string | null; upstream: string | null }
+}
+const remembered = new Map<string, Snapshot>()
+
 export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): React.JSX.Element {
   /**
    * **「まだ読んでいない」と「読んだ結果、無い」を区別する。**
@@ -23,15 +49,17 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
    * 「Forgejo の remote がありません」が出て、すぐ消えていた。
    * 一瞬でも嘘を出すと、利用者は設定を疑って触りに行く。
    */
-  const [remotes, setRemotes] = useState<RemoteRef[] | null>(null)
-  const [branch, setBranch] = useState<string | null>(null)
-  const [pushed, setPushed] = useState(false)
-  const [pulls, setPulls] = useState<ForgejoPull[] | null>(null)
-  const [issues, setIssues] = useState<GitHubIssue[] | null>(null)
-  const [gh, setGh] = useState<{ ok: boolean; detail: string } | null>(null)
-  const [commits, setCommits] = useState<string[] | null>(null)
+  const seed = remembered.get(cwd) ?? null
+  const [remotes, setRemotes] = useState<RemoteRef[] | null>(seed?.remotes ?? null)
+  const [branch, setBranch] = useState<string | null>(seed?.branch ?? null)
+  const [pushed, setPushed] = useState(seed?.pushed ?? false)
+  const [pulls, setPulls] = useState<ForgejoPull[] | null>(seed?.pulls ?? null)
+  const [issues, setIssues] = useState<GitHubIssue[] | null>(seed?.issues ?? null)
+  const [ghPulls, setGhPulls] = useState<GitHubPull[] | null>(seed?.ghPulls ?? null)
+  const [gh, setGh] = useState<{ ok: boolean; detail: string } | null>(seed?.gh ?? null)
+  const [commits, setCommits] = useState<string[] | null>(seed?.commits ?? null)
   const [bases, setBases] = useState<{ sandbox: string | null; upstream: string | null }>(
-    { sandbox: null, upstream: null }
+    seed?.bases ?? { sandbox: null, upstream: null }
   )
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
@@ -54,15 +82,33 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
     ])
     setBases({ sandbox: sandboxBase, upstream: upstreamBase })
 
+    let nextPushed = false
+    let nextPulls: ForgejoPull[] = []
+    let nextIssues: GitHubIssue[] = []
+    let nextGhPulls: GitHubPull[] = []
+    let nextCommits: string[] = []
+
     if (sb && br) {
-      setPushed(await window.izuna.isPushed(cwd, sb.name, br).catch(() => false))
-      if (sb.owner && sb.repo) setPulls(await window.izuna.forgePulls(sb.owner, sb.repo).catch(() => []))
+      nextPushed = await window.izuna.isPushed(cwd, sb.name, br).catch(() => false)
+      if (sb.owner && sb.repo) nextPulls = await window.izuna.forgePulls(sb.owner, sb.repo).catch(() => [])
+      setPushed(nextPushed)
+      setPulls(nextPulls)
     }
     if (status.ok) {
-      setIssues(await window.izuna.ghIssues(cwd).catch(() => []))
+      nextIssues = await window.izuna.ghIssues(cwd).catch(() => [])
+      nextGhPulls = await window.izuna.ghPulls(cwd).catch(() => [])
+      setGhPulls(nextGhPulls)
       const base = up && upstreamBase ? `${up.name}/${upstreamBase}` : 'HEAD~10'
-      setCommits(await window.izuna.commitsSince(cwd, base).catch(() => []))
+      nextCommits = await window.izuna.commitsSince(cwd, base).catch(() => [])
+      setIssues(nextIssues)
+      setCommits(nextCommits)
     }
+
+    remembered.set(cwd, {
+      remotes: rs, branch: br, gh: status, pushed: nextPushed, pulls: nextPulls,
+      issues: nextIssues, ghPulls: nextGhPulls, commits: nextCommits,
+      bases: { sandbox: sandboxBase, upstream: upstreamBase }
+    })
   }, [cwd])
 
   useEffect(() => { void load() }, [load])
@@ -81,6 +127,18 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
   }
 
   const { sandbox, upstream } = rolesIn(remotes ?? [])
+
+  /**
+   * 見出しの右には**事実を置く**。
+   *
+   * 以前は「荒れてよい」「仕上がったものだけ」と書いていたが、
+   * 二段であることは**あいだの矢印が既に言っている**ので重複していたし、
+   * 見るたびに同じ文字が出るだけで、何も分からなかった。
+   */
+  const upstreamNote = [
+    ghPulls === null ? null : `PR ${ghPulls.length} 件`,
+    bases.upstream
+  ].filter(Boolean).join(' · ')
   const stage = stageOf({ remotes: remotes ?? [], pushedToSandbox: pushed })
 
   // 読み終わるまでは**何も断定しない**
@@ -97,7 +155,8 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
       {/* Sandbox */}
       <Head dot={sandbox ? C.teal : C.faint} title="Sandbox"
-        sub={sandbox?.host ?? '未設定'} note="荒れてよい" />
+        sub={sandbox?.host ?? '未設定'}
+        note={pulls === null ? '' : `PR ${pulls.length} 件`} />
       <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
         {!sandbox ? (
           <>
@@ -163,7 +222,8 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
       {/* Upstream */}
       <Head dot={gh?.ok ? C.teal : C.red} title="Upstream"
-        sub={gh?.ok ? gh.detail : 'gh が使えません'} note="仕上がったものだけ" />
+        sub={gh?.ok ? gh.detail : 'gh が使えません'}
+        note={upstreamNote} />
       <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
         {!gh?.ok && <Faint>{gh?.detail ?? '確認しています…'}</Faint>}
         {gh?.ok && branch && (
