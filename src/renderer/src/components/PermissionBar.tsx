@@ -3,6 +3,8 @@ import { describeToolInput, diffFromToolInput } from '../../../shared/diff'
 import { F, C, MONO, ellipsis } from '../theme'
 import { Button } from './ui'
 import { DiffView } from './DiffView'
+import { Questions } from './Questions'
+import { questionsOf } from '../../../shared/question'
 
 /**
  * 承認は**人間が持つ**（docs/GOAL.md 完成の定義 5）。
@@ -11,12 +13,25 @@ import { DiffView } from './DiffView'
 export function PermissionBar({
   request,
   onAllow,
+  onAnswer,
   onDeny
 }: {
   request: PermissionRequest
   onAllow: (alwaysThisSession: boolean) => void
+  /** `AskUserQuestion` への答え。問い → 選んだ札（自由記述を含む） */
+  onAnswer: (answers: Record<string, string[]>) => void
   onDeny: () => void
 }): React.JSX.Element {
+  // **問いは問いとして描く。** 許可の釦で答えさせると、人は選択肢に答えられない
+  const questions = questionsOf(request.toolName, request.input)
+  if (questions) {
+    return (
+      <div style={{ border: `1px solid ${C.amberLine}`, background: C.amberBg, borderRadius: 11, padding: 16 }}>
+        <Questions questions={questions} onAnswer={onAnswer} onDeny={onDeny} />
+      </div>
+    )
+  }
+
   const diff = diffFromToolInput(request.toolName, request.input)
   // CLI が「常に許可」の中身を提案してくる。ボタンの意味を自前で決めない
   const suggestion = request.suggestions?.[0]

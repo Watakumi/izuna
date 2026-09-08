@@ -16,6 +16,7 @@ import { Board } from './components/Board'
 import { Files } from './components/Files'
 import { Attachments, collectImages } from './components/Attachments'
 import type { Attachment } from '../../shared/image'
+import { answerInput } from '../../shared/question'
 import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
@@ -237,6 +238,8 @@ function App(): React.JSX.Element {
                         ? { behavior: 'allow', updatedPermissions: active.pending.suggestions }
                         : { behavior: 'allow' }
                     )}
+                    // 問いへの答えは allow に updatedInput で載せる（shared/question.ts）
+                    onAnswer={(answers) => respond({ behavior: 'allow', updatedInput: answerInput(active.pending?.input, answers) })}
                     onDeny={() => respond({ behavior: 'deny', message: '拒否しました' })}
                   />
                 </div>
