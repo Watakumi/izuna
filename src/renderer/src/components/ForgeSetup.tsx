@@ -3,7 +3,7 @@ import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import type { FixId } from '../../../main/forge/setup'
 import type { ForgejoToken } from '../../../main/forge/client'
 import { F, C, MONO, R, S, ellipsis } from '../theme'
-import { Button, Reload } from './ui'
+import { Button, Reload, Tag } from './ui'
 
 /**
  * Forgejo のセットアップ（段5 の入口）。
@@ -180,10 +180,10 @@ function Tokens(): React.JSX.Element | null {
           {data.tokens.map((t) => {
             const mine = data.mineLast8 !== null && t.last8 === data.mineLast8
             return (
+              // **記号に説明を付けない。** 読めば分かる札を行に置く
               <div key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: S.md }}>
-                <span style={{ font: `${F.small}px ${MONO}`, color: mine ? C.teal : C.dim2,
-                  flexShrink: 0, width: 16 }}>{mine ? '●' : '○'}</span>
                 <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>{t.name}</span>
+                {mine && <Tag>使用中</Tag>}
                 <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
                   …{t.last8}
                 </span>
@@ -194,12 +194,9 @@ function Tokens(): React.JSX.Element | null {
               </div>
             )
           })}
-          <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.6 }}>
-            ● がいま使っているもの。消すのは Forgejo の画面から（API はパスワード認証を要求します）
-          </span>
           <a href={data.settingsUrl} target="_blank" rel="noreferrer"
             style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}>
-            {data.settingsUrl}
+            Forgejo で消す
           </a>
         </div>
       )}
