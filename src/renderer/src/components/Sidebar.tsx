@@ -98,7 +98,9 @@ export function Sidebar({
                 <span style={{ fontSize: F.body, color: on ? C.ink : C.ink2, ...ellipsis }}>{p.label}</span>
                 <span style={{ font: `${F.micro}px ${MONO}`, color: p.pending ? C.amber : C.dim2,
                   ...ellipsis }}>
-                  {p.branch ?? '(worktree なし)'} · {label(p)}
+                  {/* **無いことを書かない。** worktree は Izuna が作らないので
+                      大半のセッションで空になる。空なら状態だけ出せばよい */}
+                  {p.branch ? `${p.branch} · ` : ''}{label(p)}
                 </span>
               </div>
               <span

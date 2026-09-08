@@ -156,10 +156,13 @@ function App(): React.JSX.Element {
           )}
           {active?.transcript.limits && (
             // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
-            // 実際の制約はサブスクリプションの枠のほう
-            <span style={S.note} title="Pro プランの使用量。ターミナルの Claude Code と同じ上限を共有します">
-              使用量 {Math.round(active.transcript.limits.fiveHour * 100)}%
-              <span style={{ color: C.faint }}> / 5時間</span>
+            // 実際の制約はサブスクリプションの上限のほう。
+            //
+            // **「使用量」とも書かない。** 「使用料」と一字しか違わず、金額を
+            // 出していると読める。金額は §14 で消したのに、言葉のほうで
+            // 戻してしまっていた。
+            <span style={S.note} title="5 時間ごとの上限に対する割合。ターミナルの Claude Code と同じ上限を共有します">
+              5時間 <span style={{ color: C.ink2 }}>{Math.round(active.transcript.limits.fiveHour * 100)}%</span>
             </span>
           )}
           {/*

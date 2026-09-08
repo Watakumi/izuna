@@ -111,7 +111,7 @@ export function Inspector({
         </button>
       </Block>
 
-      <Block title="枠">
+      <Block title="上限">
         {limits ? (
           <>
             <Meter label="5時間" value={limits.fiveHour} />
