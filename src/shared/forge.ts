@@ -166,7 +166,7 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
   if (facts.tokenUnreadable) {
     return { id, label, level: 'ng',
       // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
-      detail: '保管したトークンを復号できません。暗号化の鍵が変わっています（keychain の izuna Safe Storage が 2 つあると起きる）',
+      detail: '保管したトークンを復号できません。暗号化に使った鍵と違う鍵で動いています（別の keychain、または --use-mock-keychain）',
       fix: { label: '発行し直す', warning: REISSUE } }
   }
 
