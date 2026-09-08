@@ -15,7 +15,8 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 pnpm install          # git hook と Electron 向けの再ビルドもここで
 pnpm dev              # 開発。renderer は HMR、main は再起動が要る（CLAUDE.md §7）
 pnpm verify           # 型検査と検査（カバレッジの線つき）。緑でなければ進まない
-pnpm shots            # 実 renderer を作り物の window.izuna で撮る（CLAUDE.md §22）
+pnpm shots            # 実 renderer を作り物の window.izuna で撮る（§22）
+pnpm e2e              # 本物の Electron を起動して口を叩く（§30）。要 build と Forgejo
 pnpm build:mac        # .app を作る。署名も配布もしない
 ```
 

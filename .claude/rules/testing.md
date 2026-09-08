@@ -280,3 +280,19 @@ Izuna は library ではない。**外部の利用者という逃げ道が無い
 ### 失敗の記録（2026-09-08、docs/NIMBALYST.md §3 の 4）
 
 `.claude/agent-mistakes.md`。日付、何が起きたか、根本原因、教訓。作業を始める前に読む。
+
+---
+
+## 30. 本物を起動する検査（2026-09-09）
+
+`pnpm e2e`（`scripts/e2e.ts`）。Playwright の `_electron` で `out/` のアプリを起動し、
+renderer から `window.izuna` を呼んで返りの形を見る。**`shots.ts` は main を動かさない**ので、
+「口を足したのに handler が無い」「Forgejo の口のパスが違う」はここでしか分からない。
+
+見るもの: 窓の題、preload の面が `CH` と一致すること、`IPC_VERSION` が main と renderer で同じこと、
+読むだけの口 12 個が返ること、Forgejo に届いてトークンが通るなら `forgeRepos` → `forgePulls` →
+`forgePullDiff` が差分を返すこと、画面の見出しと釦。**書く口は呼ばない**（push、worktree の削除、セッションの起動）。
+
+要るものが多い（組み立て済みのアプリ、Forgejo、保管したトークン）ので `verify` には入れない。
+初回（2026-09-09）は 17 件通り、Forgejo の段は「トークンが読めない」で skip した。
+それが上の §7 の keychain の罠の発見だった。**skip は「通った」ではない。** 出力を読むこと。

@@ -145,7 +145,7 @@ Windows / Linux、複数エージェント対応。
 | --- | --- | --- |
 | `.claude/rules/claude-cli.md` | claude の駆動 | §5, §6, §13, §14 |
 | `.claude/rules/pitfalls.md` | 実装上の罠 | §7 |
-| `.claude/rules/testing.md` | 検査 | §10, §11, §24, §28 |
+| `.claude/rules/testing.md` | 検査 | §10, §11, §24, §28, §30 |
 | `.claude/rules/team.md` | ブレインと実行役 | §12 |
 | `.claude/rules/config.md` | 設定 | §15 |
 | `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29 |
@@ -165,6 +165,7 @@ Windows / Linux、複数エージェント対応。
 ```bash
 pnpm verify     # typecheck + test + カバレッジの線。緑にならないものを完了としない
 pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが要るので verify には入れない
+pnpm e2e        # 本物の Electron を起動して口を叩く（§30）。Forgejo とトークンが要る
 ```
 
 線と数え方は `.claude/rules/testing.md`（§10、§28）。
@@ -176,7 +177,7 @@ pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが�
 1. **変えたい挙動を検査で先に書く。** 不変条件に触る変更では、守るものを明示してから直す（§11）。
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
-   新しい節を足すなら番号は続きから（いまの最後は §29）。既存の番号は変えない。
+   新しい節を足すなら番号は続きから（いまの最後は §30）。既存の番号は変えない。
 4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
    `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
 5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。
