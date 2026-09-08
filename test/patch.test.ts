@@ -34,7 +34,11 @@ describe('unified diff', () => {
     const a = files[0]
     expect(a).toMatchObject({ added: 2, removed: 1, whole: false })
     expect(a.lines.map((l) => [l.kind, l.before, l.after])).toEqual([
-      ['same', 1, 1], ['del', 2, null], ['add', null, 2], ['add', null, 3], ['same', 3, 4]
+      ['same', 1, 1],
+      ['del', 2, null],
+      ['add', null, 2],
+      ['add', null, 3],
+      ['same', 3, 4]
     ])
   })
 
@@ -57,7 +61,18 @@ describe('unified diff', () => {
   })
 
   it('2 つ目の hunk で行番号を取り直す', () => {
-    const two = ['diff --git a/x b/x', '--- a/x', '+++ b/x', '@@ -1 +1 @@', '-a', '+b', '@@ -10,2 +10,2 @@', ' k', '-l', '+m'].join('\n')
+    const two = [
+      'diff --git a/x b/x',
+      '--- a/x',
+      '+++ b/x',
+      '@@ -1 +1 @@',
+      '-a',
+      '+b',
+      '@@ -10,2 +10,2 @@',
+      ' k',
+      '-l',
+      '+m'
+    ].join('\n')
     const f = parseUnifiedDiff(two)[0]
     expect(f.lines.at(-1)).toEqual({ kind: 'add', text: 'm', before: null, after: 11 })
   })

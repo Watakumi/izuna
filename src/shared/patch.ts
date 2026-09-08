@@ -46,9 +46,16 @@ export function parseUnifiedDiff(text: string): FileDiff[] {
       after = Number(hunk[2])
       continue
     }
-    if (line.startsWith('index ') || line.startsWith('similarity ') || line.startsWith('rename ') ||
-        line.startsWith('new file') || line.startsWith('deleted file') || line.startsWith('old mode') ||
-        line.startsWith('new mode') || line === '\\ No newline at end of file') {
+    if (
+      line.startsWith('index ') ||
+      line.startsWith('similarity ') ||
+      line.startsWith('rename ') ||
+      line.startsWith('new file') ||
+      line.startsWith('deleted file') ||
+      line.startsWith('old mode') ||
+      line.startsWith('new mode') ||
+      line === '\\ No newline at end of file'
+    ) {
       continue
     }
     const mark = line[0]

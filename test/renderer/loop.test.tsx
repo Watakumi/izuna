@@ -14,13 +14,29 @@ let wakeups: Wakeup[] = []
 let calls: string[] = []
 
 const panel = (over: Partial<Panel> = {}): Panel => ({
-  id: 's1', label: 'izuna', cwd: '/w', branch: null, team: 't', transcript: emptyTranscript(),
-  pending: null, prompt: '', commands: [], ended: false, loop: null, ...over
+  id: 's1',
+  label: 'izuna',
+  cwd: '/w',
+  branch: null,
+  team: 't',
+  transcript: emptyTranscript(),
+  pending: null,
+  prompt: '',
+  commands: [],
+  ended: false,
+  loop: null,
+  ...over
 })
 
 const w = (over: Partial<Wakeup>): Wakeup => ({
-  id: 'w1', sessionId: 's1', cwd: '/w', prompt: '続きを', fireAt: Date.now() + 30 * 60_000,
-  state: 'pending', createdAt: 0, ...over
+  id: 'w1',
+  sessionId: 's1',
+  cwd: '/w',
+  prompt: '続きを',
+  fireAt: Date.now() + 30 * 60_000,
+  state: 'pending',
+  createdAt: 0,
+  ...over
 })
 
 beforeEach(() => {
@@ -28,9 +44,16 @@ beforeEach(() => {
   calls = []
   ;(window as unknown as { izuna: unknown }).izuna = {
     listWakeups: async () => wakeups,
-    addWakeup: async (input: { minutes: number; prompt: string }) => { calls.push(`add:${input.minutes}:${input.prompt}`); return w({}) },
-    removeWakeup: async (id: string) => { calls.push(`remove:${id}`) },
-    fireWakeup: async (id: string) => { calls.push(`fire:${id}`) },
+    addWakeup: async (input: { minutes: number; prompt: string }) => {
+      calls.push(`add:${input.minutes}:${input.prompt}`)
+      return w({})
+    },
+    removeWakeup: async (id: string) => {
+      calls.push(`remove:${id}`)
+    },
+    fireWakeup: async (id: string) => {
+      calls.push(`fire:${id}`)
+    },
     startLoop: async () => {},
     stopLoop: async () => {}
   }
@@ -45,7 +68,9 @@ describe('時刻を決めて送る', () => {
 
   it('分と依頼を渡して予約する', async () => {
     render(<Loop panel={panel()} />)
-    fireEvent.change(screen.getByPlaceholderText('時刻が来たら送る依頼'), { target: { value: '続きを' } })
+    fireEvent.change(screen.getByPlaceholderText('時刻が来たら送る依頼'), {
+      target: { value: '続きを' }
+    })
     fireEvent.click(screen.getByText('予約する'))
     await waitFor(() => expect(calls).toEqual(['add:30:続きを']))
   })

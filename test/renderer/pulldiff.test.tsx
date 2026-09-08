@@ -8,11 +8,22 @@ import { parseUnifiedDiff } from '../../src/shared/patch'
 afterEach(cleanup)
 
 /** sandbox の PR の差分を読む側（docs/NIMBALYST.md §7 の 3） */
-const files = parseUnifiedDiff([
-  'diff --git a/src/a.ts b/src/a.ts', '--- a/src/a.ts', '+++ b/src/a.ts',
-  '@@ -1,2 +1,2 @@', ' keep', '-old', '+new',
-  'diff --git a/b.md b/b.md', '--- /dev/null', '+++ b/b.md', '@@ -0,0 +1 @@', '+hi'
-].join('\n'))
+const files = parseUnifiedDiff(
+  [
+    'diff --git a/src/a.ts b/src/a.ts',
+    '--- a/src/a.ts',
+    '+++ b/src/a.ts',
+    '@@ -1,2 +1,2 @@',
+    ' keep',
+    '-old',
+    '+new',
+    'diff --git a/b.md b/b.md',
+    '--- /dev/null',
+    '+++ b/b.md',
+    '@@ -0,0 +1 @@',
+    '+hi'
+  ].join('\n')
+)
 
 describe('PR の差分', () => {
   it('読んでいるあいだはそう言い、読めたらファイルごとに描いて合計を出す', async () => {
@@ -27,7 +38,13 @@ describe('PR の差分', () => {
   })
 
   it('読めなければ理由を出す（黙って空にしない）', async () => {
-    render(<PullDiff load={async () => { throw new Error('Forgejo が 404 を返しました') }} />)
+    render(
+      <PullDiff
+        load={async () => {
+          throw new Error('Forgejo が 404 を返しました')
+        }}
+      />
+    )
     await waitFor(() => expect(screen.getByText('Forgejo が 404 を返しました')).toBeTruthy())
   })
 
