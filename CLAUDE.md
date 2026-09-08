@@ -12,8 +12,10 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
-  セッションの一覧と resume）。次は v1 の 7 手を通しで実機確認（docs/GOAL.md）
-- **`pnpm verify` は緑**（850件）。壊したら直してから進むこと
+  セッションの一覧と resume・画像・mermaid・盤面・自律ループ）。
+  2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直した。
+  次は v1 の 7 手を通しで実機確認（docs/GOAL.md）と、`docs/NIMBALYST.md` §3 の 7 件
+- **`pnpm verify` は緑**（929件）。壊したら直してから進むこと
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
 ---
@@ -25,7 +27,9 @@ GUI で描くデスクトップアプリ。ターミナルの中で TUI を動�
 アプリが CLI をプロトコル越しに操作する。
 
 **差別化の核は `/` コマンド。** 実行するだけでなく、横断的に見て・探して・
-編集できるようにする。既存 GUI はどれも実行しかできない。
+編集できるようにする。**「既存 GUI は実行しかできない」は古い** —— Nimbalyst は
+出どころと本文を見せ、元の `.md` を開ける（`docs/NIMBALYST.md` §5）。
+差にするなら、複数リポジトリを跨ぐ検索や実行履歴との突き合わせまで要る。
 
 想定利用者は作者ひとり。汎用製品として競合に勝つことは目標にしない（§2）。
 
@@ -104,14 +108,26 @@ renderer に `require` を露出しない、`contextBridge` で狭い型付き I
 
 ```
 src/main/claude/session.ts  SDK の query() で claude を飼うセッション層。UI を知らない
-src/main/claude/locate.ts   claude 本体とログインシェル環境の解決
-src/main/ipc/register.ts    renderer に出す唯一の面。shared/ipc.ts の型に従う
+src/main/claude/locate.ts   claude 本体とログインシェル環境の解決（環境は一度取ったら覚える。§27）
+src/main/claude/trust.ts    開く前の関所。hook と .mcp.json を数え、信頼していなければ止める（§26）
+src/main/hub.ts             セッションの駆動部。1 件 1 record（session・共有フォルダ・cwd・ループ）。§28
+src/main/ipc/register.ts    口を関数に繋ぐ表だけ。Handlers の型が口の数だけ手があることを見る
+src/main/exec.ts            外の道具（git / gh / forgejo / brew）を呼ぶ唯一の包み（§27）
 src/main/team.ts            共有フォルダと盤面（作る・読む・log.md を書く）
 src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
-src/shared/team.ts          札・要約・決定・記録のパース（純粋関数）
+src/main/loop.ts            自律ループの駆動と、進捗を申告する MCP ツール（§23）
+src/main/wakeup.ts          起床の予約。覚えのある id だけ起こす（§26）
+src/main/sessions.ts        ~/.claude/projects の走査と復元（§18）
+src/main/forge/, git/       Forgejo の API と準備、git の remote / worktree
+src/preload/index.ts        renderer に出す面。CH の鍵から組む。手で並べない（§27）
+src/shared/ipc.ts           口の型と名前（CH）。IPC_VERSION は鍵から導く
+src/shared/hooks.ts         リポジトリが持ち込む hook / MCP の検出（純粋関数）
+src/shared/links.ts         外に出してよいリンクの判定（純粋関数）
+src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
-src/renderer/src/App.tsx    画面。右パネルに 情報 / 盤面 / ループ / PR / ブランチ
+src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
+src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 盤面 / ループ / PR / ブランチ
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）
 scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
@@ -120,6 +136,9 @@ scripts/smoke-permission.ts 権限承認の握手が成立するかを見る。�
 scripts/shots.ts            実 renderer を作り物の window.izuna で撮る（§22）
 
 test/docs.test.ts           **文書と実装のズレの門**（§24）
+test/surface.test.ts        renderer に出す面・HTML の注入口・execFile の呼び手の門（§26–27）
+test/main-hub.test.ts       駆動部の検査。ループと予約は本物を回す（§28）
+test/renderer/              部品を jsdom で描く検査（§28）
 test/scripts-protocol.test.ts 録画に対する門。網も費用も要らない
 test/auth.test.ts           認証経路（Pro プランか API キーか）と SDK/CLI の版の門
 test/fixtures/session-safe.ndjson  --safe-mode で録った記録。**版管理に入る**。門はこれを見る
@@ -352,8 +371,10 @@ type PermissionResult =
   食い違い、`No handler registered for 'izuna:repo'` のような**原因を指さない
   エラー**になる。実際に 5 時間前に起動した main で踏んだ。
 
-  対処: `shared/ipc.ts` の `IPC_VERSION` を、**口を足したら上げる**。
-  renderer が起動時に main へ問い合わせ、食い違っていたら赤い帯を出す。
+  対処: `shared/ipc.ts` の `IPC_VERSION`。renderer が起動時に main へ問い合わせ、
+  食い違っていたら赤い帯を出す。**手では上げない** —— `CH` の鍵から導くので、
+  口が増減すれば必ず変わる（§27。以前は「上げ忘れても害はない」と書いていたが、
+  それは「検出しない」と同じだった）。
   詰まったら `pkill -f 'izuna/node_modules/.pnpm/electron'` して `pnpm dev`。
 - **CSP が WASM のコンパイルを止める**（2026-09-07 に踏んだ）。electron-vite の
   雛形は `script-src 'self'` で、`ghostty-web` が
@@ -538,13 +559,13 @@ pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが�
 
 | | |
 | --- | --- |
-| `shared/` | **95.9%**。純粋関数なので、ここは高くて当然 |
-| `main/` | **95%超**。ファイル・git・HTTP・PTY・外部コマンドを触る層 |
+| `shared/` + `main/` | **行 98.0%、分岐 88.0%**（2026-09-08）。線は行 97、分岐 84 |
+| `renderer/src/components/` | **行 30.6%**。描いた部品は 9 割超、画面全体を持つ 10 部品は未着手。線は測った床（§28） |
 
 **数えるのは検査できるものだけ**（`vitest.config.ts` の `include`）。
-Electron の起動（`index.ts`）と `ipcMain` への登録（`ipc/register.ts`）は外す ——
-混ぜて数えると「何割書けているか」ではなく「Electron が何割か」を見ることになる。
-画面は `pnpm shots` が別に見る。
+Electron の起動（`index.ts`）と口の表（`ipc/register.ts`）は外す —— 判断は
+`main/hub.ts` に出してあり、そちらを数える（§28）。線は範囲ごとに引く。
+画面の部品は jsdom で描いて数え、見た目は `pnpm shots` が別に見る。
 
 ### 外の道具を呼ぶ層は「渡している引数」を見る
 
@@ -589,6 +610,8 @@ Electron の起動（`index.ts`）と `ipcMain` への登録（`ipc/register.ts`
    `WorktreeCreate` フックが返すパスでも起きうる
 3. `github.ts` の検査を書くとき `loginShellEnv()` が先に `execFile` を
    消費することに気づいた —— 呼び出しの順序が見えていなかった
+   （2026-09-08 に `loginShellEnv` は一度取ったら覚えるようになった。§27。
+   検査は `locate` を差し替えているので、順序の問題は消えている）
 
 補助（どちらも**実 API を呼ぶ**ので、verify には入れていない）。
 
@@ -1043,7 +1066,8 @@ macOS の既定のファイルシステムは大小を区別しないので同�
   "repoRoots": ["~/work", "~/src"],                    // 探索先
   "repoDepth": 3,
   "claudePath": null,                                  // PATH に無い場所に置いているとき
-  "settingSources": ["project", "local"]               // §13
+  "settingSources": ["project", "local"],              // §13
+  "trustedRepos": []                                   // hook があっても聞かずに開く場所（前方一致）。§26
 }
 ```
 
@@ -1896,7 +1920,11 @@ MCP の進捗サーバも**明示的に無効化**されている
 ### なぜ入れたか
 
 Nimbalyst に `SafePathValidator` というパス検証器がある。設計文書には
-安全機構として書かれ、専用の検査もある。**製品コードからは一度も呼ばれていない。**
+安全機構として書かれ、専用の検査もある。**製品コードからは一度も呼ばれていない** ——
+と 2026-09-08 の朝に読んだが、同日の main（`49220e4b`）では
+`ElectronFileSystemService` が `validate()` を 3 か所で呼んでいる（`docs/NIMBALYST.md` §5）。
+読んだ時点が違ったか、読み違えたか。**門の理由は変わらない**（この形は起きうる）が、
+根拠として Nimbalyst を挙げるのはやめる。
 同じリポジトリのセキュリティ文書は `permissionEngine.ts` /
 `dangerousPatterns.ts` / `directoryScope.ts` を対策として挙げているが、
 **そのファイルは存在しない**。

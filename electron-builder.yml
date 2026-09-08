@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: kodama
+  executableName: izuna
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

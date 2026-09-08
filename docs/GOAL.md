@@ -173,6 +173,9 @@ Electron でも本物の Ghostty の VT 実装が使える。
 - **WYSIWYG エディタ・kanban・マインドマップ**（Nimbalyst の領域）
 - **拡張機構・プラグイン SDK**
 - **配布・自動更新**（自分の手元で動けばよい）
+- **データベース・計測**（保存層を持たない。送る相手がいない）
+
+Nimbalyst にあって入れないものは、理由つきで [NIMBALYST.md](NIMBALYST.md) §4 に並べてある。
 
 ---
 
