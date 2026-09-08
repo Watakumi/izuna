@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerSessionIpc, stopAllSessions } from './ipc/register'
-import { isOwnPage, openableOutside } from '../shared/links'
+import { isOwnPage, shouldOpenOutside } from '../shared/links'
 
 /** 通知の宛先。段3 で複数ウィンドウにするまでは 1 枚 */
 let mainWindow: BrowserWindow | null = null
@@ -30,36 +30,6 @@ function createWindow(): void {
     if (mainWindow === win) mainWindow = null
   })
 
-  /**
-   * **外に出すのは http / https / mailto だけ。**
-   *
-   * `shell.openExternal` は `open` と同じで、`file:` や独自スキームは
-   * アプリを起動する。本文のリンクは LLM が書くので、クリックで
-   * 何が起動するかを本文に委ねない（`shared/links.ts`）。
-   */
-  const escape = (url: string): void => {
-    if (openableOutside(url)) void shell.openExternal(url)
-  }
-
-  win.webContents.setWindowOpenHandler((details) => {
-    escape(details.url)
-    return { action: 'deny' }
-  })
-
-  /**
-   * **アプリの窓が外部サイトに置き換わるのを防ぐ。**
-   *
-   * 会話の本文には LLM が書いたリンクが出る。`target="_blank"` なら上の
-   * ハンドラを通って既定のブラウザに逃げるが、素の `<a href>` は
-   * **この窓ごと遷移する**。そうなると戻る手段が無い（メニューも無い）。
-   * 自前の画面（dev サーバと file://）以外への遷移は止めて、外に出す。
-   */
-  win.webContents.on('will-navigate', (event, url) => {
-    if (isOwnPage(url, win.webContents.getURL())) return
-    event.preventDefault()
-    escape(url)
-  })
-
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -72,9 +42,39 @@ function createWindow(): void {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+/**
+ * **全部の webContents に同じ門をかける。** 窓ごとに付けると、付け忘れた窓が
+ * 素の Electron の挙動（子窓を開く・窓ごと遷移する）になる。
+ *
+ * 外に出すのは http / https / mailto だけで、しかも**自分の origin と同じ http は出さない**
+ * （本文の相対リンクが dev サーバに漏れたもの）。`shell.openExternal` は `open` と同じで、
+ * `file:` や独自スキームはアプリを起動する。本文のリンクは LLM が書くので、
+ * クリックで何が起動するかを本文に委ねない（`shared/links.ts`）。
+ *
+ * 素の `<a href>` は**窓ごと遷移する**ので、自前の画面以外への遷移は止めて外に出す。
+ * 戻る手段が無い（メニューも無い）。
+ */
+function guardWebContents(contents: Electron.WebContents): void {
+  const escape = (url: string): void => {
+    if (shouldOpenOutside(url, contents.getURL() || null)) void shell.openExternal(url)
+  }
+  contents.setWindowOpenHandler((details) => {
+    escape(details.url)
+    return { action: 'deny' }
+  })
+  contents.on('will-navigate', (event, url) => {
+    if (isOwnPage(url, contents.getURL())) return
+    event.preventDefault()
+    escape(url)
+  })
+}
+
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('dev.watakumi.izuna')
+
+  // 窓が作られる前に登録する。あとから付けると最初の窓が素のまま
+  app.on('web-contents-created', (_e, contents) => guardWebContents(contents))
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

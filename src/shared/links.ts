@@ -43,3 +43,23 @@ export function isOwnPage(url: string, here: string): boolean {
   }
   return to.origin === at.origin
 }
+
+/**
+ * 外に出してよいか。**自分の origin と同じ http は出さない。**
+ *
+ * 本文の相対リンク（`./src/a.ts`）は dev では dev サーバの URL に解決される。
+ * それを既定のブラウザに渡すと、真っ白なページか 404 が開く。
+ * 漏れたファイルリンクであって、サイトではない（Nimbalyst の `windowOpenGuard` と同じ判断）。
+ */
+export function shouldOpenOutside(url: string, here: string | null): boolean {
+  if (!openableOutside(url)) return false
+  if (!here) return true
+  try {
+    const to = new URL(url)
+    const at = new URL(here)
+    if (to.protocol.startsWith('http') && at.protocol.startsWith('http') && to.origin === at.origin) return false
+  } catch {
+    return true
+  }
+  return true
+}

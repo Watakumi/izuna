@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isOwnPage, openableOutside } from '../src/shared/links'
+import { isOwnPage, openableOutside, shouldOpenOutside } from '../src/shared/links'
 
 /**
  * 本文のリンクは LLM が書く。クリックで何が起動するかを本文に委ねない（§26）。
@@ -36,5 +36,22 @@ describe('自分の画面の中か', () => {
   it('スキームが違えば外', () => {
     expect(isOwnPage('https://localhost:5173/', 'http://localhost:5173/')).toBe(false)
     expect(isOwnPage('::', 'http://localhost:5173/')).toBe(false)
+  })
+})
+
+describe('外に出すか（自分の origin を見る）', () => {
+  it('**dev サーバと同じ origin の http は出さない**（本文の相対リンクが漏れたもの）', () => {
+    expect(shouldOpenOutside('http://localhost:5173/src/a.ts', 'http://localhost:5173/')).toBe(false)
+    expect(shouldOpenOutside('https://example.com/', 'http://localhost:5173/')).toBe(true)
+  })
+
+  it('本番（file://）からは http なら出す', () => {
+    expect(shouldOpenOutside('https://example.com/', 'file:///app/index.html')).toBe(true)
+    expect(shouldOpenOutside('https://example.com/', null)).toBe(true)
+  })
+
+  it('スキームの判定はそのまま', () => {
+    expect(shouldOpenOutside('file:///etc/passwd', 'file:///app/index.html')).toBe(false)
+    expect(shouldOpenOutside('mailto:a@b', 'http://localhost:5173/')).toBe(true)
   })
 })

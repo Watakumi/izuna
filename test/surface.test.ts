@@ -71,12 +71,15 @@ describe('BrowserWindow', () => {
     expect(src).not.toMatch(/webSecurity:\s*false/)
   })
 
-  it('外に出す URL は必ず判定を通す', () => {
+  it('外に出す URL は必ず判定を通す。**門は全部の webContents にかける**', () => {
     // openExternal を直接呼ぶ箇所が無い（escape() だけが呼ぶ）
     const direct = [...src.matchAll(/shell\.openExternal\(/g)].length
     expect(direct).toBe(1)
-    expect(src).toContain('openableOutside(url)')
+    expect(src).toContain('shouldOpenOutside(url')
     expect(src).toContain('isOwnPage(')
+    expect(src).toContain("app.on('web-contents-created'")
+    // 窓ごとに付けない（付け忘れた窓が素のままになる）
+    expect(src).not.toMatch(/win\.webContents\.setWindowOpenHandler/)
   })
 })
 
