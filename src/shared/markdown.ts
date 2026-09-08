@@ -4,6 +4,9 @@
  * **HTML を作らない。** 木を返して React が要素を組む。
  * LLM の出力をそのまま `dangerouslySetInnerHTML` に流すと、Electron で
  * script 注入の口になる。木のまま渡せば、その心配が構造的に消える。
+ * **例外は ```mermaid だけ**（`components/Mermaid.tsx`。SVG の文字列しか
+ * 返ってこないので、mermaid の消毒に頼る）。他に口を作らないことは
+ * `test/surface.test.ts` が見張る。
  *
  * **完全な markdown は目指さない。** 実際に出てくるものだけを扱う ——
  * 見出し・段落・箇条書き・番号付き・コード・引用・区切り・表と、

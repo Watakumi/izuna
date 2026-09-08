@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import mermaid from 'mermaid'
 import { C, F, MONO, R, resolve, resolveMono, S } from '../theme'
 import { Button } from './ui'
@@ -11,8 +11,14 @@ import { Button } from './ui'
  * mermaid は SVG の属性に直接書くので、変数のまま渡すと黒い図になる。
  * 端末を一度これで壊しているので、ここでは最初から解いて渡す。
  *
- * **図が描けなくても本文は失う。** 描けなければ元の字を出す ——
+ * **図が描けなくても本文は失わない。** 描けなければ元の字を出す ——
  * 図にならなかったからといって、書いてあったことまで消してはいけない。
+ *
+ * **ここがアプリで唯一の HTML 注入口である。** `shared/markdown.ts` は木を返して
+ * HTML を作らないが、mermaid は SVG の文字列しか返さない。`securityLevel: 'strict'`
+ * で mermaid 側が消毒し、`test/surface.test.ts` が「注入口がここ以外に無いこと」を
+ * 見張る。renderer には `window.izuna.openTerminal` があるので、ここが破られれば
+ * ユーザ権限のコード実行になる（§26）。
  */
 
 let ready = false
@@ -21,6 +27,14 @@ function init(): void {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
+    /**
+     * **失敗した図を body に描かせない。** これが無いと、構文エラーのとき
+     * mermaid は「Syntax error in text」の図を一時要素に描いてから例外を投げ、
+     * 後始末（`removeTempElements`）はその後ろにあるので呼ばれない。
+     * 逐次描画では途中の文字列が毎回失敗するので、その図が画面の末尾に残る
+     * （`mermaid.core.mjs` で確認。2026-09-08）
+     */
+    suppressErrorRendering: true,
     fontFamily: resolveMono(),
     theme: 'base',
     themeVariables: {
@@ -43,21 +57,30 @@ function init(): void {
   ready = true
 }
 
-let seq = 0
+/** 本文が変わらなくなってから描くまでの間。短すぎると途中の失敗を見せる */
+const SETTLE_MS = 300
 
 export function Mermaid({ text }: { text: string }): React.JSX.Element {
   const [svg, setSvg] = useState<string | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [source, setSource] = useState(false)
-  const id = useRef(`m${(seq += 1)}`)
+  // mermaid は id を CSS セレクタに使う。`useId` の `:` は落とし、`m` で始める（撮影の門が探す形）
+  const id = { current: 'm' + useId().replace(/\W/g, '') }
 
   useEffect(() => {
     let live = true
     if (!ready) init()
-    mermaid.render(id.current, text)
-      .then((r) => { if (live) { setSvg(r.svg); setFailed(null) } })
-      .catch((e: unknown) => { if (live) setFailed(String(e).replace(/^Error:\s*/, '').split('\n')[0]) })
-    return () => { live = false }
+    /**
+     * **落ち着いてから描く。** 逐次描画では 1 チャンクごとに本文が変わる。
+     * そのたびに描くと、途中の文字列で失敗し続けたうえに CPU を食う。
+     * 変わらなくなって少し待ってから 1 回描く。
+     */
+    const timer = setTimeout(() => {
+      mermaid.render(id.current, text)
+        .then((r) => { if (live) { setSvg(r.svg); setFailed(null) } })
+        .catch((e: unknown) => { if (live) setFailed(String(e).replace(/^Error:\s*/, '').split('\n')[0]) })
+    }, SETTLE_MS)
+    return () => { live = false; clearTimeout(timer) }
   }, [text])
 
   // 描けなかったときは**字をそのまま出す**。図にならなかったことは下に書く
