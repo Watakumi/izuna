@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { RepoInfo } from '../../../shared/ipc'
 import type { FoundRepo } from '../../../main/repos'
 import type { GitHubIssue } from '../../../main/forge/github'
-import { belongsTo, byNewest, labelOf, type SessionSummary } from '../../../shared/sessions'
+import { belongsTo, filterSessions, labelOf, type SessionSummary } from '../../../shared/sessions'
 import { C, F, MONO, R, S, ellipsis } from '../theme'
 import { Button, Faint, Input, TextArea } from './ui'
 
@@ -49,6 +49,7 @@ export function NewSession({
   const [text, setText] = useState('')
 
   const [showAllPast, setShowAllPast] = useState(false)
+  const [pastQuery, setPastQuery] = useState('')
 
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
@@ -89,9 +90,11 @@ export function NewSession({
     : text.trim()
 
   // この画面で選んだリポジトリのもの。**worktree のセッションも同じ束**にする
-  const resumable = (past ?? [])
+  // このリポジトリのものだけに絞ってから、字で絞る（§18）。
+  // `filterSessions` は見出し・最初の依頼・slug・id を見て、新しい順に並べ替える
+  const here = (past ?? [])
     .filter((p) => cwd.trim() !== '' && belongsTo(p, cwd.trim(), (repo?.worktrees ?? []).map((w) => w.path)))
-    .sort(byNewest)
+  const resumable = filterSessions(here, pastQuery)
 
   /**
    * **依頼は必須にしない。** 「とりあえず開いて、会話で伝える」を潰さない。
@@ -180,7 +183,7 @@ export function NewSession({
           </Section>
 
           {/* 2. 続きから —— 新しく始めるか、続きか。**同じ画面で選ぶ** */}
-          {resumable.length > 0 && (
+          {here.length > 0 && (
             <Section label="続きから" action={
               resumable.length > 4
                 ? <Button size="sm" onClick={() => setShowAllPast((v) => !v)}>
@@ -189,6 +192,11 @@ export function NewSession({
                 : undefined
             }>
               <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
+                {here.length > 4 && (
+                  <Input value={pastQuery} placeholder={`${here.length} 件から絞り込む`}
+                    onChange={(e) => setPastQuery(e.target.value)} />
+                )}
+                {resumable.length === 0 && <Faint>見つかりません</Faint>}
                 {(showAllPast ? resumable : resumable.slice(0, 4)).map((p) => (
                   <div key={p.id} onClick={() => void start(p)}
                     style={{ display: 'flex', alignItems: 'baseline', gap: S.md, padding: '8px 12px',

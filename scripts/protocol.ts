@@ -3,7 +3,14 @@
  *
  * 出典は claude 2.1.263 の実測。仕様として公開されたものではないため、
  * 未知のフィールドは落とさずに保持し、未知の type は UnknownEvent に落ちる。
- * ここを唯一の真実にして、アプリ側は生の JSON を直接触らない。
+ *
+ * **アプリはこれを使わない。** Izuna 本体は CLI の標準出力ではなく
+ * `@anthropic-ai/claude-agent-sdk` の `query()` から型付きの値を受け取る（§7）。
+ * ここが要るのは録画の道具（`record-fixture.ts`）と、
+ * 録画に対する門（`test/scripts-protocol.test.ts`）だけである。
+ * だから `src/` ではなく `scripts/` に置いてある ——
+ * `src/` に置くと「アプリが使っている」ように見え、
+ * 上流が変わったとき壊れる範囲を読み違える。
  */
 
 /** Anthropic Messages API のコンテンツブロック（必要な範囲だけ） */

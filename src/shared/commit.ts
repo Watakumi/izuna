@@ -43,20 +43,3 @@ export function draftPrompt(context: CommitContext): string {
   ].join('\n')
 }
 
-/**
- * 返ってきた本文からコミット文を取り出す。
- *
- * **囲みを外す。** モデルは頼まれなくても ``` で囲むことがあり、
- * そのまま渡すとコミット文に ``` が入る。
- */
-export function extractMessage(text: string): string {
-  const fenced = /```(?:\w+)?\n([\s\S]*?)```/.exec(text)
-  const body = (fenced ? fenced[1] : text).trim()
-  // 前置き（「はい、こちらです：」など）が付いていたら、空行までを落とす
-  const lines = body.split('\n')
-  const lead = lines.findIndex((l) => l.trim() === '')
-  if (lead > 0 && lead < 3 && /[：:]\s*$/.test(lines[0].trim())) {
-    return lines.slice(lead + 1).join('\n').trim()
-  }
-  return body
-}

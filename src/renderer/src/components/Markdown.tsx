@@ -1,4 +1,4 @@
-import { parseInline, parseMarkdown, type Inline, type ListItem, type Node } from '../../../shared/markdown'
+import { parseMarkdown, type Inline, type ListItem, type Node } from '../../../shared/markdown'
 import { C, F, MONO, R, READ, S } from '../theme'
 
 /**
@@ -160,7 +160,3 @@ function Spans({ nodes }: { nodes: Inline[] }): React.JSX.Element {
   )
 }
 
-/** 1 行だけを描く（表の中など、塊にしたくない場所） */
-export function MarkdownLine({ text }: { text: string }): React.JSX.Element {
-  return <Spans nodes={parseInline(text)} />
-}

@@ -50,6 +50,8 @@ const izuna: IzunaApi = {
   pickDirectory: () => ipcRenderer.invoke(CH.pickDirectory),
   ipcVersion: () => ipcRenderer.invoke(CH.ipcVersion),
   teamPath: (name: string) => ipcRenderer.invoke(CH.teamPath, name),
+  teamBoard: (id) => ipcRenderer.invoke(CH.teamBoard, id),
+  setTaskStatus: (id, taskId, status) => ipcRenderer.invoke(CH.setTaskStatus, id, taskId, status),
   repo: (cwd: string) => ipcRenderer.invoke(CH.repo, cwd),
   removeWorktree: (cwd: string, path: string, force?: boolean) =>
     ipcRenderer.invoke(CH.removeWorktree, cwd, path, force),

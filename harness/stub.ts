@@ -1,7 +1,7 @@
 import type { IzunaApi, SessionEvent } from '../src/shared/ipc'
 import type { GhosttySkin } from '../src/main/ghostty'
 import { IPC_VERSION } from '../src/shared/ipc'
-import { buildTranscript } from '../src/shared/transcript'
+import { applyMessage, emptyTranscript } from '../src/shared/transcript'
 
 /**
  * `window.izuna` の作り物。**ハーネス専用で、製品には入らない。**
@@ -79,7 +79,7 @@ export function installStub(): void {
         title: null, slug: null, firstPrompt: 'Reply with exactly: pong', branch: 'main',
         cliVersion: '2.1.263', updatedAt: Date.parse(iso(840)), bytes: 72_000 }
     ],
-    replaySession: async () => buildTranscript(MESSAGES),
+    replaySession: async () => MESSAGES.reduce(applyMessage, emptyTranscript()),
     findRepos: async () => [
       { path: '/Users/x/work/izuna', name: 'izuna', group: 'work/personal' },
       { path: '/Users/x/work/gh-radar', name: 'gh-radar', group: 'work/personal' }
@@ -97,6 +97,27 @@ export function installStub(): void {
     forgePulls: async () => [],
     forgeFacts: nothing,
     teamPath: async () => '/Users/x/.izuna/teams/izuna',
+    teamBoard: async () => ({
+      dir: '/Users/x/.izuna/teams/izuna',
+      brief: { issue: '12', created: '2026-09-08T00:00:00Z', body: '盤面を出す' },
+      tasks: [
+        { id: 'A-01', title: '盤面を読む', assignee: 'exec-1', branch: 'feat/board',
+          status: 'doing' as const, depends_on: [], paths: ['src/main/team.ts'],
+          updated: '2026-09-08T01:00:00Z', body: '' },
+        { id: 'A-02', title: '重なりを出す', assignee: 'exec-2', branch: 'feat/collide',
+          status: 'idle' as const, depends_on: [], paths: ['src/main/team.ts'],
+          updated: '2026-09-08T01:10:00Z', body: '' }
+      ],
+      errors: [],
+      summaries: [{ task: 'A-01', by: 'exec-1', at: '2026-09-08T01:05:00Z',
+        outcome: 'partial' as const, body: '' }],
+      decisions: [{ at: '2026-09-08T01:06:00Z', target: 'A-01', by: 'brain', body: '先に読む側を通す' }],
+      log: [{ at: '2026-09-08T01:00:00Z', from: 'izuna', to: 'brain',
+        kind: 'start', target: '/Users/x/work/izuna', note: '新規' }],
+      collisions: [{ a: 'A-01', b: 'A-02', paths: ['src/main/team.ts'] }],
+      ready: []
+    }),
+    setTaskStatus: async () => true,
     start: async () => {
       // 起こしたら会話が流れてくる。**本物と同じ経路**で画面を埋める
       setTimeout(() => {

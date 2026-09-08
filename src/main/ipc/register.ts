@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { ipcMain, type BrowserWindow } from 'electron'
 import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
-import { ensureTeam, teamInstructions, teamPathFor } from '../team'
+import { appendLog, ensureTeam, readBoard, setTaskStatus, teamInstructions, teamPathFor } from '../team'
 import { applyFix, gatherFacts, type FixId } from '../forge/setup'
 import { createPull, ensureRepo, listPulls, listRepos, listTokens, whoami } from '../forge/client'
 import { loadToken } from '../forge/store'
@@ -16,6 +16,7 @@ import { progressServer, readProgress, runLoop, type RunningLoop } from '../loop
 import { Wakeups } from '../wakeup'
 import { canDraft, draftPrompt } from '../../shared/commit'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { TaskStatus } from '../../shared/team'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
@@ -118,6 +119,19 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.pickDirectory, () => pickDirectory(getWindow()))
   ipcMain.handle(CH.ipcVersion, () => IPC_VERSION)
   ipcMain.handle(CH.teamPath, (_e, name: string) => teamPathFor(name))
+  // 盤面は読むだけ。**壊れた札も落とさずに返す**（黙って消すと書いた本人が気づけない）
+  ipcMain.handle(CH.teamBoard, async (_e, id: SessionId) => {
+    const dir = teams.get(id)
+    return dir ? await readBoard(dir) : null
+  })
+  ipcMain.handle(CH.setTaskStatus, async (_e, id: SessionId, taskId: string, status: TaskStatus) => {
+    const dir = teams.get(id)
+    if (!dir) return false
+    const ok = await setTaskStatus(dir, taskId, status)
+    if (ok) await appendLog(dir, { at: new Date().toISOString(), from: 'izuna', to: 'board',
+      kind: 'status', target: taskId, note: status })
+    return ok
+  })
 
   ipcMain.handle(CH.repo, async (_e, cwd: string): Promise<RepoInfo> => {
     const [root, name, worktrees] = await Promise.all([
@@ -154,6 +168,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     session.on('permissionExpired', (requestId) => emit({ kind: 'permissionExpired', id, requestId }))
     session.on('error', (err) => emit({ kind: 'error', id, message: err.message }))
     session.on('done', () => {
+      void appendLog(team, { at: new Date().toISOString(), from: 'izuna', to: 'brain',
+        kind: 'end', target: input.cwd, note: '終了' })
       sessions.delete(id)
       loops.get(id)?.stop()
       loops.delete(id)
@@ -161,6 +177,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     })
     teams.set(id, team)
     cwds.set(id, input.cwd)
+    // log.md は Izuna が書く（§16）。追記のみ。**エージェントには書かせない**
+    void appendLog(team, { at: new Date().toISOString(), from: 'izuna', to: 'brain',
+      kind: 'start', target: input.cwd, note: input.resume ? '続きから' : '新規' })
 
     sessions.set(id, session)
     try {

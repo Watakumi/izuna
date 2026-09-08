@@ -208,9 +208,6 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
   }
 }
 
-export function buildTranscript(messages: SDKMessage[]): Transcript {
-  return messages.reduce(applyMessage, emptyTranscript())
-}
 
 // ── 途中経過 ────────────────────────────────────────────────
 
@@ -417,10 +414,3 @@ function attachResults(items: Item[], content: unknown, denied: string[]): Item[
   })
 }
 
-/** 画面に出す本文だけを繋げる。検査で二重描画を見つけるのに使う */
-export function plainText(t: Transcript): string {
-  return t.items
-    .flatMap((i) => (i.kind === 'assistant' ? i.blocks : []))
-    .flatMap((b) => (b.kind === 'text' ? [b.text] : []))
-    .join('')
-}

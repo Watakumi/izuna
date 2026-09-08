@@ -26,15 +26,6 @@ async function git(cwd: string, args: string[]): Promise<string> {
     }
 }
 
-/** git リポジトリかどうか。**失敗を例外にしない** —— 呼び出し側で分岐する */
-export async function isRepo(cwd: string): Promise<boolean> {
-  try {
-    await git(cwd, ['rev-parse', '--git-dir'])
-    return true
-  } catch {
-    return false
-  }
-}
 
 /** cwd を含むリポジトリの本体。worktree の中から呼んでも本体を返す */
 export async function repoRoot(cwd: string): Promise<string> {

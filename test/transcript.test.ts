@@ -6,14 +6,13 @@ import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import {
   applyMessage,
   appendUserText,
-  buildTranscript,
   emptyTranscript,
   markDenied,
-  plainText,
   stripAnsi,
   setPermissionMode,
   type Block,
-  type Item
+  type Item,
+  type Transcript
 } from '../src/shared/transcript'
 
 /**
@@ -31,7 +30,23 @@ const messages: SDKMessage[] = readFileSync(FIXTURE, 'utf8')
   .filter((l) => l.trim())
   .map((l) => JSON.parse(l) as SDKMessage)
 
-const t = buildTranscript(messages)
+
+/**
+ * 検査だけが要る組み立て。**製品コードには置かない** ——
+ * `src/` に置くと「アプリが使っている」ように見え、`test/docs.test.ts` が
+ * 死んだ export として落とす（それが正しい）。
+ */
+function build(messages: SDKMessage[]): Transcript {
+  return messages.reduce(applyMessage, emptyTranscript())
+}
+function plainText(t: Transcript): string {
+  return t.items
+    .flatMap((i) => (i.kind === 'assistant' ? i.blocks : []))
+    .flatMap((b) => (b.kind === 'text' ? [b.text] : []))
+    .join('')
+}
+
+const t = build(messages)
 const assistants = t.items.filter((i): i is Extract<Item, { kind: 'assistant' }> => i.kind === 'assistant')
 const tools = assistants.flatMap((a) => a.blocks).filter((b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool')
 
@@ -104,7 +119,7 @@ describe('途中経過は状態を汚さない', () => {
 
   it('stream_event を全部落としても確定状態は変わらない', () => {
     // これが成り立つ限り、途中経過は表示専用であって状態ではない
-    const withoutStream = buildTranscript(messages.filter((m) => m.type !== 'stream_event'))
+    const withoutStream = build(messages.filter((m) => m.type !== 'stream_event'))
     expect(withoutStream.items).toEqual(t.items)
   })
 
@@ -244,7 +259,7 @@ describe('端末のエスケープシーケンス', () => {
 
 describe('未知のものを落とさない', () => {
   it('知らない type が来ても状態を壊さない', () => {
-    const before = buildTranscript(messages)
+    const before = build(messages)
     const after = applyMessage(before, { type: 'brand_new_event' } as unknown as SDKMessage)
     expect(after).toEqual(before)
   })

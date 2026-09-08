@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
-import { buildTranscript, plainText, type Block, type Item } from '../src/shared/transcript'
+import { applyMessage, emptyTranscript, type Block, type Item, type Transcript } from '../src/shared/transcript'
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
 /**
  * ブレインと実行役に対する門（段4）。
@@ -20,7 +21,23 @@ const messages: SDKMessage[] = readFileSync(FIXTURE, 'utf8')
   .filter((l) => l.trim())
   .map((l) => JSON.parse(l) as SDKMessage)
 
-const t = buildTranscript(messages)
+
+/**
+ * 検査だけが要る組み立て。**製品コードには置かない** ——
+ * `src/` に置くと「アプリが使っている」ように見え、`test/docs.test.ts` が
+ * 死んだ export として落とす（それが正しい）。
+ */
+function build(messages: SDKMessage[]): Transcript {
+  return messages.reduce(applyMessage, emptyTranscript())
+}
+function plainText(t: Transcript): string {
+  return t.items
+    .flatMap((i) => (i.kind === 'assistant' ? i.blocks : []))
+    .flatMap((b) => (b.kind === 'text' ? [b.text] : []))
+    .join('')
+}
+
+const t = build(messages)
 const task = t.tasks[0]
 
 describe('実行役を拾う', () => {

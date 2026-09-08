@@ -13,6 +13,8 @@ import type { Progress, Stop } from './loop'
 import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
 import type { Transcript } from './transcript'
+import type { TeamBoard } from '../main/team'
+import type { TaskStatus } from './team'
 
 /**
  * renderer と main のあいだの唯一の口。
@@ -99,6 +101,12 @@ export interface IzunaApi {
   ipcVersion(): Promise<number>
   /** 共有フォルダの場所。renderer は homedir を知らない */
   teamPath(name: string): Promise<string>
+  /**
+   * 共有フォルダの盤面（§16）。**`paths` の重なりは実行役を起こす前に見る**。
+   * 読むだけ。書くのは札の状態だけで、それも下の 1 本に限る。
+   */
+  teamBoard(id: SessionId): Promise<TeamBoard | null>
+  setTaskStatus(id: SessionId, taskId: string, status: TaskStatus): Promise<boolean>
   /** 作業ディレクトリからリポジトリと worktree 一覧を引く */
   repo(cwd: string): Promise<RepoInfo>
   removeWorktree(cwd: string, path: string, force?: boolean): Promise<void>
@@ -178,7 +186,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 16
+export const IPC_VERSION = 17
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -221,6 +229,8 @@ export const CH = {
   pickDirectory: 'izuna:repos:pick',
   ipcVersion: 'izuna:ipc-version',
   teamPath: 'izuna:team:path',
+  teamBoard: 'izuna:team:board',
+  setTaskStatus: 'izuna:team:task-status',
   repo: 'izuna:repo',
   removeWorktree: 'izuna:worktree:remove',
   worktreeStatus: 'izuna:worktree:status',

@@ -243,14 +243,6 @@ export function Card({
   )
 }
 
-/** 節の見出し */
-export function Label({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return (
-    <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>
-      {children}
-    </span>
-  )
-}
 
 /** 補助の説明。読めるが目立たない */
 export function Faint({ children, style }: {
@@ -259,16 +251,6 @@ export function Faint({ children, style }: {
   return <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.7, ...style }}>{children}</span>
 }
 
-/** 状態の点。塗りは「動いている」、輪郭は「止まっている」 */
-export function Dot({ color, filled = true }: { color: string; filled?: boolean }): React.JSX.Element {
-  return (
-    <span style={{
-      width: 7, height: 7, borderRadius: R.full, flexShrink: 0,
-      background: filled ? color : 'transparent',
-      border: filled ? 'none' : `1.5px solid ${color}`
-    }} />
-  )
-}
 
 /** 小さな札 */
 export function Tag({ children, tone }: {

@@ -1,4 +1,3 @@
-import { hostOf } from '../../shared/remote'
 import { loadToken } from './store'
 
 /**
@@ -176,7 +175,6 @@ export async function ensureRepo(rootUrl: string, name: string): Promise<Forgejo
   }
 }
 
-export const forgeHostOf = hostOf
 
 export interface ForgejoToken {
   id: number

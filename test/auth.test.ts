@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
-import { parseLine, isInit, type InitEvent } from '../src/shared/protocol'
+import { parseLine, isInit, type InitEvent } from '../scripts/protocol'
 
 /**
  * Izuna は利用者の Pro プラン（claude.ai の OAuth ログイン）で動く前提で作っている。

@@ -8,7 +8,7 @@ import {
   isPushed, listRemotes, push
 } from '../src/main/git/remote'
 import {
-  isRepo, listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
+  listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
 } from '../src/main/git/worktree'
 
 /**
@@ -45,11 +45,6 @@ beforeAll(() => {
 afterAll(() => rmSync(join(base, '..'), { recursive: true, force: true }))
 
 describe('リポジトリかどうか', () => {
-  it('git の中と外を見分ける', async () => {
-    expect(await isRepo(work)).toBe(true)
-    expect(await isRepo(outside)).toBe(false)
-  })
-
   it('根と名前を返す', async () => {
     expect(await repoRoot(work)).toBe(await repoRoot(work))
     expect(await repoName(work)).toBe('work')

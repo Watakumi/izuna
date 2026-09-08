@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import { locateClaude, loginShellEnv } from '../src/main/claude/locate'
-import { userInput } from '../src/shared/protocol'
+import { userInput } from './protocol'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT_DIR = join(ROOT, 'test', 'fixtures')

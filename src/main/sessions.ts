@@ -165,10 +165,6 @@ export async function replaySession(id: string): Promise<Transcript> {
   return { ...t, tasks: [...t.tasks, ...tasks] }
 }
 
-/** 復元用に全文の行を返す。**一覧では呼ばない**（19MB を読む） */
-export async function readSessionLines(id: string): Promise<string[]> {
-  return (await locate(id)).lines
-}
 
 /** 記録の在り処と中身。置き場所は復元でサイドカーを引くのに要る */
 async function locate(id: string): Promise<{ lines: string[]; dir: string }> {

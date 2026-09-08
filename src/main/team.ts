@@ -1,7 +1,12 @@
-import { mkdir, writeFile, access } from 'node:fs/promises'
+import { mkdir, writeFile, access, readFile, readdir, appendFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { slugifyBranch } from '../shared/worktree'
+import {
+  formatLogEntry, parseBrief, parseDecisions, parseLog, parseSummary, parseTask,
+  pathCollisions, readyTasks, serializeTask,
+  type Brief, type Decision, type LogEntry, type Summary, type Task, type TaskStatus
+} from '../shared/team'
 
 /**
  * 共有フォルダ（CLAUDE.md §12）。
@@ -80,4 +85,103 @@ export function teamInstructions(dir: string): string {
     '実行役の成果を読んだら、判断を `decisions.md` に追記してから次の指示を出してください。',
     ''
   ].join('\n')
+}
+
+// ── 盤面 ────────────────────────────────────────────────
+//
+// CLAUDE.md §16 は「`paths` が重なる作業を同時に走らせない」を
+// **実行役を起こす前に必ず通す**検査だと書いている。書いただけでは通らない。
+// ここが読んで、`register.ts` が返し、右パネルが出す。
+
+/** 盤面。壊れた札は落とさずに `errors` に出す —— 黙って消すと書いた本人が気づけない */
+export interface TeamBoard {
+  dir: string
+  brief: Brief
+  tasks: Task[]
+  errors: string[]
+  summaries: Summary[]
+  decisions: Decision[]
+  log: LogEntry[]
+  /** 同時に走らせてはいけない組。空でなければ UI が止める */
+  collisions: Array<{ a: string; b: string; paths: string[] }>
+  /** depends_on が満たされていて未着手のもの */
+  ready: Task[]
+}
+
+const read = async (path: string): Promise<string> => {
+  try {
+    return await readFile(path, 'utf8')
+  } catch {
+    return ''
+  }
+}
+
+const listDir = async (path: string): Promise<string[]> => {
+  try {
+    return (await readdir(path)).filter((f) => f.endsWith('.md')).sort()
+  } catch {
+    return []
+  }
+}
+
+export async function readBoard(dir: string): Promise<TeamBoard> {
+  const [briefSrc, decisionsSrc, logSrc, taskFiles, summaryFiles] = await Promise.all([
+    read(join(dir, 'brief.md')),
+    read(join(dir, 'decisions.md')),
+    read(join(dir, 'log.md')),
+    listDir(join(dir, 'tasks')),
+    listDir(join(dir, 'summaries'))
+  ])
+
+  const tasks: Task[] = []
+  const errors: string[] = []
+  for (const f of taskFiles) {
+    const r = parseTask(await read(join(dir, 'tasks', f)))
+    if (r.ok) tasks.push(r.value)
+    else errors.push(`tasks/${f}: ${r.error}`)
+  }
+
+  const summaries: Summary[] = []
+  for (const f of summaryFiles) {
+    const r = parseSummary(await read(join(dir, 'summaries', f)))
+    if (r.ok) summaries.push(r.value)
+    else errors.push(`summaries/${f}: ${r.error}`)
+  }
+
+  return {
+    dir,
+    brief: parseBrief(briefSrc),
+    tasks,
+    errors,
+    summaries,
+    decisions: parseDecisions(decisionsSrc),
+    log: parseLog(logSrc),
+    collisions: pathCollisions(tasks),
+    ready: readyTasks(tasks)
+  }
+}
+
+/**
+ * `log.md` は Izuna が書く（§16）。**追記のみ** ——
+ * 書き換えを許すと、誰がいつ何をしたのかが復元できなくなる。
+ */
+export async function appendLog(dir: string, entry: LogEntry): Promise<void> {
+  await mkdir(dir, { recursive: true })
+  await appendFile(join(dir, 'log.md'), formatLogEntry(entry) + '\n', 'utf8')
+}
+
+/**
+ * 札の状態だけを書き換える。本文と他の欄はそのまま返す
+ * （`serializeTask` は読んだものを組み立て直すので、書いた人の本文が消えない）。
+ */
+export async function setTaskStatus(dir: string, id: string, status: TaskStatus): Promise<boolean> {
+  for (const f of await listDir(join(dir, 'tasks'))) {
+    const path = join(dir, 'tasks', f)
+    const r = parseTask(await read(path))
+    if (!r.ok || r.value.id !== id) continue
+    const next = { ...r.value, status, updated: new Date().toISOString() }
+    await writeFile(path, serializeTask(next), 'utf8')
+    return true
+  }
+  return false
 }

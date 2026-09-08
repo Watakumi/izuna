@@ -1,6 +1,6 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { DEFAULTS, parseConfig, type IzunaConfig, type MergeResult } from '../shared/config'
 
 /**
@@ -32,12 +32,6 @@ export async function loadConfig(): Promise<MergeResult> {
   return cached
 }
 
-/** 設定画面から書き戻すとき用。書いたら次回から効く */
-export async function saveConfig(config: IzunaConfig): Promise<void> {
-  await mkdir(dirname(CONFIG_PATH), { recursive: true })
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n', 'utf8')
-  cached = null
-}
 
 /** 探索先などは `~` を展開して使う */
 export async function resolved(): Promise<IzunaConfig & { ignored: string[] }> {

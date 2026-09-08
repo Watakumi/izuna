@@ -102,27 +102,40 @@ renderer に `require` を露出しない、`contextBridge` で狭い型付き I
 ## 4. リポジトリ構成
 
 ```
-src/shared/protocol.ts      stream-json のワイヤ型。ここが唯一の真実
-                            パースと版検査もここ(純粋関数。プロセスを知らない)
-src/main/claude/session.ts  双方向 stream-json で claude を飼うセッション層
+src/main/claude/session.ts  SDK の query() で claude を飼うセッション層。UI を知らない
 src/main/claude/locate.ts   claude 本体とログインシェル環境の解決
+src/main/ipc/register.ts    renderer に出す唯一の面。shared/ipc.ts の型に従う
+src/main/team.ts            共有フォルダと盤面（作る・読む・log.md を書く）
+src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
+src/shared/team.ts          札・要約・決定・記録のパース（純粋関数）
+src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
+src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
+src/renderer/src/App.tsx    画面。右パネルに 情報 / 盤面 / ループ / PR / ブランチ
+
+scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）
+scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
 scripts/smoke-session.ts    人が目で見る疎通確認。実 API を呼ぶ
 scripts/smoke-permission.ts 権限承認の握手が成立するかを見る。実 API を呼ぶ
-src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
-scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ
-test/protocol.test.ts       録画に対する門。網も費用も要らない
+scripts/shots.ts            実 renderer を作り物の window.izuna で撮る（§22）
+
+test/docs.test.ts           **文書と実装のズレの門**（§24）
+test/scripts-protocol.test.ts 録画に対する門。網も費用も要らない
 test/auth.test.ts           認証経路（Pro プランか API キーか）と SDK/CLI の版の門
 test/fixtures/session-safe.ndjson  --safe-mode で録った記録。**版管理に入る**。門はこれを見る
 test/fixtures/session-full.ndjson  素で録った記録。**gitignore**（§11）。手元専用
 CLAUDE.md                   このファイル
 ```
 
-まだ無い: renderer の実装、IPC 登録、`/` コマンドの索引、権限承認。
+**設計原則**: `ClaudeSession` は UI を知らない。パースはプロセスを知らない。
+この 2 段があるので、UI を壊さずに下の層を検証でき、
+かつ下の層の検証に実 API が要らない。
 
-**設計原則**: `ClaudeSession` は UI を知らない。**パースはプロセスを知らない**
-(`parseLine` は `shared/protocol.ts` の純粋関数で、`spawn` に触れない)。
-この 2 段があるので、UI を壊さずにプロトコル層を検証でき、
-かつプロトコル層の検証に実 API が要らない。
+**`scripts/protocol.ts` が `src/` に無い理由。** これは
+`--output-format stream-json` のワイヤ型で、CLI を直接叩いていた頃の資産である。
+いまアプリは SDK の `query()` から型付きの値を受け取るので、**製品コードは触らない**。
+使うのは録画の道具と、録画に対する門だけ。`src/` に置いたままだと
+「アプリが使っている」ように見え、上流が変わったとき壊れる範囲を読み違える。
+置き場所そのものが、誰が依存しているかの申告である。
 
 ## 5. stream-json 実測仕様
 
@@ -568,7 +581,7 @@ Electron の起動（`index.ts`）と `ipcMain` への登録（`ipc/register.ts`
 
 **3 つ、実装の粗さが見つかった。**
 
-1. `readSessionLines` が走査先の無い環境で `ENOENT` を投げていた
+1. 記録の読み出しが、走査先の無い環境で `ENOENT` を投げていた
    （`scanSessions` は空を返すのに）
 2. `removeWorktree` がパスを**文字列で照合**していた。macOS の `/var` は
    `/private/var` への symlink で、git は解決後の絶対パスを返す。
@@ -603,7 +616,7 @@ CLI が黙って上がってワイヤが変われば、気づくのは UI が壊
 | 決定 | 理由 |
 | --- | --- |
 | テストは **vitest** | `node --test` は拡張子なし import を解決できない（§3、実測） |
-| パースを **`shared/protocol.ts` の純粋関数に出す** | `spawn` に密着していると、CLI を叩かないと何も検証できない |
+| パースを **プロセスから切った純粋関数に出す** | `spawn` に密着していると、CLI を叩かないと何も検証できない |
 | **録画した NDJSON を版管理に入れる** | 網も費用も要らない検査ができる。加工しない —— 加工した時点で観測ではなく解釈になる |
 | 版のずれは **verify で落とし、アプリでは落とさない** | 版が上がってもワイヤが変わるとは限らない。**上がるたびに起動しない道具は使われなくなる**。止める代償が安いのは verify の側 |
 | fixture 未録は **skip ではなく赤** | skip する検査は門ではない。赤が「まず録れ」の合図になる |
@@ -788,7 +801,12 @@ pathCollisions(tasks)   // status が doing / idle のものだけを見て、�
 readyTasks(tasks)       // depends_on が満たされていて未着手のもの
 ```
 
-`brief.md` の「触らない範囲」と合わせて、**実行役を起こす前に必ず通す**。
+`brief.md` の「触らない範囲」と合わせて、**実行役を動かす前に必ず通す**。
+
+通しているのは `main/team.ts` の `readBoard()` で、右パネルの「盤面」が出す。
+**申し送りに規律を書くだけでは通らない** —— 書いてある規律は、
+守られたかどうかを誰も見ていない。`test/docs.test.ts` はこの形
+（文書が機能として書いているのに製品コードが呼んでいない）を落とす。
 
 ### 規律
 
@@ -1865,3 +1883,66 @@ MCP の進捗サーバも**明示的に無効化**されている
 （`main/index.ts:196`「server disabled - leaking into non-super-loop sessions」）。
 
 **「あちらにあるから安心」ではない。** 設計は参考になるが、動作の裏付けは無い。
+
+---
+
+## 24. 文書と実装のズレの門（2026-09-08）
+
+### なぜ入れたか
+
+Nimbalyst に `SafePathValidator` というパス検証器がある。設計文書には
+安全機構として書かれ、専用の検査もある。**製品コードからは一度も呼ばれていない。**
+同じリポジトリのセキュリティ文書は `permissionEngine.ts` /
+`dangerousPatterns.ts` / `directoryScope.ts` を対策として挙げているが、
+**そのファイルは存在しない**。
+
+**検査は通り、文書は立派で、コードは呼んでいない。**
+これは「守られていない」より質が悪い。**守られていると思い込ませる**からである。
+
+他人事ではないので、Izuna で同じ形を探した。`test/docs.test.ts` がその門で、
+入れた日に **27 件**出た。
+
+### 何を見ているか
+
+| 門 | 落とすもの |
+| --- | --- |
+| 名指ししたファイルが実在する | CLAUDE.md が書いたパスが消えている／移動した |
+| **公開した値が製品コードから呼ばれている** | 検査だけが呼んでいる export（＝ SafePathValidator の形） |
+| `§N` の参照が見出しとして実在する | 節を足し引きしたときの番号のズレ |
+| 「やらない」が守られている | worktree を作らない、トークンを URL に埋めない |
+
+Izuna は library ではない。**外部の利用者という逃げ道が無い**ので、
+呼ばれない export は作りかけか置き忘れのどちらかである。
+逃げ道を作らないために、許可リストは置かなかった。
+
+### 27 件の内訳と、何をしたか
+
+| 区分 | 件数 | 対応 |
+| --- | --- | --- |
+| 道具だけが使う（`scripts/` `harness/`） | 8 | **`src/` の外へ出した**。`protocol.ts` を `scripts/` へ |
+| 検査の都合で置いていた組み立て | 2 | 検査ファイルの中に移した |
+| 作りかけ・置き忘れ | 8 | 消した（`extractMessage` `saveConfig` `isRepo` ほか） |
+| **文書が保証として書いていたのに動いていない** | 9 | **繋いだ**（`shared/team.ts` の盤面一式） |
+
+### 消す前に、必ず `src` の外も見る
+
+最初に `protocol.ts` を「SDK 移行の置き忘れ」と判断して消しかけた。
+実際には `scripts/record-fixture.ts` が使っており、**録画の道具が壊れるところだった**。
+
+`src` の中だけを見て「誰も使っていない」と言うのは、
+**調べていないことの証拠にしかならない**（§10 と同じ規律）。
+判定は `src` `test` `scripts` `harness` の 4 つを全部見てから下す。
+
+### 移動は依存の申告である
+
+`scripts/protocol.ts` は消すのではなく移した。
+`src/` に置いたままだと「アプリが使っている」ように見え、
+上流の CLI が変わったとき壊れる範囲を読み違える。
+**置き場所そのものが、誰が依存しているかの申告**になっている。
+
+### 直せなかった種類のズレ
+
+この門はパスと識別子しか見ない。**説明文の正しさは見ていない。**
+実際、§4 の「まだ無い: renderer の実装、IPC 登録、`/` コマンドの索引、権限承認」は
+4 つとも既にあった。門に落ちなかったのは、そこに識別子が無いからである。
+**機械が読める形で書いたものしか守れない**ということは、書く側が知っておく。

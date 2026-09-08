@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { claudeProjectsDir, readSessionLines, replaySession, scanSessions } from '../src/main/sessions'
+import { claudeProjectsDir, replaySession, scanSessions } from '../src/main/sessions'
 
 /**
  * `~/.claude/projects/` の走査（CLAUDE.md §18）。
@@ -169,14 +169,14 @@ describe('サイドカーを読む', () => {
 })
 
 describe('復元のための読み出し', () => {
-  it('全文の行を返す', async () => {
+  it('全文を読んで会話に戻す', async () => {
     put('-a', 'ffff0000-0000-0000-0000-000000000000',
       line({ type: 'user', message: { content: '一' } }) + line({ type: 'assistant', message: { content: [] } }))
-    const lines = await readSessionLines('ffff0000-0000-0000-0000-000000000000')
-    expect(lines.filter((l) => l.trim() !== '')).toHaveLength(2)
+    const t = await replaySession('ffff0000-0000-0000-0000-000000000000')
+    expect(t.items.length).toBeGreaterThan(0)
   })
 
   it('見つからなければ、探した id を言って落ちる', async () => {
-    await expect(readSessionLines('missing')).rejects.toThrow(/missing/)
+    await expect(replaySession('missing')).rejects.toThrow(/missing/)
   })
 })

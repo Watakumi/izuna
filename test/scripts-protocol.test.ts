@@ -12,7 +12,7 @@ import {
   versionDrift,
   type ClaudeEvent,
   type InitEvent
-} from '../src/shared/protocol'
+} from '../scripts/protocol'
 
 /**
  * ワイヤ形式に対する門。

@@ -62,14 +62,6 @@ describe('設定', () => {
     await expect(loadConfig()).resolves.toBeTruthy()
   })
 
-  it('書き出して読み直せる', async () => {
-    const { loadConfig, saveConfig, CONFIG_PATH } = await import('../src/main/config')
-    const { config } = await loadConfig()
-    await saveConfig({ ...config, sandboxRemote: 'sb' })
-    expect(existsSync(CONFIG_PATH)).toBe(true)
-    expect((await loadConfig()).config.sandboxRemote).toBe('sb')
-  })
-
   it('~ を家に開く', async () => {
     const { expandHome } = await import('../src/main/config')
     expect(expandHome('~/work')).toBe(join(home, 'work'))
