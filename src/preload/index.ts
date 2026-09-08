@@ -1,11 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
 import { CH, type IzunaApi, type TerminalEvent, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../shared/ipc'
 import type { Attachment } from '../shared/image'
 
 /**
  * renderer に出す面はここだけ。`contextIsolation` は既定のまま維持し、
  * `require` は渡さない。`shared/ipc.ts` の `IzunaApi` に無いものは出さない。
+ *
+ * **`@electron-toolkit/preload` の `electronAPI` は出さない。** あれは
+ * `process.env` を丸ごと返すゲッターと、任意チャネルの `ipcRenderer` を
+ * 持っている。renderer は一度も使っていなかった（2026-09-08 に数えた）。
  */
 const izuna: IzunaApi = {
   forgeFacts: () => ipcRenderer.invoke(CH.forgeFacts),
@@ -73,16 +76,6 @@ const izuna: IzunaApi = {
   }
 }
 
-if (process.contextIsolated) {
-  try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('izuna', izuna)
-  } catch (error) {
-    console.error(error)
-  }
-} else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
-  // @ts-ignore (define in dts)
-  window.izuna = izuna
-}
+// contextIsolation を切った構成は作らない。切れていたら露出せずに落とす
+if (!process.contextIsolated) throw new Error('contextIsolation が無効です。Izuna はこの構成では動かしません')
+contextBridge.exposeInMainWorld('izuna', izuna)
