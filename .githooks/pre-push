@@ -1,0 +1,4 @@
+#!/bin/sh
+# push の門。中身は scripts/prepush.mjs（検査できるように node で書いてある）。
+# **実行ビットが無いと git は黙って飛ばす。** prepare が chmod +x する。
+exec node scripts/prepush.mjs "$@"
