@@ -212,6 +212,11 @@ paths:
   `izuna` と `izuna Key` の 2 項目あるのは事実だが、原因ではなかった。
   `scripts/e2e.ts` は素の `electron .` を起動して CDP で繋ぐ。`tokenStatus()` の「無い」と
   「読めない」の区別はそのまま残す —— 本物の起動で「読めない」が出たら、そのときは鍵が違う。
+- **push の直後に PR を作ると 404 になる**（2026-09-09 に踏んだ）。`empty` のリポジトリに
+  main と feat を push し、続けて `POST /pulls` したら「The target couldn't be found」。
+  数秒置いて同じ呼び出しをしたら通った（`empty: false` になっていた）。push の後始末が
+  API の状態に反映されるまで間がある。`forgeCreatePull` を push の直後に呼ぶ画面は無いが、
+  作るなら `forgeRepos` で `empty` が落ちるのを待つこと。
 - **ボットのトークンでは、人の下にある sandbox が見えない**（2026-09-09、`pnpm e2e` で実測。
   `forgeRepos()` が 0 件）。§26 でトークンを `izuna` のものにしたので、`watakumi/…` の
   リポジトリは Forgejo で `izuna` を協力者に足すまで一覧に出ない。新しく作るものは

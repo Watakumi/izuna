@@ -299,4 +299,7 @@ Playwright の `connectOverCDP` で renderer に繋いで `window.izuna` を呼�
 初回（2026-09-09）は `_electron.launch` で書いていて、Forgejo の段が「トークンが読めない」で skip した。
 それを本物の不具合と誤診した（§7）。**ハーネスが「本物が壊れている」と言ったら、ハーネス無しで
 再現してから人に言うこと。** 素の起動に直したあとはトークンが通り、Forgejo の段に入る。
-ただしボットの見えるリポジトリが 0 件で、`.diff` の口は open な PR が見えるまで確かめられていない。
+
+Forgejo の段の材料は **`izuna/izuna-e2e`**（ボットの下。同日に Izuna 自身の口で作った。
+main と feat に 1 コミットずつ、PR !1 は閉じない）。ボットのトークンでは人の下の sandbox が
+見えないので、ボットの下に置いてある。消したら `forgeEnsureRepo` → `push` → `forgeCreatePull` で作り直せる。
