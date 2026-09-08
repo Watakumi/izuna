@@ -3,6 +3,7 @@ import type { WorktreeStatus } from '../../../main/git/worktree'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
+import { makeCache } from '../remember'
 import { F, C, MONO, ellipsis } from '../theme'
 import { Meter } from './ui'
 
@@ -15,6 +16,16 @@ import { Meter } from './ui'
  * 会話の下に出ているもの（実行役 = TaskPanel）はここに重ねない。
  * 同じ情報が 2 箇所にあると、狭いほうを見る理由が無くなる。
  */
+/** 覚えておく中身。鍵は作業ディレクトリ */
+interface Snapshot {
+  status: WorktreeStatus | null
+  remotes: RemoteRef[]
+  issues: GitHubIssue[] | null
+  pushed: boolean | null
+  team: string | null
+}
+const remembered = makeCache<Snapshot>()
+
 export function Inspector({
   panel,
   onOpenForge
@@ -22,12 +33,14 @@ export function Inspector({
   panel: Panel
   onOpenForge: () => void
 }): React.JSX.Element {
-  const [status, setStatus] = useState<WorktreeStatus | null>(null)
+  // 一度読んだものは覚えておく（`remember.ts` の註）
+  const seed = remembered.get(panel.cwd)
+  const [status, setStatus] = useState<WorktreeStatus | null>(seed?.status ?? null)
   // 「まだ読んでいない」を `null` で表す（`[]` だと『無い』と嘘をつく）
-  const [remotes, setRemotes] = useState<RemoteRef[] | null>(null)
-  const [issues, setIssues] = useState<GitHubIssue[] | null>(null)
-  const [pushed, setPushed] = useState<boolean | null>(null)
-  const [team, setTeam] = useState<string | null>(null)
+  const [remotes, setRemotes] = useState<RemoteRef[] | null>(seed?.remotes ?? null)
+  const [issues, setIssues] = useState<GitHubIssue[] | null>(seed?.issues ?? null)
+  const [pushed, setPushed] = useState<boolean | null>(seed?.pushed ?? null)
+  const [team, setTeam] = useState<string | null>(seed?.team ?? null)
   const [showTeam, setShowTeam] = useState(false)
 
   useEffect(() => {
@@ -44,13 +57,18 @@ export function Inspector({
       setTeam(tp)
 
       const { sandbox } = rolesIn(rs)
+      let nextPushed: boolean | null = null
       if (sandbox && st?.branch) {
-        const ok = await window.izuna.isPushed(panel.cwd, sandbox.name, st.branch).catch(() => false)
-        if (alive) setPushed(ok)
-      } else if (alive) setPushed(null)
+        nextPushed = await window.izuna.isPushed(panel.cwd, sandbox.name, st.branch).catch(() => false)
+      }
+      if (!alive) return
+      setPushed(nextPushed)
 
       const list = await window.izuna.ghIssues(panel.cwd).catch(() => null)
-      if (alive) setIssues(list)
+      if (!alive) return
+      setIssues(list)
+
+      remembered.set(panel.cwd, { status: st, remotes: rs, issues: list, pushed: nextPushed, team: tp })
     })()
     return () => { alive = false }
   }, [panel.cwd, panel.team, panel.transcript.state])

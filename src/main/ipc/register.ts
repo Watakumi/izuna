@@ -10,9 +10,8 @@ import * as gh from '../forge/github'
 import * as remote from '../git/remote'
 import * as term from '../terminal'
 import { findRepos, pickDirectory } from '../repos'
-import { scanSessions, readSessionLines } from '../sessions'
+import { scanSessions, replaySession } from '../sessions'
 import { loadGhosttySkin } from '../ghostty'
-import { replay } from '../../shared/sessions'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
@@ -56,7 +55,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   // 過去のセッション（§18）。走査するだけで、保存層は持たない
   ipcMain.handle(CH.ghosttySkin, () => loadGhosttySkin().catch(() => null))
   ipcMain.handle(CH.listSessions, () => scanSessions())
-  ipcMain.handle(CH.replaySession, async (_e, sessionId: string) => replay(await readSessionLines(sessionId)))
+  ipcMain.handle(CH.replaySession, (_e, sessionId: string) => replaySession(sessionId))
 
   ipcMain.handle(CH.forgeFacts, () => gatherFacts())
   ipcMain.handle(CH.forgeRepos, async () => listRepos(await forgeRoot()))

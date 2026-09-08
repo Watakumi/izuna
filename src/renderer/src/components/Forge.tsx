@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ForgejoPull } from '../../../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
+import { makeCache } from '../remember'
 import { C, F, MONO, S, ellipsis } from '../theme'
 import { Button, Card, Faint, Result } from './ui'
 
@@ -15,19 +16,7 @@ import { Button, Card, Faint, Result } from './ui'
  * **モーダルにしない。** 会話と行き来しながら使う画面なので、
  * 横に並べて見られる必要がある。狭い縦の柱なので上下に積む。
  */
-/**
- * 一度読んだものは覚えておく。
- *
- * タブを行き来するたびに畳まれて作り直されるので、**そのたびに
- * 「読んでいます…」が出ていた**。中身はほとんど変わらないのに、
- * 毎回 git と 2 つの API を待たせるのは筋が悪い。
- *
- * **覚えたものを先に出し、裏で取り直す。** 古い値が一瞬見えるのは、
- * 「読んでいます…」より害が小さい —— それは嘘ではなく、**少し前の事実**である。
- * 何か操作したあとは `load()` が走るので、結果はすぐ新しくなる。
- *
- * 画面を閉じたら消える（module の寿命）。ディスクには置かない。
- */
+/** 一度読んだものは覚えておく（`remember.ts` の註）。鍵は作業ディレクトリ */
 interface Snapshot {
   remotes: RemoteRef[]
   branch: string | null
@@ -39,7 +28,7 @@ interface Snapshot {
   commits: string[]
   bases: { sandbox: string | null; upstream: string | null }
 }
-const remembered = new Map<string, Snapshot>()
+const remembered = makeCache<Snapshot>()
 
 export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): React.JSX.Element {
   /**

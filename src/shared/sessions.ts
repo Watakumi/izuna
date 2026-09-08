@@ -1,4 +1,7 @@
-import { emptyTranscript, appendUserText, applyMessage, type Transcript } from './transcript'
+import {
+  emptyTranscript, appendUserText, applyMessage,
+  type TaskRun, type Transcript
+} from './transcript'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
 /**
@@ -219,12 +222,63 @@ function stripEmptyThinking(e: RawEntry): RawEntry {
   return kept.length === c.length ? e : { ...e, message: { ...e.message, content: kept } }
 }
 
-export function replay(lines: string[]): Transcript {
+/**
+ * 巨大なツール出力は**外のファイルに逃がされている**（2026-09-08 実測、23 セッション該当）。
+ *
+ * ```
+ * <persisted-output>
+ * Output too large (33.5KB). Full output saved to: …/tool-results/xxxx.txt
+ * </persisted-output>
+ * ```
+ *
+ * 読まないと**抜粋しか復元されない**。ここは印からパスを取り出すだけで、
+ * 読むのは `main/sessions.ts` の仕事（§4 の原則）。
+ */
+export function persistedOutputPath(text: string): string | null {
+  const m = /Full output saved to:\s*(\S+)/.exec(text)
+  return m ? m[1] : null
+}
+
+/** 印を、実際の中身で置き換える */
+export function withPersistedOutput(text: string, content: string): string {
+  return text.replace(/<persisted-output>[\s\S]*?<\/persisted-output>/, content)
+}
+
+/**
+ * 実行役の記録（`<sessionId>/subagents/agent-<id>.jsonl`）から 1 件を組み立てる。
+ *
+ * **親のツール呼び出しには紐付けられない。** `task_started` などの
+ * イベントは記録に残らない（実測: `system` に出るのは `away_summary` /
+ * `turn_duration` などだけ）。だから**ファイルそのものを 1 件の実行役**として扱う。
+ */
+export function replayTask(agentId: string, lines: string[]): TaskRun | null {
+  const t = replay(lines, true)
+  const blocks = t.items.flatMap((i) => (i.kind === 'assistant' ? i.blocks : []))
+  const firstPrompt = t.items.find((i) => i.kind === 'user')
+  if (blocks.length === 0 && !firstPrompt) return null
+  return {
+    taskId: agentId,
+    toolUseId: null,
+    description: firstPrompt?.kind === 'user' ? firstPrompt.text.slice(0, 80) : '(記録のみ)',
+    subagentType: null,
+    prompt: firstPrompt?.kind === 'user' ? firstPrompt.text : null,
+    // 記録から読んでいる時点で、その実行役はもう走っていない
+    status: 'completed',
+    summary: null,
+    lastTool: null,
+    backgrounded: false,
+    usage: null,
+    blocks
+  }
+}
+
+export function replay(lines: string[], includeSidechain = false): Transcript {
   let t = emptyTranscript()
   let n = 0
   for (const line of lines) {
     const e = parse(line)
-    if (!e || e.isSidechain) continue
+    // **実行役の記録は全行が sidechain。** そのファイルを読むときは飛ばさない
+    if (!e || (e.isSidechain && !includeSidechain)) continue
     if (isHuman(e)) {
       t = appendUserText(t, textOf(e.message?.content) ?? '', `replay-${n++}`)
       continue

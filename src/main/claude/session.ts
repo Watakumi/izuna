@@ -75,6 +75,8 @@ export interface SessionOptions {
 type Events = {
   message: [SDKMessage]
   permission: [PermissionRequest]
+  /** 誰も答えないまま期限が来た承認要求。画面から消すために使う */
+  permissionExpired: [string]
   error: [Error]
   done: []
 }
@@ -229,6 +231,19 @@ export class ClaudeSession extends EventEmitter<Events> {
     await this.#query?.interrupt()
   }
 
+  /**
+   * 承認を待つ上限。**答えが来なければ deny する。**
+   *
+   * §6 に「答えないまま放置すると CLI は待ち続ける」と書きながら、
+   * 上限を置いていなかった。人が画面を見ているうちは露呈しないが、
+   * **無人で回した瞬間に固まる**。
+   *
+   * Nimbalyst は同じ場所を 5 分で deny していた（実測。外部 CLI 経路は 10 分）。
+   * 同じ値を採る —— 短すぎると考えている人を追い出し、
+   * 長すぎると止まったことに気づけない。
+   */
+  static readonly PERMISSION_TIMEOUT_MS = 5 * 60_000
+
   async stop(): Promise<void> {
     this.#input.close()
     this.#running = false
@@ -278,10 +293,30 @@ export class ClaudeSession extends EventEmitter<Events> {
     return new Promise<PermissionResult>((resolve) => {
       this.#pending.set(id, resolve)
 
+      /**
+       * **「人が拒否した」と「誰も答えなかった」を区別する。**
+       * 同じ deny でも、エージェントが次に取るべき手が違う ——
+       * 前者はやり方を変えるべきで、後者は人を呼ぶべきである。
+       */
+      const timer = setTimeout(() => {
+        if (!this.#pending.delete(id)) return
+        this.emit('permissionExpired', id)
+        resolve({
+          behavior: 'deny',
+          message: `${ClaudeSession.PERMISSION_TIMEOUT_MS / 60_000} 分待ちましたが、誰も答えませんでした（拒否されたわけではありません）`
+        })
+      }, ClaudeSession.PERMISSION_TIMEOUT_MS)
+
+      const settle = (result: PermissionResult): void => {
+        clearTimeout(timer)
+        resolve(result)
+      }
+      this.#pending.set(id, settle)
+
       // 中断されたら fail-closed。答えないまま放置すると CLI が待ち続ける。
       opts.signal?.addEventListener('abort', () => {
         if (!this.#pending.delete(id)) return
-        resolve({ behavior: 'deny', message: '承認要求が取り消されました' })
+        settle({ behavior: 'deny', message: '承認要求が取り消されました' })
       })
 
       this.emit('permission', {

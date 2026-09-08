@@ -4,9 +4,12 @@ import {
   byNewest,
   filterSessions,
   labelOf,
+  persistedOutputPath,
   projectDirName,
   replay,
+  replayTask,
   summarize,
+  withPersistedOutput,
   type SessionSummary
 } from '../src/shared/sessions'
 
@@ -199,6 +202,68 @@ describe('会話の復元', () => {
   it('復元した時点では走っていない（走ったままだと止められない画面になる）', () => {
     expect(replay(lines).running).toBe(false)
     expect(replay(lines).draft).toBeNull()
+  })
+})
+
+describe('外に逃がされたツール出力', () => {
+  /**
+   * 巨大な出力は `<sessionId>/tool-results/*.txt` に逃がされ、記録には印だけが残る。
+   * **読まないと抜粋しか復元されない**（実測で 23 セッション該当）。
+   */
+  const MARK = [
+    '<persisted-output>',
+    'Output too large (33.5KB). Full output saved to: /x/tool-results/abc.txt',
+    '</persisted-output>'
+  ].join('\n')
+
+  it('印からパスを取り出す', () => {
+    expect(persistedOutputPath(MARK)).toBe('/x/tool-results/abc.txt')
+  })
+
+  it('印が無ければ null', () => {
+    expect(persistedOutputPath('ふつうの出力')).toBeNull()
+  })
+
+  it('印を中身で置き換える', () => {
+    expect(withPersistedOutput(`前${MARK}後`, '本当の中身')).toBe('前本当の中身後')
+  })
+
+  it('印が無ければ何もしない', () => {
+    expect(withPersistedOutput('そのまま', 'x')).toBe('そのまま')
+  })
+})
+
+describe('実行役の記録', () => {
+  /**
+   * `<sessionId>/subagents/agent-<id>.jsonl`。実測で 154 本あった。
+   * **全行が `isSidechain`** なので、親の会話と同じ扱いで読むと空になる。
+   */
+  const lines = [
+    j({ type: 'user', isSidechain: true, message: { content: 'この関数を調べて' } }),
+    j({ type: 'assistant', isSidechain: true, message: { id: 'm1', content: [{ type: 'text', text: '調べました' }] } })
+  ]
+
+  it('ファイルそのものを 1 件の実行役として組み立てる', () => {
+    const t = replayTask('a1b2c3', lines)!
+    expect(t.taskId).toBe('a1b2c3')
+    expect(t.description).toContain('この関数')
+    expect(t.blocks).toHaveLength(1)
+  })
+
+  it('**記録から読んだ時点で、その実行役は走っていない**', () => {
+    expect(replayTask('a1', lines)!.status).toBe('completed')
+  })
+
+  it('親のツール呼び出しには紐付けない（task_* は記録に残らない）', () => {
+    expect(replayTask('a1', lines)!.toolUseId).toBeNull()
+  })
+
+  it('中身が無ければ null（空の札を並べない）', () => {
+    expect(replayTask('a1', ['', '{壊れている'])).toBeNull()
+  })
+
+  it('親の会話を読むときは sidechain を飛ばす（混ぜない）', () => {
+    expect(replay(lines).items).toHaveLength(0)
   })
 })
 

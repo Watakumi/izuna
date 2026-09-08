@@ -269,6 +269,80 @@ describe('承認（§6）', () => {
     expect(await answer).toMatchObject({ behavior: 'deny' })
   })
 
+  it('**誰も答えなければ deny する**（無人で回した瞬間に固まらないように）', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ClaudeSession } = await load()
+      const s = new ClaudeSession({ cwd: '/w' })
+      await s.start()
+      const answer = askTool!('Bash', { command: 'ls' }, {})
+      let settled = false
+      void answer.then(() => { settled = true })
+
+      await vi.advanceTimersByTimeAsync(ClaudeSession.PERMISSION_TIMEOUT_MS - 1000)
+      expect(settled, '期限前に勝手に答えない').toBe(false)
+
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(await answer).toMatchObject({ behavior: 'deny' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('**「人が拒否した」と「誰も答えなかった」を区別する**（次の一手が違う）', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ClaudeSession } = await load()
+      const s = new ClaudeSession({ cwd: '/w' })
+      await s.start()
+      const answer = askTool!('Write', {}, {})
+      await vi.advanceTimersByTimeAsync(ClaudeSession.PERMISSION_TIMEOUT_MS + 1000)
+      const r = (await answer) as { behavior: string; message: string }
+      expect(r.message).toContain('誰も答えませんでした')
+      expect(r.message).toContain('拒否されたわけではありません')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('期限切れを画面に伝える（出したままの承認札を消すため）', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ClaudeSession } = await load()
+      const s = new ClaudeSession({ cwd: '/w' })
+      await s.start()
+      const expired: string[] = []
+      s.on('permissionExpired', (id) => expired.push(id))
+      const asked = new Promise<{ id: string }>((r) => s.on('permission', r))
+      void askTool!('Write', {}, {})
+      const req = await asked
+      await vi.advanceTimersByTimeAsync(ClaudeSession.PERMISSION_TIMEOUT_MS + 1000)
+      expect(expired).toEqual([req.id])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('答えたあとに期限が来ても二度答えない', async () => {
+    vi.useFakeTimers()
+    try {
+      const { ClaudeSession } = await load()
+      const s = new ClaudeSession({ cwd: '/w' })
+      await s.start()
+      const asked = new Promise<{ id: string }>((r) => s.on('permission', r))
+      const answer = askTool!('Write', {}, {})
+      const req = await asked
+      s.respondToPermission(req.id, { behavior: 'allow' })
+      const expired: string[] = []
+      s.on('permissionExpired', (id) => expired.push(id))
+      await vi.advanceTimersByTimeAsync(ClaudeSession.PERMISSION_TIMEOUT_MS + 1000)
+      expect(await answer).toMatchObject({ behavior: 'allow' })
+      expect(expired).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('知らない id に答えても落ちない', async () => {
     const { ClaudeSession } = await load()
     const s = new ClaudeSession({ cwd: '/w' })

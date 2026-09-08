@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { claudeProjectsDir, readSessionLines, scanSessions } from '../src/main/sessions'
+import { claudeProjectsDir, readSessionLines, replaySession, scanSessions } from '../src/main/sessions'
 
 /**
  * `~/.claude/projects/` の走査（CLAUDE.md §18）。
@@ -90,6 +90,81 @@ describe('走査', () => {
     put('-b', 'eeee0000-0000-0000-0000-000000000000', line({ type: 'user', cwd: '/b', message: { content: '無事' } }))
     const list = await scanSessions()
     expect(list.some((s) => s.firstPrompt === '無事')).toBe(true)
+  })
+})
+
+describe('サイドカーを読む', () => {
+  /**
+   * 記録の隣に置かれるもの。**読まないと復元が痩せる。**
+   * - `<sessionId>/tool-results/*.txt` — 逃がされた巨大な出力
+   * - `<sessionId>/subagents/agent-<id>.jsonl` — 実行役の記録
+   */
+  const SID = 'aaaa1111-2222-3333-4444-555555555555'
+
+  const sidecar = (rel: string, body: string): string => {
+    const path = join(root, 'projects', '-a', SID, rel)
+    mkdirSync(join(path, '..'), { recursive: true })
+    writeFileSync(path, body)
+    return path
+  }
+
+  it('逃がされた出力を中身に差し替える', async () => {
+    const at = sidecar('tool-results/big.txt', '本当の中身がここにある')
+    put('-a', SID,
+      line({ type: 'assistant', cwd: '/a', message: { id: 'm1', content: [
+        { type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'ls' } }
+      ] } }) +
+      line({ type: 'user', cwd: '/a', message: { content: [{
+        type: 'tool_result', tool_use_id: 't1',
+        content: `<persisted-output> Output too large. Full output saved to: ${at} </persisted-output>`
+      }] } }))
+    const text = JSON.stringify(await replaySession(SID))
+    expect(text).toContain('本当の中身がここにある')
+    expect(text).not.toContain('persisted-output')
+  })
+
+  it('**逃がし先が消えていたら印を残す**（消すと「出力が空だった」と読める）', async () => {
+    put('-a', SID,
+      line({ type: 'assistant', cwd: '/a', message: { id: 'm1', content: [
+        { type: 'tool_use', id: 't1', name: 'Bash', input: {} }
+      ] } }) +
+      line({ type: 'user', cwd: '/a', message: { content: [{
+        type: 'tool_result', tool_use_id: 't1',
+        content: '<persisted-output> Full output saved to: /いない/x.txt </persisted-output>'
+      }] } }))
+    expect(JSON.stringify(await replaySession(SID))).toContain('persisted-output')
+  })
+
+  it('実行役の記録を読む', async () => {
+    put('-a', SID, line({ type: 'user', cwd: '/a', message: { content: 'やって' } }))
+    sidecar('subagents/agent-abc123.jsonl',
+      line({ type: 'user', isSidechain: true, message: { content: '下調べを頼む' } }) +
+      line({ type: 'assistant', isSidechain: true, message: { id: 'm1', content: [{ type: 'text', text: '調べた' }] } }))
+    const t = await replaySession(SID)
+    expect(t.tasks).toHaveLength(1)
+    expect(t.tasks[0]).toMatchObject({ taskId: 'abc123', status: 'completed' })
+  })
+
+  it('サイドカーが無くても復元できる（古い CLI には無い）', async () => {
+    put('-a', SID, line({ type: 'user', cwd: '/a', message: { content: 'ふつうの会話' } }))
+    const t = await replaySession(SID)
+    expect(t.tasks).toEqual([])
+    expect(t.items).toHaveLength(1)
+  })
+
+  it('壊れた実行役の記録が 1 つあっても、ほかは読める', async () => {
+    put('-a', SID, line({ type: 'user', cwd: '/a', message: { content: 'やって' } }))
+    sidecar('subagents/agent-broken.jsonl', '{壊れている\n')
+    sidecar('subagents/agent-ok.jsonl',
+      line({ type: 'assistant', isSidechain: true, message: { id: 'm', content: [{ type: 'text', text: '無事' }] } }))
+    const t = await replaySession(SID)
+    expect(t.tasks.map((k) => k.taskId)).toEqual(['ok'])
+  })
+
+  it('agent- で始まらないものは読まない', async () => {
+    put('-a', SID, line({ type: 'user', cwd: '/a', message: { content: 'x' } }))
+    sidecar('subagents/notes.md', 'ただの文書')
+    expect((await replaySession(SID)).tasks).toEqual([])
   })
 })
 

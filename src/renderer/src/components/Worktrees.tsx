@@ -3,6 +3,7 @@ import type { WorktreeStatus } from '../../../main/git/worktree'
 import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
 import { F, C, MONO, ellipsis, S } from '../theme'
+import { makeCache } from '../remember'
 import { Button, Reload, Result, Tag } from './ui'
 
 /**
@@ -17,6 +18,14 @@ import { Button, Reload, Result, Tag } from './ui'
  */
 type Row = Worktree & { status: WorktreeStatus | null; session: Panel | null }
 
+/**
+ * 覚えておく中身。鍵は作業ディレクトリ。
+ *
+ * **セッションは覚えない**（`panels` は毎回渡ってくる生の状態で、
+ * 古いものを混ぜると「終わったセッションが走っている」と嘘になる）。
+ */
+const remembered = makeCache<Omit<Row, 'session'>[]>()
+
 export function Worktrees({
   cwd,
   panels,
@@ -26,7 +35,11 @@ export function Worktrees({
   panels: Panel[]
   onOpen: (worktree: Worktree) => void
 }): React.JSX.Element {
-  const [rows, setRows] = useState<Row[] | null>(null)
+  // 一度読んだものは覚えておく（`remember.ts` の註）。セッションだけは今のものを当てる
+  const seed = remembered.get(cwd)
+  const [rows, setRows] = useState<Row[] | null>(
+    seed ? seed.map((w) => ({ ...w, session: panels.find((p) => p.cwd === w.path) ?? null })) : null
+  )
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad: boolean; at: number } | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
@@ -39,6 +52,7 @@ export function Worktrees({
       session: panels.find((p) => p.cwd === w.path) ?? null
     })))
     setRows(withStatus)
+    remembered.set(cwd, withStatus.map(({ session: _session, ...rest }) => rest))
   }, [cwd, panels])
 
   useEffect(() => { void load() }, [load])

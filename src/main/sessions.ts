@@ -1,7 +1,11 @@
-import { open, readdir, stat } from 'node:fs/promises'
+import { open, readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { summarize, type SessionSummary } from '../shared/sessions'
+import {
+  persistedOutputPath, replay, replayTask, summarize, withPersistedOutput,
+  type SessionSummary
+} from '../shared/sessions'
+import type { TaskRun, Transcript } from '../shared/transcript'
 
 /**
  * `~/.claude/projects/` の走査（CLAUDE.md §18）。
@@ -103,8 +107,71 @@ export async function scanSessions(): Promise<SessionSummary[]> {
   return out.filter((s): s is SessionSummary => s !== null)
 }
 
+/**
+ * 逃がされたツール出力を、実際の中身に差し替える。
+ *
+ * **無いファイルは印のまま残す。** 消すと「出力が空だった」と読めてしまう。
+ */
+async function fillPersistedOutputs(lines: string[]): Promise<string[]> {
+  return Promise.all(
+    lines.map(async (line) => {
+      if (!line.includes('persisted-output')) return line
+      const path = persistedOutputPath(line)
+      if (!path) return line
+      try {
+        // JSON の文字列に埋める。生のまま入れると行が壊れる
+        const body = await readFile(path.replace(/\\n$/, ''), 'utf8')
+        const escaped = JSON.stringify(body).slice(1, -1)
+        return withPersistedOutput(line, escaped)
+      } catch {
+        return line
+      }
+    })
+  )
+}
+
+/**
+ * 実行役の記録。`<sessionId>/subagents/agent-<id>.jsonl` を読む。
+ *
+ * 実測で 154 本あった（2026-09-08）。読まないと、実行役が何をしたのかが
+ * まるごと落ちる。**無ければ空**（サイドカーは新しい CLI にしか無い）。
+ */
+async function readSubagents(dir: string, id: string): Promise<TaskRun[]> {
+  const at = join(dir, id, 'subagents')
+  let names: string[]
+  try {
+    names = (await readdir(at)).filter((n) => n.startsWith('agent-') && n.endsWith('.jsonl'))
+  } catch {
+    return []
+  }
+  const tasks = await Promise.all(
+    names.map(async (n) => {
+      try {
+        const text = await readFile(join(at, n), 'utf8')
+        return replayTask(n.slice('agent-'.length, -'.jsonl'.length), text.split('\n'))
+      } catch {
+        return null
+      }
+    })
+  )
+  return tasks.filter((t): t is TaskRun => t !== null)
+}
+
+/** 記録から会話を組み立て直す。サイドカーも読む */
+export async function replaySession(id: string): Promise<Transcript> {
+  const { lines, dir } = await locate(id)
+  const [filled, tasks] = await Promise.all([fillPersistedOutputs(lines), readSubagents(dir, id)])
+  const t = replay(filled)
+  return { ...t, tasks: [...t.tasks, ...tasks] }
+}
+
 /** 復元用に全文の行を返す。**一覧では呼ばない**（19MB を読む） */
 export async function readSessionLines(id: string): Promise<string[]> {
+  return (await locate(id)).lines
+}
+
+/** 記録の在り処と中身。置き場所は復元でサイドカーを引くのに要る */
+async function locate(id: string): Promise<{ lines: string[]; dir: string }> {
   const root = claudeProjectsDir()
   // 走査先が無いのは「まだ一度も使っていない」だけ。**ENOENT を投げない** ——
   // 下の「見つかりません」に落として、探した id を見せる
@@ -119,7 +186,7 @@ export async function readSessionLines(id: string): Promise<string[]> {
     try {
       const fh = await open(path, 'r')
       try {
-        return (await fh.readFile()).toString('utf8').split('\n')
+        return { lines: (await fh.readFile()).toString('utf8').split('\n'), dir: join(root, name) }
       } finally {
         await fh.close()
       }
