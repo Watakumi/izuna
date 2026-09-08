@@ -12,7 +12,7 @@ import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
-import { TextArea } from './components/ui'
+import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
@@ -158,16 +158,19 @@ function App(): React.JSX.Element {
             // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
             // 実際の制約はサブスクリプションの枠のほう
             <span style={S.note} title="Pro プランの使用量。ターミナルの Claude Code と同じ上限を共有します">
-              枠 {Math.round(active.transcript.limits.fiveHour * 100)}%
+              使用量 {Math.round(active.transcript.limits.fiveHour * 100)}%
               <span style={{ color: C.faint }}> / 5時間</span>
             </span>
           )}
-          {active && (
-            <button style={S.ghostSmall} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
-          )}
-          {/* 破壊的な操作。ほかと同じ形にしない。実行中だけ出す */}
+          {/*
+            **実行中だけ出す。** 止めるものが無いときに出ていると、
+            何をする釦なのか分からない（実際 2 つ並べていて、片方は
+            実行中かどうかに関係なく出ていた）。
+          */}
           {active?.transcript.state === 'running' && (
-            <button style={S.danger} onClick={() => void window.izuna.interrupt(active.id)}>中断</button>
+            <Button kind="danger" size="sm" onClick={() => void window.izuna.interrupt(active.id)}>
+              止める
+            </Button>
           )}
           {active && (
             <button
