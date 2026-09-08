@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { basename } from 'node:path'
-import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
+import type { HookInput, HookJSONOutput, PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../shared/wait'
 import { canDraft, draftPrompt } from '../shared/commit'
 import { canReview, reviewPrompt } from '../shared/review'
@@ -8,6 +8,7 @@ import type { TaskStatus } from '../shared/team'
 import type { Attachment } from '../shared/image'
 import type { Progress } from '../shared/loop'
 import type { Wakeup } from '../shared/wakeup'
+import { TEAMMATE_HOOKS, logEntryOf, teammateEventOf, type TeammateHooks } from '../shared/teammate'
 import type { SessionEvent, SessionId, StartSessionInput } from '../shared/ipc'
 import { ClaudeSession } from './claude/session'
 import { gateProjectHooks } from './claude/trust'
@@ -97,7 +98,8 @@ export class SessionHub {
       appendSystemPrompt: teamInstructions(team),
       // 自律ループが進捗を申告するための口。**ループでなくても渡してよい**
       // （呼ばれなければ何も起きない）
-      mcpServers: { izuna: progressServer(team) }
+      mcpServers: { izuna: progressServer(team) },
+      hooks: this.#teammateHooks(id, team)
     })
 
     session.on('message', (message) => this.#emit({ kind: 'message', id, message }))
@@ -126,6 +128,25 @@ export class SessionHub {
       throw err
     }
     return id
+  }
+
+  /**
+   * 実行役の節目を拾う hook（§12「反省ループの起点は hook」）。
+   *
+   * 拾ったら `log.md` に書き（Izuna が書く。§12）、画面に流す。
+   * **止めない。** 返すのは空で、`continue: false` も `decision` も付けない ——
+   * 実行役を止めるのはブレインの判断で、Izuna が hook で割り込むものではない。
+   */
+  #teammateHooks(id: SessionId, team: string): TeammateHooks {
+    const record = async (input: HookInput): Promise<HookJSONOutput> => {
+      const event = teammateEventOf(input)
+      if (event) {
+        await appendLog(team, logEntryOf(event))
+        this.#emit({ kind: 'teammate', id, event })
+      }
+      return {}
+    }
+    return Object.fromEntries(TEAMMATE_HOOKS.map((name) => [name, [{ hooks: [record] }]]))
   }
 
   send(id: SessionId, text: string, images: Attachment[] = []): void {

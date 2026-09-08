@@ -106,6 +106,15 @@ describe('起動時に渡すもの', () => {
     expect(passed?.includePartialMessages).toBe(true)
   })
 
+  it('hook を渡せば query に載せる。渡さなければ鍵ごと無い（SDK の既定に任せる）', async () => {
+    const { ClaudeSession } = await load()
+    const hooks = { SubagentStop: [{ hooks: [async () => ({})] }] }
+    await new ClaudeSession({ cwd: '/w', hooks }).start()
+    expect(passed?.hooks).toBe(hooks)
+    await new ClaudeSession({ cwd: '/w' }).start()
+    expect('hooks' in (passed ?? {})).toBe(false)
+  })
+
   it('claude の場所とログインシェルの環境を渡す（Finder 起動は PATH を継承しない）', async () => {
     const { ClaudeSession } = await load()
     await new ClaudeSession({ cwd: '/w' }).start()

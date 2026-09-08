@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canRemove,
+  lockPid,
   parseWorktrees,
   slugifyBranch,
   type Worktree
@@ -95,6 +96,15 @@ describe('畳んでよいか', () => {
 
   it('ロック中は畳めない。理由があれば見せる', () => {
     expect(canRemove(wt({ locked: '実験中' }))).toContain('実験中')
+  })
+
+  it('主のいないロック（pid が死んでいる）なら消してよい。生きていれば拒む', () => {
+    const reason = 'claude agent agent-a9536a959adee1c24 (pid 4221 start Tue Sep  8 18:28:27 2026)'
+    expect(canRemove(wt({ locked: reason, lockStale: true }))).toBeNull()
+    expect(canRemove(wt({ locked: reason, lockStale: false }))).toContain('ロック')
+    expect(lockPid(reason)).toBe(4221)
+    expect(lockPid('実験中')).toBeNull()
+    expect(lockPid(null)).toBeNull()
     expect(canRemove(wt({ locked: '' }))).toContain('ロック')
   })
 

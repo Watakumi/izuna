@@ -221,3 +221,27 @@ paths:
   `forgeRepos()` が 0 件）。§26 でトークンを `izuna` のものにしたので、`watakumi/…` の
   リポジトリは Forgejo で `izuna` を協力者に足すまで一覧に出ない。新しく作るものは
   `ensureRepo` がボットの下に作る。
+- **`WorktreeCreate` の hook は観察の口ではない**（2026-09-09、`scripts/probe-team.ts` で踏んだ）。
+  SDK の `hooks` に `WorktreeCreate` を張ると、CLI は worktree の**作成をその hook に委ねる**。
+  hook が `hookSpecificOutput.worktreePath` を返さなければ「hook succeeded but returned no worktree
+  path」で、**`isolation: "worktree"` の Agent の起動ごと失敗する**。見るだけなら `git worktree list`。
+  Izuna は `SubagentStart` / `SubagentStop` だけを主に見る（`shared/teammate.ts`）。
+- **サブエージェントは `EnterWorktree` を呼べない**（同日）。「cannot create a worktree from a subagent
+  with a cwd override」と「cwd is the repository root, not an isolated worktree」の 2 通りで拒まれる。
+  分けるのは起こす側で、`Agent` に `isolation: "worktree"` を付ける。
+- **Bash で `cd` した先はセッションに残る**（同日、walk で踏んだ）。ブレインが共有フォルダへ `cd` して
+  読んだあと `Agent`（`isolation: "worktree"`）を起こしたら、「git のリポジトリではない」で失敗した。
+  申し送りに「共有フォルダは絶対パスで読み書きする」と書いた（`main/team.ts`）。
+- **Playwright の `getByText(題名)` は「続きから」の行にも当たる**（同日、walk で踏んだ）。Issue の題名で
+  札を探したら、同じ題名を持つ前回のセッションの行を押して resume していた。`#<番号>` の印で探す。
+- **画面の区切りの印を依頼文に入れると、自分の依頼文に反応する**（同日）。「MERGED と返して」と頼むと
+  依頼文にも MERGED がある。送った時点の数より増えたかで見る（`scripts/walk.ts` の `send`）。
+- **CLI は実行役の worktree を `claude agent <id> (pid N …)` でロックし、プロセスが死んでも外さないことがある**
+  （2026-09-09、walk を途中で殺したあとに踏んだ）。`git worktree remove` は locked を拒む。
+  `main/git/worktree.ts` は理由の pid が生きていなければ `lockStale` を立て、`unlock` してから消す。
+  **生きているロックは今までどおり拒む**（実行役が動いている worktree を消さない）。
+- **同じタブを押し直しても画面は読み直さない**（同日、walk で踏んだ）。PR タブにいるまま remote を変えて
+  PR タブを押しても一覧は古いまま。別のタブを経由する（`Forge` は mount で読む）。
+- **前の走行の Electron が残っていると、次の走行がそちらに繋がる**（同日）。`scripts/lib/electron.ts` は
+  port が既に開いていれば起動しない。`lsof -i :9334` で確かめて殺す。
+

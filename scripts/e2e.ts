@@ -1,9 +1,5 @@
-import { chromium, type Page } from 'playwright'
-import { spawn, type ChildProcess } from 'node:child_process'
-import { createRequire } from 'node:module'
-import { join } from 'node:path'
-import { existsSync } from 'node:fs'
 import { CH, IPC_VERSION } from '../src/shared/ipc'
+import { ROOT, call, launch } from './lib/electron'
 
 /**
  * 本物の Electron を起動して、口が通っているかを見る（§30）。
@@ -11,18 +7,14 @@ import { CH, IPC_VERSION } from '../src/shared/ipc'
  * `scripts/shots.ts` はブラウザで作り物の `window.izuna` を描く。**main は動かさない。**
  * だから「口を足したのに handler が無い」「Forgejo の口のパスが違う」は、そこでは分からない。
  * ここは本物を起動し、`window.izuna` を renderer から呼んで、返りの形を見る。
- *
- * **Playwright の `_electron.launch` は使わない。** あれは Chromium に `--use-mock-keychain` を
- * 渡すので、`safeStorage` が本物と違う鍵で動き、保管したトークンが読めない
- * （2026-09-09 に踏んだ。「鍵が変わった」と誤診して、人に発行し直しを頼んでしまった）。
- * `electron-vite dev` と同じく素の `electron .` を起動し、CDP で renderer に繋ぐ。
+ * 起動の仕方は `scripts/lib/electron.ts`（`_electron.launch` を使わない理由もそこに）。
  *
  * 要るもの: `pnpm build` の出力、動いている Forgejo、保管したトークン。
  * 手元専用で、`verify` には入れない（`shots` と同じ）。**書く口は呼ばない** ——
  * push・worktree の削除・セッションの起動は、検査のたびに本物を動かすものではない。
+ * 7 手を通しで動かすのは `scripts/walk.ts`。
  */
 
-const ROOT = join(__dirname, '..')
 const PORT = 9333
 let failures = 0
 const check = (ok: boolean, what: string): void => {
@@ -31,45 +23,13 @@ const check = (ok: boolean, what: string): void => {
 }
 const skip = (what: string): void => console.log(`skip ${what}`)
 
-type Api = Record<string, (...args: unknown[]) => Promise<unknown>>
-const call = <T>(page: Page, name: string, ...args: unknown[]): Promise<T> =>
-  page.evaluate(([n, a]) => (window as unknown as { izuna: Api }).izuna[n](...a) as Promise<T>, [
-    name,
-    args
-  ] as const)
-
-/** 素の Electron を起こし、CDP が開くまで待つ */
-async function launch(): Promise<ChildProcess> {
-  const require = createRequire(__filename)
-  const electronPath = require('electron') as string
-  const ps = spawn(electronPath, ['.', `--remote-debugging-port=${PORT}`], {
-    cwd: ROOT,
-    stdio: 'ignore'
-  })
-  for (let i = 0; i < 40; i++) {
-    try {
-      const res = await fetch(`http://127.0.0.1:${PORT}/json/version`)
-      if (res.ok) return ps
-    } catch {
-      // まだ開いていない
-    }
-    await new Promise((r) => setTimeout(r, 250))
-  }
-  ps.kill()
-  throw new Error('Electron の CDP が 10 秒で開かなかった')
-}
-
 async function main(): Promise<void> {
-  if (!existsSync(join(ROOT, 'out', 'main', 'index.js'))) {
-    console.error('out/ が無い。先に pnpm build')
+  const app = await launch(PORT).catch((e: Error) => {
+    console.error(e.message)
     process.exit(2)
-  }
-  const ps = await launch()
+  })
+  const { page } = app
   try {
-    const browser = await chromium.connectOverCDP(`http://127.0.0.1:${PORT}`)
-    const page = browser.contexts()[0].pages()[0]
-    await page.waitForLoadState('domcontentloaded')
-
     // ── 窓と口の面 ─────────────────────────────────────
     check((await page.title()) === 'Izuna', '窓の題が Izuna')
     const keys = await page.evaluate(() =>
@@ -155,6 +115,18 @@ async function main(): Promise<void> {
           Array.isArray(files) && files.length > 0 && typeof files[0].path === 'string',
           `forgePullDiff(${r.owner}/${r.name} !${p.number}) が差分を返す（${files.length} ファイル、+${files.reduce((n, f) => n + f.added, 0)}）`
         )
+        // Actions の口。無効なら空。**空でも通る** —— 回していないのは異常ではない
+        const runs = await call<Array<{ id: number; status: string; ref: string }>>(
+          page,
+          'forgeRuns',
+          r.owner,
+          r.name
+        )
+        check(
+          Array.isArray(runs) &&
+            runs.every((x) => typeof x.id === 'number' && typeof x.status === 'string'),
+          `forgeRuns(${r.owner}/${r.name}) が返る（${runs.length} 件${runs[0] ? `、最新 ${runs[0].status} @ ${runs[0].ref}` : ''}）`
+        )
         seen = true
         break
       }
@@ -164,9 +136,8 @@ async function main(): Promise<void> {
     // ── 画面。作り物ではなく本物が描いている ──────────────
     check((await page.getByText('セッション', { exact: true }).count()) > 0, '一覧の見出しが出る')
     check((await page.getByText('新しいセッション').count()) > 0, '「新しいセッション」の釦が出る')
-    await browser.close()
   } finally {
-    ps.kill()
+    await app.close()
   }
   console.log(failures === 0 ? '\n全部通った' : `\n${failures} 件落ちた`)
   process.exit(failures === 0 ? 0 : 1)

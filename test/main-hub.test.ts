@@ -349,3 +349,40 @@ describe('会話に頼むもの', () => {
     await expect(hub.requestReview(id, 'main')).rejects.toThrow(/決まりません/)
   })
 })
+
+describe('実行役の節目（§12）', () => {
+  type Hook = (input: Record<string, unknown>) => Promise<unknown>
+  const hooksOf = (s: FakeSession): Record<string, Array<{ hooks: Hook[] }>> =>
+    s.options.hooks as Record<string, Array<{ hooks: Hook[] }>>
+
+  it('SubagentStart / SubagentStop / TeammateIdle / Task の hook を張る。**Worktree は張らない**', async () => {
+    const { hub } = await load()
+    await hub.start({ cwd: '/w' })
+    expect(Object.keys(hooksOf(FakeSession.created[0])).sort()).toEqual(
+      ['SubagentStart', 'SubagentStop', 'TaskCompleted', 'TaskCreated', 'TeammateIdle']
+    )
+  })
+
+  it('鳴ったら log.md に書き、画面に流し、**止めない**（空を返す）', async () => {
+    const { hub, events } = await load()
+    const id = await hub.start({ cwd: '/w' })
+    const stop = hooksOf(FakeSession.created[0]).SubagentStop[0].hooks[0]
+    const out = await stop({ session_id: 's', transcript_path: '/t', cwd: '/w', hook_event_name: 'SubagentStop',
+      stop_hook_active: false, agent_id: 'a9d98cdcaa1a7c6e6', agent_type: 'general-purpose',
+      agent_transcript_path: '/x', last_assistant_message: 'Done.' })
+    expect(out).toEqual({})
+    expect(logs.at(-1)).toMatchObject({ kind: 'stop', note: 'Done.' })
+    const ev = events.find((e) => e.kind === 'teammate')
+    expect(ev).toMatchObject({ kind: 'teammate', id, event: { kind: 'stop', agent: 'a9d98cdcaa1a7c6e6', note: 'Done.' } })
+  })
+
+  it('読めない入力は書かず流さず、それでも空を返す', async () => {
+    const { hub, events } = await load()
+    await hub.start({ cwd: '/w' })
+    const before = logs.length
+    const h = hooksOf(FakeSession.created[0]).TeammateIdle[0].hooks[0]
+    expect(await h({ session_id: 's', transcript_path: '/t', cwd: '/w', hook_event_name: 'Stop', stop_hook_active: false })).toEqual({})
+    expect(logs.length).toBe(before)
+    expect(events.some((e) => e.kind === 'teammate')).toBe(false)
+  })
+})

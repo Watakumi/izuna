@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ForgejoPull } from '../../../main/forge/client'
+import type { ForgejoPull, ForgejoRun } from '../../../main/forge/client'
 import type { FileDiff } from '../../../shared/diff'
 import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
-import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
+import { rolesIn, stageOf, upstreamLeaks, type RemoteRef } from '../../../shared/remote'
 import { makeCache } from '../remember'
 import { C, F, MONO, S, ellipsis } from '../theme'
 import { Button, Card, Faint, Result } from './ui'
 import { PullDiff } from './PullDiff'
+import { CiBadge } from './CiBadge'
 
 /**
  * 右ペインの「PR」タブ。二段の PR（docs/GOAL.md 柱2）。
@@ -24,11 +25,17 @@ interface Snapshot {
   branch: string | null
   pushed: boolean
   pulls: ForgejoPull[]
+  /** sandbox の Actions の実行。Actions が無効なら空 */
+  runs: ForgejoRun[]
   issues: GitHubIssue[]
   ghPulls: GitHubPull[]
   gh: { ok: boolean; detail: string } | null
   commits: string[]
   bases: { sandbox: string | null; upstream: string | null }
+  /** upstream に出ている作業ブランチ。無ければ空。読めなければ null */
+  leaks: string[] | null
+  /** sandbox にあるブランチ。7 手目で捨てる候補 */
+  sandboxHeads: string[] | null
 }
 const remembered = makeCache<Snapshot>()
 
@@ -50,6 +57,7 @@ export function Forge({ cwd, sessionId, onDone }: {
   const [branch, setBranch] = useState<string | null>(seed?.branch ?? null)
   const [pushed, setPushed] = useState(seed?.pushed ?? false)
   const [pulls, setPulls] = useState<ForgejoPull[] | null>(seed?.pulls ?? null)
+  const [runs, setRuns] = useState<ForgejoRun[] | null>(seed?.runs ?? null)
   const [issues, setIssues] = useState<GitHubIssue[] | null>(seed?.issues ?? null)
   const [ghPulls, setGhPulls] = useState<GitHubPull[] | null>(seed?.ghPulls ?? null)
   const [gh, setGh] = useState<{ ok: boolean; detail: string } | null>(seed?.gh ?? null)
@@ -57,6 +65,8 @@ export function Forge({ cwd, sessionId, onDone }: {
   const [bases, setBases] = useState<{ sandbox: string | null; upstream: string | null }>(
     seed?.bases ?? { sandbox: null, upstream: null }
   )
+  const [leaks, setLeaks] = useState<string[] | null>(seed?.leaks ?? null)
+  const [sandboxHeads, setSandboxHeads] = useState<string[] | null>(seed?.sandboxHeads ?? null)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad: boolean; at: number } | null>(null)
 
@@ -80,15 +90,23 @@ export function Forge({ cwd, sessionId, onDone }: {
 
     let nextPushed = false
     let nextPulls: ForgejoPull[] = []
+    let nextRuns: ForgejoRun[] = []
     let nextIssues: GitHubIssue[] = []
     let nextGhPulls: GitHubPull[] = []
     let nextCommits: string[] = []
+    let nextLeaks: string[] | null = null
+    let nextSandboxHeads: string[] | null = null
 
     if (sb && br) {
       nextPushed = await window.izuna.isPushed(cwd, sb.name, br).catch(() => false)
-      if (sb.owner && sb.repo) nextPulls = await window.izuna.forgePulls(sb.owner, sb.repo).catch(() => [])
+      if (sb.owner && sb.repo) {
+        nextPulls = await window.izuna.forgePulls(sb.owner, sb.repo).catch(() => [])
+        // CI の状態は PR と一緒に読む。Actions が無ければ空で、札は「CI 無し」になる
+        nextRuns = await window.izuna.forgeRuns(sb.owner, sb.repo).catch(() => [])
+      }
       setPushed(nextPushed)
       setPulls(nextPulls)
+      setRuns(nextRuns)
     }
     if (status.ok) {
       nextIssues = await window.izuna.ghIssues(cwd).catch(() => [])
@@ -100,10 +118,25 @@ export function Forge({ cwd, sessionId, onDone }: {
       setCommits(nextCommits)
     }
 
+    // **GitHub に出るのは二段目だけ**（GOAL.md 測り方）。sandbox にある作業ブランチが
+    // upstream にもあれば、漏れている。いま出すブランチと既定ブランチは除く
+    if (sb) {
+      const [upHeads, sbHeads] = await Promise.all([
+        up ? window.izuna.remoteHeads(cwd, up.name).catch(() => []) : Promise.resolve([]),
+        window.izuna.remoteHeads(cwd, sb.name).catch(() => [])
+      ])
+      nextSandboxHeads = sbHeads
+      setSandboxHeads(sbHeads)
+      if (up) {
+        nextLeaks = upstreamLeaks({ upstreamHeads: upHeads, sandboxHeads: sbHeads, allowed: [upstreamBase, br] })
+        setLeaks(nextLeaks)
+      }
+    }
+
     remembered.set(cwd, {
-      remotes: rs, branch: br, gh: status, pushed: nextPushed, pulls: nextPulls,
+      remotes: rs, branch: br, gh: status, pushed: nextPushed, pulls: nextPulls, runs: nextRuns,
       issues: nextIssues, ghPulls: nextGhPulls, commits: nextCommits,
-      bases: { sandbox: sandboxBase, upstream: upstreamBase }
+      bases: { sandbox: sandboxBase, upstream: upstreamBase }, leaks: nextLeaks, sandboxHeads: nextSandboxHeads
     })
   }, [cwd])
 
@@ -131,6 +164,10 @@ export function Forge({ cwd, sessionId, onDone }: {
   }
 
   const { sandbox, upstream } = rolesIn(remotes ?? [])
+  // 7 手目で捨てる候補。既定ブランチといまのブランチは出さない。
+  // sandbox の既定ブランチが取れないこと（remote の HEAD が無い）があるので、main / master も名指しで外す
+  const keep = new Set([bases.sandbox, bases.upstream, branch, 'main', 'master'])
+  const workBranches = (sandboxHeads ?? []).filter((b) => !keep.has(b))
 
   /**
    * 見出しの右には**事実を置く**。
@@ -197,7 +234,10 @@ export function Forge({ cwd, sessionId, onDone }: {
                     {openPull === p.number ? '閉じる' : '差分'}
                   </span>
                 </div>
-                <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
+                  <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
+                  <CiBadge runs={runs} ref={p.head} />
+                </div>
                 {openPull === p.number && sandbox.owner && sandbox.repo && (
                   <div style={{ marginTop: S.md }}>
                     <PullDiff load={diffLoader(sandbox.owner, sandbox.repo, p.number)} />
@@ -205,6 +245,23 @@ export function Forge({ cwd, sessionId, onDone }: {
                 )}
               </Card>
             ))}
+
+            {/* 7 手目: 作業ブランチは sandbox で捨てる */}
+            {workBranches.length > 0 && (
+              <>
+                <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>作業ブランチ</span>
+                {workBranches.map((b) => (
+                  <div key={b} style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
+                    <span style={{ font: `${F.small}px ${MONO}`, ...ellipsis }}>{b}</span>
+                    <div style={{ flexGrow: 1 }} />
+                    <Button size="sm" disabled={busy !== null}
+                      onClick={() => void act(`del:${b}`, () => window.izuna.deleteRemoteBranch(cwd, sandbox.name, b))}>
+                      {busy === `del:${b}` ? '消しています…' : '消す'}
+                    </Button>
+                  </div>
+                ))}
+              </>
+            )}
 
             {pulls?.length === 0 && pushed && branch && (
               <Button disabled={busy !== null} kind="primary"
@@ -240,6 +297,14 @@ export function Forge({ cwd, sessionId, onDone }: {
         note={upstreamNote} />
       <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
         {!gh?.ok && <Faint>{gh?.detail ?? '読んでいます…'}</Faint>}
+        {leaks && leaks.length > 0 && (
+          <span style={{ fontSize: F.small, color: C.red, lineHeight: 1.6 }}>
+            作業ブランチが Upstream に出ています: {leaks.join(', ')}
+          </span>
+        )}
+        {leaks && leaks.length === 0 && sandbox && (
+          <span style={{ fontSize: F.micro, color: C.faint }}>作業ブランチは Upstream に出ていません</span>
+        )}
         {gh?.ok && branch && (
           <Card tone="attention">
             <span style={{ font: `${F.small}px ${MONO}` }}>

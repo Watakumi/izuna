@@ -218,8 +218,76 @@ export async function listTokens(rootUrl: string, user: string): Promise<Forgejo
 
 /**
  * PR の差分（unified diff の文字列）。読むのは `shared/patch.ts`。
- * `GET /repos/{owner}/{repo}/pulls/{index}.diff`（Forgejo の API 文書。**実機では未検証**）
+ * `GET /repos/{owner}/{repo}/pulls/{index}.diff`（2026-09-09 に `pnpm e2e` で実機確認。§30）
  */
 export async function pullDiff(rootUrl: string, owner: string, repo: string, index: number): Promise<string> {
   return callText(rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}.diff`)
+}
+
+/** Actions の 1 回の実行。形は `shared/ci.ts` が読む */
+export interface ForgejoRun {
+  id: number
+  title: string
+  /** Forgejo がそのまま返す語（success / failure / running / waiting / cancelled …） */
+  status: string
+  event: string
+  /** `refs/heads/feat/x` の形で来る。ブランチと突き合わせるのは `shared/ci.ts` */
+  ref: string
+  sha: string
+  htmlUrl: string
+  workflow: string
+  startedAt: string | null
+  stoppedAt: string | null
+}
+
+type RawRun = {
+  id: number
+  title: string
+  status: string
+  event: string
+  prettyref?: string
+  head_branch?: string
+  commit_sha: string
+  html_url: string
+  workflow_id: string
+  started: string | null
+  stopped: string | null
+}
+
+/**
+ * Actions の実行一覧（GOAL.md 測り方「Izuna がその状態を読める」）。
+ *
+ * `GET /repos/{owner}/{repo}/actions/runs`（Forgejo 16.0.3 の swagger にある。
+ * 応答は配列か `{ workflow_runs }` のどちらか —— Gitea は後者で、Forgejo の
+ * 文書は形を書いていないので両方読む）。`ref` を渡せばそのブランチだけ。
+ *
+ * **Actions が無効なら 404 が返る。** 「回していない」は異常ではないので空で返す。
+ * それ以外の失敗は握りつぶさない（`listPulls` と同じ）。
+ */
+export async function listRuns(
+  rootUrl: string, owner: string, repo: string, ref?: string
+): Promise<ForgejoRun[]> {
+  const q = new URLSearchParams({ limit: '20' })
+  if (ref) q.set('ref', ref.startsWith('refs/') ? ref : `refs/heads/${ref}`)
+  try {
+    const raw = await call<RawRun[] | { workflow_runs?: RawRun[] }>(
+      rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs?${q}`
+    )
+    const list = Array.isArray(raw) ? raw : (raw.workflow_runs ?? [])
+    return list.map((r) => ({
+      id: r.id,
+      title: r.title,
+      status: r.status,
+      event: r.event,
+      ref: r.prettyref ?? (r.head_branch ? `refs/heads/${r.head_branch}` : ''),
+      sha: r.commit_sha,
+      htmlUrl: r.html_url,
+      workflow: r.workflow_id,
+      startedAt: r.started || null,
+      stoppedAt: r.stopped || null
+    }))
+  } catch (e) {
+    if (e instanceof ForgeError && e.status === 404) return []
+    throw e
+  }
 }

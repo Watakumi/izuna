@@ -4,6 +4,7 @@ import type { PermissionRequest } from '../../main/claude/session'
 import type { SessionId, StartSessionInput } from '../../shared/ipc'
 import type { Progress, Stop } from '../../shared/loop'
 import { appendUserText, applyMessage, emptyTranscript, type Transcript } from '../../shared/transcript'
+import { teammateNotice } from '../../shared/teammate'
 
 /**
  * 複数セッションの状態（段3）。
@@ -93,6 +94,18 @@ export function useSessions(): Sessions {
               items: [...p.transcript.items, {
                 kind: 'notice', id: `wake${p.transcript.items.length}`, tone: 'info',
                 text: `予約の時刻になったので送りました: ${event.prompt.slice(0, 60)}`
+              }]
+            }
+          }
+        case 'teammate':
+          // 実行役の節目は会話に一言で挟む。埋もれさせない（柱 1）
+          return {
+            ...p,
+            transcript: {
+              ...p.transcript,
+              items: [...p.transcript.items, {
+                kind: 'notice', id: `tm${p.transcript.items.length}`, tone: 'info',
+                text: teammateNotice(event.event)
               }]
             }
           }

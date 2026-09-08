@@ -173,3 +173,52 @@ describe('PR の差分', () => {
     expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/me/r/pulls/7.diff')
   })
 })
+
+describe('Actions の実行（GOAL.md 測り方「Izuna がその状態を読める」）', () => {
+  it('/actions/runs を叩き、ref は refs/heads/ を付けて渡す', async () => {
+    const { listRuns } = await import('../src/main/forge/client')
+    reply([])
+    await listRuns('http://localhost:4649/', 'izuna', 'r', 'feat/x')
+    expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/izuna/r/actions/runs?limit=20&ref=refs%2Fheads%2Ffeat%2Fx')
+  })
+
+  it('ref が既に refs/ なら二重に付けない。無ければ付けない', async () => {
+    const { listRuns } = await import('../src/main/forge/client')
+    reply([])
+    await listRuns('http://localhost:4649/', 'izuna', 'r', 'refs/heads/main')
+    expect(calls[0].url).toContain('ref=refs%2Fheads%2Fmain')
+    reply([])
+    await listRuns('http://localhost:4649/', 'izuna', 'r')
+    expect(calls[1].url).not.toContain('ref=')
+  })
+
+  it('配列でも { workflow_runs } でも同じ形に読む', async () => {
+    const { listRuns } = await import('../src/main/forge/client')
+    const raw = { id: 7, title: 'verify', status: 'success', event: 'push', prettyref: 'refs/heads/feat/x',
+      commit_sha: 'abc', html_url: 'http://x/r/actions/runs/7', workflow_id: 'verify.yml',
+      started: '2026-09-09T00:00:00Z', stopped: '' }
+    reply([raw])
+    const a = await listRuns('http://localhost:4649/', 'izuna', 'r')
+    reply({ workflow_runs: [raw], total_count: 1 })
+    const b = await listRuns('http://localhost:4649/', 'izuna', 'r')
+    expect(a).toEqual(b)
+    expect(a[0]).toEqual({ id: 7, title: 'verify', status: 'success', event: 'push', ref: 'refs/heads/feat/x',
+      sha: 'abc', htmlUrl: 'http://x/r/actions/runs/7', workflow: 'verify.yml',
+      startedAt: '2026-09-09T00:00:00Z', stoppedAt: null })
+  })
+
+  it('prettyref が無ければ head_branch から組む', async () => {
+    const { listRuns } = await import('../src/main/forge/client')
+    reply([{ id: 1, title: 't', status: 'running', event: 'push', head_branch: 'main', commit_sha: 'a',
+      html_url: 'u', workflow_id: 'w', started: null, stopped: null }])
+    expect((await listRuns('http://localhost:4649/', 'o', 'r'))[0].ref).toBe('refs/heads/main')
+  })
+
+  it('**Actions が無効の 404 は「回していない」なので空**。それ以外は落とす', async () => {
+    const { listRuns } = await import('../src/main/forge/client')
+    reply('actions disabled', 404)
+    expect(await listRuns('http://localhost:4649/', 'o', 'r')).toEqual([])
+    reply('落ちています', 500)
+    await expect(listRuns('http://localhost:4649/', 'o', 'r')).rejects.toThrow(/落ちています/)
+  })
+})

@@ -701,3 +701,12 @@ Forgejo の `GET /repos/{o}/{r}/pulls/{n}.diff` を `shared/patch.ts` が `FileD
 承認と同じ `DiffView` で描く。hunk 単位の accept / reject はしない —— Izuna は読む道具で、
 判断は PR のマージで人がする。`.diff` の口は **2026-09-09 に `pnpm e2e` で実機確認した**
 （`izuna/izuna-e2e` !1 が 1 ファイル +2 の差分で返る。§30）。
+
+### 7 手の残りを画面に出した（2026-09-09）
+
+- **CI の札**（`CiBadge.tsx`）。sandbox の PR の札に、`forgeRuns` を `shared/ci.ts` で畳んだ結果を出す。
+  1 本も無ければ灰色の「CI 無し」で、赤にしない。押すと Forgejo の実行の頁
+- **漏れの判定**。Upstream の下に「作業ブランチは Upstream に出ていません」か、出ているブランチ名を赤で。
+  `remoteHeads` で両方の remote のブランチを取り、`shared/remote.ts` の `upstreamLeaks` が決める
+- **作業ブランチを消す**。Sandbox の下に既定ブランチといまのブランチ以外を並べ、「消す」で
+  `deleteRemoteBranch`。main / master は口の側でも拒む。worktree を消すのは「ブランチ」タブのまま

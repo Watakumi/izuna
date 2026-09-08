@@ -1,6 +1,6 @@
 import { realpathSync } from 'node:fs'
 import { basename } from 'node:path'
-import { parseWorktrees, canRemove, type Worktree } from '../../shared/worktree'
+import { parseWorktrees, canRemove, type Worktree, lockPid } from '../../shared/worktree'
 import { run } from '../exec'
 
 /**
@@ -34,8 +34,23 @@ export async function repoName(cwd: string): Promise<string> {
   return basename(await repoRoot(cwd))
 }
 
+/** その pid のプロセスがいるか。`kill(pid, 0)` は送らずに存在だけ見る */
+function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (e) {
+    // EPERM は「いるが触れない」。EPERM 以外（ESRCH）はいない
+    return (e as NodeJS.ErrnoException).code === 'EPERM'
+  }
+}
+
 export async function listWorktrees(cwd: string): Promise<Worktree[]> {
-  return parseWorktrees(await git(cwd, ['worktree', 'list', '--porcelain']))
+  return parseWorktrees(await git(cwd, ['worktree', 'list', '--porcelain'])).map((w) => {
+    const pid = lockPid(w.locked)
+    // ロックの主が死んでいれば、消してよい印を付ける。pid が読めなければ今までどおり拒む
+    return pid !== null ? { ...w, lockStale: !processAlive(pid) } : w
+  })
 }
 
 /**
@@ -74,6 +89,8 @@ export async function removeWorktree(cwd: string, path: string, force = false): 
   const problem = canRemove(target)
   if (problem) throw new Error(problem)
 
+  // 主のいないロックは外してから消す。git は locked のままでは remove を拒む
+  if (target.locked !== null && target.lockStale) await git(root, ['worktree', 'unlock', target.path])
   await git(root, ['worktree', 'remove', ...(force ? ['--force'] : []), target.path])
 }
 

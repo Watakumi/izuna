@@ -11,7 +11,9 @@ import {
   type SDKMessageOrigin,
   type SlashCommand,
   type SettingSource,
-  type McpServerConfig
+  type McpServerConfig,
+  type HookEvent,
+  type HookCallbackMatcher
 } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import type { Attachment } from '../../shared/image'
@@ -81,6 +83,12 @@ export interface SessionOptions {
    * ここに渡すだけで済む（Nimbalyst は同じことに 752 行使っていた）。
    */
   mcpServers?: Record<string, McpServerConfig>
+  /**
+   * プロセス内の hook。実行役の節目（`SubagentStop` / `TeammateIdle` …）を拾うのに使う（§12）。
+   * リポジトリの `.claude/settings.json` の hook とは別で、こちらは関所（§26）を通らない ——
+   * Izuna 自身が張るものだから。
+   */
+  hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>
 }
 
 type Events = {
@@ -189,6 +197,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         forwardSubagentText: true,
         settingSources: this.options.settingSources,
         ...(this.options.mcpServers ? { mcpServers: this.options.mcpServers } : {}),
+        ...(this.options.hooks ? { hooks: this.options.hooks } : {}),
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
         canUseTool: (toolName, input, opts) => this.#ask(toolName, input, opts)

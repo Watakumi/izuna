@@ -150,15 +150,15 @@ Electron でも本物の Ghostty の VT 実装が使える。
 
 | 測るもの | 2026-09-09 の状態 |
 | --- | --- |
-| `pnpm verify` が緑 | ✅ 1,030 件 |
-| 上の 7 手を人が実際に通せる（スクリーンショットを残す） | **未**。部品は全部あるが通しで撮っていない |
-| 実行役 2 つを同時に走らせて、互いの worktree を壊さない | **未**（`.claude/rules/team.md` §12「まだ測っていないこと」） |
-| **GitHub に出るのは 6 の二段目だけ**。作業ブランチも一段目の PR も GitHub に漏れていない | **未**。`shared/remote.ts` の `stageOf` が役を決めるが、通しで見ていない |
-| Forgejo Actions が作業ブランチの CI を回し、Izuna がその状態を読める | **未実装**。読めるのは Actions が有効かと runner の数だけ（`shared/forge.ts`）。PR は Actions 無しでも作れる |
-| **ブレイン → 実行役のメッセージが保留されずに届く**（権限モードのクラス不一致という既知の罠を踏んでいない。CLAUDE.md §12） | **未**。`TeammateIdle` が SDK 経由で発火するかも未測 |
-| sandbox の PR の差分を Izuna で読める | ✅ `pnpm e2e` が `izuna/izuna-e2e` !1 で確かめる（2026-09-09） |
+| `pnpm verify` が緑 | ✅ 1,090 件 |
+| 上の 7 手を人が実際に通せる（スクリーンショットを残す） | ✅ `pnpm walk` が本物の Izuna で 7 手を通し、`docs/v1-walk/` に PNG と README を残す（人の役はスクリプトが画面を操作して演じる。§31） |
+| 実行役 2 つを同時に走らせて、互いの worktree を壊さない | ✅ `Agent` の `isolation: "worktree"` で `<repo>/.claude/worktrees/agent-<id>` に分かれ、本体の作業ツリーと HEAD は無傷（`scripts/probe-team.ts` と walk の手 3。§12） |
+| **GitHub に出るのは 6 の二段目だけ**。作業ブランチも一段目の PR も GitHub に漏れていない | ✅ `upstreamLeaks` が upstream と sandbox のブランチを突き合わせ、PR の画面に出す。walk の手 6 で「作業ブランチは Upstream に出ていません」、GitHub のブランチは main と出したものだけ |
+| Forgejo Actions が作業ブランチの CI を回し、Izuna がその状態を読める | **読む側は ✅**（`forgeRuns` → `shared/ci.ts` → PR の札）。**回す側は人が決める** —— runner は Docker で `HTTP_ADDR` を LAN に開く必要があり、アプリが押し切らない（docs/ACTIONS.md）。この環境では runner 未登録で、札は「CI 無し」 |
+| **ブレイン → 実行役のメッセージが保留されずに届く**（権限モードのクラス不一致という既知の罠を踏んでいない。CLAUDE.md §12） | ✅ `SendMessage` で止まった実行役が起き直し、追記して commit した（probe と walk の手 4）。同じセッションの中なので `crossSessionInbound` の保留は起きない。`TeammateIdle` はサブエージェント方式では鳴らない（`SubagentStop` で代える） |
+| sandbox の PR の差分を Izuna で読める | ✅ `pnpm e2e` が `izuna/izuna-e2e` !1 で確かめる |
 
-**v1 と言うには上の「未」を全部潰す。** 順は 7 手の通し → 実行役 2 つ → Actions の状態。
+**v1 は 2026-09-09 に通った。** 残るのは runner を回すかどうかの判断（人）だけ。
 
 ---
 
