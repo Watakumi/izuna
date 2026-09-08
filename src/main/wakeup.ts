@@ -1,0 +1,110 @@
+import { randomUUID } from 'node:crypto'
+import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { due, next, parseWakeups, reconcile, type Wakeup } from '../shared/wakeup'
+
+/**
+ * 起床の予約を持つ（判断は `shared/wakeup.ts`）。
+ *
+ * **DB は使わない。** 覚えるのは「いつ・どのセッションに・何を送るか」だけで、
+ * 数も高々数十件である。JSON 1 枚で足りる（§18 と同じ理由）。
+ */
+
+export const WAKEUPS_PATH = join(homedir(), '.izuna', 'wakeups.json')
+
+async function load(): Promise<Wakeup[]> {
+  try {
+    return parseWakeups(await readFile(WAKEUPS_PATH, 'utf8'))
+  } catch {
+    return []
+  }
+}
+
+async function save(wakeups: Wakeup[]): Promise<void> {
+  await mkdir(dirname(WAKEUPS_PATH), { recursive: true })
+  const tmp = `${WAKEUPS_PATH}.tmp`
+  await writeFile(tmp, JSON.stringify(wakeups, null, 2), 'utf8')
+  await rename(tmp, WAKEUPS_PATH)
+}
+
+/**
+ * 予約を持って、時が来たら起こす。
+ *
+ * **タイマーは 1 本だけ**張る。件数分の `setTimeout` を撒くと、
+ * 消したはずのものが残っていて二重に起きる。
+ */
+export class Wakeups {
+  #timer: NodeJS.Timeout | null = null
+  #fire: (w: Wakeup) => void = () => {}
+
+  /** 起こすときに呼ばれる。呼ぶ側がセッションを再開する */
+  onFire(handler: (w: Wakeup) => void): void {
+    this.#fire = handler
+  }
+
+  /**
+   * 起動時に 1 回。**過ぎているものは発火させず、`overdue` にして見せる。**
+   * 閉じているあいだに溜まった分が、開いた瞬間に一斉に走り出すのを避ける。
+   */
+  async start(): Promise<Wakeup[]> {
+    const reconciled = reconcile(await load(), Date.now())
+    await save(reconciled)
+    this.#arm(reconciled)
+    return reconciled
+  }
+
+  async list(): Promise<Wakeup[]> {
+    return load()
+  }
+
+  async add(input: { sessionId: string; cwd: string; prompt: string; fireAt: number }): Promise<Wakeup> {
+    const w: Wakeup = { ...input, id: randomUUID(), state: 'pending', createdAt: Date.now() }
+    const all = [...(await load()), w]
+    await save(all)
+    this.#arm(all)
+    return w
+  }
+
+  async remove(id: string): Promise<void> {
+    const all = (await load()).filter((w) => w.id !== id)
+    await save(all)
+    this.#arm(all)
+  }
+
+  /** 過ぎてしまったものを、人が改めて起こす */
+  async fireNow(id: string): Promise<Wakeup | null> {
+    const all = await load()
+    const w = all.find((x) => x.id === id)
+    if (!w) return null
+    await save(all.map((x) => (x.id === id ? { ...x, state: 'fired' as const } : x)))
+    this.#fire(w)
+    return w
+  }
+
+  stop(): void {
+    if (this.#timer) clearTimeout(this.#timer)
+    this.#timer = null
+  }
+
+  #arm(wakeups: Wakeup[]): void {
+    this.stop()
+    const soonest = next(wakeups, Date.now())
+    if (!soonest) return
+    // **上限を切る。** 何日も先の予約に長いタイマーを張ると、
+    // その間に足された近いものを取り逃がす
+    const wait = Math.min(soonest.fireAt - Date.now(), 60_000)
+    this.#timer = setTimeout(() => { void this.#tick() }, Math.max(wait, 250))
+  }
+
+  async #tick(): Promise<void> {
+    const all = await load()
+    const now = Date.now()
+    const ready = due(all, now)
+    if (ready.length > 0) {
+      await save(all.map((w) => (ready.some((r) => r.id === w.id) ? { ...w, state: 'fired' as const } : w)))
+      for (const w of ready) this.#fire(w)
+    }
+    this.#arm(await load())
+  }
+}

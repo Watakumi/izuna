@@ -4,7 +4,8 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  commitsSince, currentBranch, defaultBranch, ensureSandboxRemote, isPushed, listRemotes, push
+  commitContext, commitsSince, currentBranch, defaultBranch, ensureSandboxRemote,
+  isPushed, listRemotes, push
 } from '../src/main/git/remote'
 import {
   isRepo, listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
@@ -105,6 +106,30 @@ describe('remote', () => {
     const list = await commitsSince(work, 'origin/main')
     expect(list.some((c) => c.includes('最初のコミット'))).toBe(false)
     expect(await commitsSince(work, 'いない参照')).toEqual([])
+  })
+})
+
+describe('コミット文の材料', () => {
+  it('変更されたファイルと、直近のコミットを集める', async () => {
+    writeFileSync(join(work, 'c.txt'), 'three\n')
+    const c = await commitContext(work)
+    expect(c.changed.some((l) => l.includes('c.txt'))).toBe(true)
+    expect(c.branch).toBe('main')
+    expect(c.recent.some((l) => l.includes('最初のコミット'))).toBe(true)
+    git(work, 'clean', '-fq')
+  })
+
+  it('**差分の中身は取らない**（意図は会話にあり、diff には無い）', async () => {
+    writeFileSync(join(work, 'c.txt'), 'three\n')
+    const text = JSON.stringify(await commitContext(work))
+    expect(text).not.toContain('@@')
+    git(work, 'clean', '-fq')
+  })
+
+  it('git でない場所でも落ちない（空で返す）', async () => {
+    const c = await commitContext(outside)
+    expect(c.changed).toEqual([])
+    expect(c.branch).toBeNull()
   })
 })
 

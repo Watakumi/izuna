@@ -30,7 +30,8 @@
     "@electron-toolkit/utils": "^4.0.0",
     "ghostty-web": "^0.4.0",
     "node-pty": "^1.1.0",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

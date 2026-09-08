@@ -9,7 +9,8 @@ import {
   type PermissionMode,
   type PermissionUpdate,
   type SlashCommand,
-  type SettingSource
+  type SettingSource,
+  type McpServerConfig
 } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import { locateClaude, loginShellEnv } from './locate'
@@ -70,6 +71,13 @@ export interface SessionOptions {
   additionalDirectories?: string[]
   /** 既定のシステムプロンプトに足す申し送り */
   appendSystemPrompt?: string
+  /**
+   * プロセス内の MCP サーバ。自律ループの `izuna_progress` を渡すのに使う。
+   *
+   * **別プロセスを建てない。** SDK が `createSdkMcpServer` を持っているので、
+   * ここに渡すだけで済む（Nimbalyst は同じことに 752 行使っていた）。
+   */
+  mcpServers?: Record<string, McpServerConfig>
 }
 
 type Events = {
@@ -173,6 +181,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         // 何を考えて何をしたのかが見えない（段4）
         forwardSubagentText: true,
         settingSources: this.options.settingSources,
+        ...(this.options.mcpServers ? { mcpServers: this.options.mcpServers } : {}),
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
         canUseTool: (toolName, input, opts) => this.#ask(toolName, input, opts)

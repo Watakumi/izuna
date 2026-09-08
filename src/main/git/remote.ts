@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
+import type { CommitContext } from '../../shared/commit'
 import { loginShellEnv } from '../claude/locate'
 import { resolved } from '../config'
 import { writeFile } from 'node:fs/promises'
@@ -175,5 +176,24 @@ export async function commitsSince(cwd: string, base: string, limit = 30): Promi
     return out.split('\n').map((l) => l.trim()).filter(Boolean)
   } catch {
     return []
+  }
+}
+
+/**
+ * コミット文の下書きに渡す材料を集める。
+ *
+ * **差分の中身は取らない**（`shared/commit.ts` の註）。
+ * 何百 KB もの差分より、触ったファイルと会話のほうが効く。
+ */
+export async function commitContext(cwd: string): Promise<CommitContext> {
+  const [status, branch, recent] = await Promise.all([
+    git(cwd, ['status', '--porcelain']).catch(() => ''),
+    currentBranch(cwd).catch(() => null),
+    git(cwd, ['log', '-5', '--format=%s']).catch(() => '')
+  ])
+  return {
+    changed: status.split('\n').map((l) => l.trim()).filter(Boolean),
+    branch,
+    recent: recent.split('\n').map((l) => l.trim()).filter(Boolean)
   }
 }

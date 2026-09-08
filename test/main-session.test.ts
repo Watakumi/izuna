@@ -120,6 +120,19 @@ describe('起動時に渡すもの', () => {
     })
   })
 
+  it('**プロセス内の MCP サーバを渡せる**（自律ループの進捗ツール用）', async () => {
+    const { ClaudeSession } = await load()
+    const fake = { type: 'sdk', name: 'izuna' } as never
+    await new ClaudeSession({ cwd: '/w', mcpServers: { izuna: fake } }).start()
+    expect(passed?.mcpServers).toEqual({ izuna: fake })
+  })
+
+  it('渡さなければ、その鍵ごと出さない（空を渡して既定を壊さない）', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w' }).start()
+    expect(passed && 'mcpServers' in passed).toBe(false)
+  })
+
   it('二度起動しない', async () => {
     const { ClaudeSession } = await load()
     const s = new ClaudeSession({ cwd: '/w' })
