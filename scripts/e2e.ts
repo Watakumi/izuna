@@ -42,7 +42,10 @@ const call = <T>(page: Page, name: string, ...args: unknown[]): Promise<T> =>
 async function launch(): Promise<ChildProcess> {
   const require = createRequire(__filename)
   const electronPath = require('electron') as string
-  const ps = spawn(electronPath, ['.', `--remote-debugging-port=${PORT}`], { cwd: ROOT, stdio: 'ignore' })
+  const ps = spawn(electronPath, ['.', `--remote-debugging-port=${PORT}`], {
+    cwd: ROOT,
+    stdio: 'ignore'
+  })
   for (let i = 0; i < 40; i++) {
     try {
       const res = await fetch(`http://127.0.0.1:${PORT}/json/version`)
