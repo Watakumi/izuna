@@ -22,6 +22,7 @@ import type { Attachment } from '../../shared/image'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
+import { gateProjectHooks } from '../claude/trust'
 import {
   listWorktrees,
   removeWorktree,
@@ -147,6 +148,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
   ipcMain.handle(CH.start, async (_e, input: StartSessionInput): Promise<SessionId> => {
     const id = randomUUID()
+    // **開く前に、そのリポジトリが持ち込む hook を見る**（§26）。
+    // 信頼していない場所に hook があれば、ここで止まる
+    const settingSources = await gateProjectHooks(input.cwd)
     // 共有フォルダを先に用意する。場所を教えるだけでは使われないので、
     // 規律ごと申し送りに書いて渡す（§12）
     const team = await ensureTeam(input.team ?? 'default')
@@ -155,9 +159,10 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
       model: input.model,
       permissionMode: input.permissionMode,
       resume: input.resume,
-      // 利用者の端末のプラグイン hook を引き継がない（CLAUDE.md §7）。
-      // 'project' は残す —— 外すとプロジェクトの CLAUDE.md が読まれなくなる。
-      settingSources: ['project', 'local'],
+      // 既定は project + local（`shared/config.ts`）。利用者の端末のプラグイン
+      // hook を引き継がない（CLAUDE.md §7）。'project' は残す ——
+      // 外すとプロジェクトの CLAUDE.md が読まれなくなる。
+      settingSources,
       additionalDirectories: [team],
       appendSystemPrompt: teamInstructions(team),
       // 自律ループが進捗を申告するための口。**ループでなくても渡してよい**

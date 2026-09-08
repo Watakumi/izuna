@@ -23,6 +23,11 @@ export interface IzunaConfig {
   claudePath: string | null
   /** 読み込む設定の出どころ。既定はプラグイン hook を避ける（CLAUDE.md §13） */
   settingSources: Array<'user' | 'project' | 'local'>
+  /**
+   * hook があっても聞かずに開いてよい場所。前方一致。
+   * 既定は空 —— **信頼は書いた人だけが足す**（§26）
+   */
+  trustedRepos: string[]
 }
 
 /** `~` は main 側で homedir に展開する。ここでは文字列のまま扱う */
@@ -33,7 +38,8 @@ export const DEFAULTS: IzunaConfig = {
   repoRoots: ['~/work', '~/src', '~/dev', '~/Projects', '~/projects', '~/ghq', '~/repos'],
   repoDepth: 3,
   claudePath: null,
-  settingSources: ['project', 'local']
+  settingSources: ['project', 'local'],
+  trustedRepos: []
 }
 
 export interface MergeResult {
@@ -72,6 +78,7 @@ export function mergeConfig(raw: unknown): MergeResult {
 
   take('forgejoWorkPaths', strings)
   take('repoRoots', strings)
+  take('trustedRepos', (v) => (Array.isArray(v) && v.length === 0 ? [] : strings(v)))
   take('forgejoUrl', (v) => (v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null))
   take('claudePath', (v) => (v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null))
   take('sandboxRemote', (v) => (typeof v === 'string' && /^[\w.-]+$/.test(v) ? v : null))

@@ -40,6 +40,7 @@ export async function resolved(): Promise<IzunaConfig & { ignored: string[] }> {
     ...config,
     forgejoWorkPaths: config.forgejoWorkPaths.map(expandHome),
     repoRoots: config.repoRoots.map(expandHome),
+    trustedRepos: config.trustedRepos.map(expandHome),
     claudePath: config.claudePath ? expandHome(config.claudePath) : null,
     ignored
   }
