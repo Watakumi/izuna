@@ -10,3 +10,4 @@ out
 test/fixtures/session-full.ndjson
 shots/
 coverage/
+*.tsbuildinfo
