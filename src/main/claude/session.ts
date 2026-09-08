@@ -16,6 +16,7 @@ import {
 import { settle } from '../../shared/wait'
 import type { Attachment } from '../../shared/image'
 import { locateClaude, refreshLoginShellEnv } from './locate'
+import { withoutBillingKeys } from '../../shared/billing'
 
 /**
  * claude との 1 会話。
@@ -156,10 +157,13 @@ export class ClaudeSession extends EventEmitter<Events> {
     // Finder 起動の Electron は PATH を継承しない。ログインシェルから解く。
     // env を渡しても keychain 経由の OAuth はそのまま効く（API キーには落ちない）。
     // **ここで取り直す。** 人が rc を直すのは、新しいセッションを起こす前である
-    const [pathToClaudeCodeExecutable, env] = await Promise.all([
+    const [pathToClaudeCodeExecutable, shellEnv] = await Promise.all([
       locateClaude(),
       refreshLoginShellEnv()
     ])
+    // **鍵は渡さない。** 拾うと従量課金に切り替わる（`shared/billing.ts`）
+    const { env, removed } = withoutBillingKeys(shellEnv)
+    if (removed.length > 0) console.warn(`[izuna] 環境の ${removed.join(', ')} は claude に渡しません（課金の経路を変えないため）`)
 
     this.#query = query({
       prompt: this.#input,

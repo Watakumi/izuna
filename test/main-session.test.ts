@@ -29,8 +29,9 @@ let hangOnReturn = false
 vi.mock('../src/main/claude/locate', () => ({
   locateClaude: async () => '/opt/claude',
   loginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' }),
-  // 起動時は取り直す（人が rc を直すのは新しいセッションを起こす前）
-  refreshLoginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' })
+  // 起動時は取り直す（人が rc を直すのは新しいセッションを起こす前）。
+  // 鍵が混じっている環境を模す —— 渡さないことを見る
+  refreshLoginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh', ANTHROPIC_API_KEY: 'sk-ant-leak' })
 }))
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
@@ -110,6 +111,13 @@ describe('起動時に渡すもの', () => {
     await new ClaudeSession({ cwd: '/w' }).start()
     expect(passed?.pathToClaudeCodeExecutable).toBe('/opt/claude')
     expect(passed?.env).toMatchObject({ PATH: '/usr/bin' })
+  })
+
+  it('**環境の ANTHROPIC_API_KEY は claude に渡さない**（拾うと従量課金に切り替わる。§14）', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w' }).start()
+    expect(passed?.env).toMatchObject({ PATH: '/usr/bin' })
+    expect(passed?.env).not.toHaveProperty('ANTHROPIC_API_KEY')
   })
 
   it('cwd・model・resume・共有フォルダを渡す', async () => {
