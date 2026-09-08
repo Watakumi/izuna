@@ -41,6 +41,16 @@ export class ForgeError extends Error {
 }
 
 async function call<T>(rootUrl: string, path: string, init?: RequestInit): Promise<T> {
+  const res = await request(rootUrl, path, init)
+  return (res.status === 204 ? undefined : await res.json()) as T
+}
+
+/** 本文を文字列で返す口。PR の `.diff` はJSON ではない */
+async function callText(rootUrl: string, path: string): Promise<string> {
+  return (await request(rootUrl, path)).text()
+}
+
+async function request(rootUrl: string, path: string, init?: RequestInit): Promise<Response> {
   const token = await loadToken()
   if (!token) throw new ForgeError('Forgejo のトークンが未設定です。「Forgejo」画面から発行してください', 0)
   // 平文で LAN を通る経路には載せない（§26）
@@ -68,7 +78,7 @@ async function call<T>(rootUrl: string, path: string, init?: RequestInit): Promi
       : body.slice(0, 300) || res.statusText
     throw new ForgeError(`Forgejo が ${res.status} を返しました: ${hint}`, res.status)
   }
-  return (res.status === 204 ? undefined : await res.json()) as T
+  return res
 }
 
 type RawRepo = {
@@ -204,4 +214,12 @@ export async function listTokens(rootUrl: string, user: string): Promise<Forgejo
     id: t.id, name: t.name, scopes: t.scopes ?? [],
     last8: t.token_last_eight, createdAt: t.created_at
   }))
+}
+
+/**
+ * PR の差分（unified diff の文字列）。読むのは `shared/patch.ts`。
+ * `GET /repos/{owner}/{repo}/pulls/{index}.diff`（Forgejo の API 文書。**実機では未検証**）
+ */
+export async function pullDiff(rootUrl: string, owner: string, repo: string, index: number): Promise<string> {
+  return callText(rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}.diff`)
 }

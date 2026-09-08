@@ -164,3 +164,12 @@ describe('経路（§26）', () => {
     expect(calls).toHaveLength(0)
   })
 })
+
+describe('PR の差分', () => {
+  it('.diff を文字列で取る（JSON ではない）。読むのは shared/patch.ts', async () => {
+    const { pullDiff } = await import('../src/main/forge/client')
+    reply('diff --git a/x b/x\n')
+    expect(await pullDiff('http://localhost:4649/', 'me', 'r', 7)).toBe('diff --git a/x b/x\n')
+    expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/me/r/pulls/7.diff')
+  })
+})
