@@ -14,9 +14,11 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
   セッションの一覧と resume・画像・mermaid・盤面・自律ループ）。
-  2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直した。
-  次は v1 の 7 手を通しで実機確認（docs/GOAL.md）と、`docs/NIMBALYST.md` §3 の 7 件
-- **`pnpm verify` は緑**（929件）。壊したら直してから進むこと
+  2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直し、
+  `docs/NIMBALYST.md` §3 の 7 件を入れた。2026-09-09 に features ページの 3 件（§7）と
+  `pnpm e2e`（§30）を入れた。**次は v1 の 7 手を通しで実機確認**（docs/GOAL.md の測り方に
+  今の状態がある）。Forgejo Actions の状態を読む口は未実装
+- **`pnpm verify` は緑**（1,030件）。壊したら直してから進むこと
 - **失敗の記録は [.claude/agent-mistakes.md](.claude/agent-mistakes.md)。作業を始める前に読む**
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 

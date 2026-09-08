@@ -158,7 +158,10 @@ packages/runtime/src/ai/server/providers/TeammateManager.ts       §12 で既出
 
 upstream は **private** の `Watakumi/izuna`（remote 名も `upstream`）。
 `shared/remote.ts` はホストで役を決めるので、`github.com` は自動で upstream になる。
-sandbox（Forgejo）はまだ無く、`stageOf` は `needsSandbox` を返す。
+sandbox（Forgejo）は `watakumi/izuna`（remote 名 `forgejo`、2026-09-08 に Izuna から push）。
+**Izuna 自身の開発は GitHub に対して行う**（2026-09-09）。シェルの git が Forgejo に使う
+保管済み認証は `radar-bot` で、`izuna` ボットとは別人なので private のリポジトリが見えず
+`git push forgejo` は 404 になる。sandbox へは Izuna 本体が押す。Forgejo の main は揃えない。
 
 ### 公開前に監査した結果（全リビジョン対象）
 
