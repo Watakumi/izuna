@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { realpathSync } from 'node:fs'
 import { basename } from 'node:path'
 import { parseWorktrees, canRemove, type Worktree } from '../../shared/worktree'
 import { loginShellEnv } from '../claude/locate'
@@ -72,18 +73,30 @@ export async function listWorktrees(cwd: string): Promise<Worktree[]> {
  */
 
 /**
- * 畳む。**push していない変更があれば止める**（`force` で押し切れる）。
+ * 消す。**push していない変更があれば止める**（`force` で押し切れる）。
  * 消してから気づくと戻せない。
+ *
+ * **パスは文字列で照合しない。** macOS の `/var` は `/private/var` への
+ * symlink で、git は解決後の絶対パスを返す。渡ってくるパスが解決前だと
+ * 「見つかりません」になる —— `WorktreeCreate` フックが返すパスでも起きうる。
  */
 export async function removeWorktree(cwd: string, path: string, force = false): Promise<void> {
   const root = await repoRoot(cwd)
-  const target = (await listWorktrees(root)).find((w) => w.path === path)
+  const same = (a: string, b: string): boolean => {
+    if (a === b) return true
+    try {
+      return realpathSync(a) === realpathSync(b)
+    } catch {
+      return false
+    }
+  }
+  const target = (await listWorktrees(root)).find((w) => same(w.path, path))
   if (!target) throw new Error(`worktree が見つかりません: ${path}`)
 
   const problem = canRemove(target)
   if (problem) throw new Error(problem)
 
-  await git(root, ['worktree', 'remove', ...(force ? ['--force'] : []), path])
+  await git(root, ['worktree', 'remove', ...(force ? ['--force'] : []), target.path])
 }
 
 export interface WorktreeStatus {

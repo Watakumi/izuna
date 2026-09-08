@@ -106,9 +106,16 @@ export async function scanSessions(): Promise<SessionSummary[]> {
 /** 復元用に全文の行を返す。**一覧では呼ばない**（19MB を読む） */
 export async function readSessionLines(id: string): Promise<string[]> {
   const root = claudeProjectsDir()
-  const dirs = (await readdir(root, { withFileTypes: true })).filter((d) => d.isDirectory())
-  for (const d of dirs) {
-    const path = join(root, d.name, `${id}.jsonl`)
+  // 走査先が無いのは「まだ一度も使っていない」だけ。**ENOENT を投げない** ——
+  // 下の「見つかりません」に落として、探した id を見せる
+  let names: string[] = []
+  try {
+    names = (await readdir(root, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name)
+  } catch {
+    names = []
+  }
+  for (const name of names) {
+    const path = join(root, name, `${id}.jsonl`)
     try {
       const fh = await open(path, 'r')
       try {

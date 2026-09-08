@@ -513,8 +513,47 @@ Windows / Linux、複数エージェント対応。
 ## 10. 完了の条件
 
 ```bash
-pnpm verify     # typecheck + test。これが緑にならないものを完了としない
+pnpm verify     # typecheck + test + カバレッジ。緑にならないものを完了としない
+pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが要るので verify には入れない
 ```
+
+### カバレッジ（2026-09-08 に入れた）
+
+**下回ったら落ちる**（statements / functions / lines 80、branches 72）。
+数えるだけでは戻る。
+
+| | |
+| --- | --- |
+| `shared/` | **95.9%**。純粋関数なので、ここは高くて当然 |
+| `main/` | **81.1%**。ファイル・git・HTTP を触る層 |
+
+**数えるのは検査できるものだけ**（`vitest.config.ts` の `include`）。
+Electron の起動（`index.ts`）と `ipcMain` への登録（`ipc/register.ts`）は外す ——
+混ぜて数えると「何割書けているか」ではなく「Electron が何割か」を見ることになる。
+画面は `pnpm shots` が別に見る。
+
+**まだ 0% の 3 つ**は、動かすのに外のものが要る。
+
+| | 要るもの |
+| --- | --- |
+| `claude/session.ts` | Agent SDK と `claude` 本体 |
+| `forge/setup.ts` | `forgejo` の実行と `brew` |
+| `terminal.ts` | PTY |
+
+模造を置けば数字は上がるが、**引数が間違っていても通る検査**になる。
+実物で測る道（`scripts/` の疎通確認）を用意してあるので、そちらで見る。
+
+### 検査を書いて分かったこと
+
+**3 つ、実装の粗さが見つかった。**
+
+1. `readSessionLines` が走査先の無い環境で `ENOENT` を投げていた
+   （`scanSessions` は空を返すのに）
+2. `removeWorktree` がパスを**文字列で照合**していた。macOS の `/var` は
+   `/private/var` への symlink で、git は解決後の絶対パスを返す。
+   `WorktreeCreate` フックが返すパスでも起きうる
+3. `github.ts` の検査を書くとき `loginShellEnv()` が先に `execFile` を
+   消費することに気づいた —— 呼び出しの順序が見えていなかった
 
 補助（どちらも**実 API を呼ぶ**ので、verify には入れていない）。
 

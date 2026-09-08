@@ -1,0 +1,139 @@
+import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import {
+  commitsSince, currentBranch, defaultBranch, ensureSandboxRemote, isPushed, listRemotes, push
+} from '../src/main/git/remote'
+import {
+  isRepo, listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
+} from '../src/main/git/worktree'
+
+/**
+ * git を実際に動かす層。**本物の git で測る。**
+ *
+ * 解釈は `shared/` の純粋関数が持っているので、ここで見たいのは
+ * 「正しい引数で git を呼び、返ってきたものを渡せているか」だけ。
+ * 模造の git を置くと、**引数が間違っていても通る**検査になる。
+ */
+
+let base: string   // 上流役（bare）
+let work: string   // 作業リポジトリ
+let outside: string // git ではない場所
+
+const git = (cwd: string, ...args: string[]): string =>
+  execFileSync('git', args, { cwd, encoding: 'utf8' })
+
+beforeAll(() => {
+  const root = mkdtempSync(join(tmpdir(), 'izuna-git-'))
+  base = join(root, 'base.git')
+  work = join(root, 'work')
+  outside = join(root, 'plain')
+  mkdirSync(base); mkdirSync(work); mkdirSync(outside)
+
+  git(base, 'init', '--bare', '-b', 'main')
+  git(work, 'init', '-b', 'main')
+  git(work, 'config', 'user.email', 't@example.com')
+  git(work, 'config', 'user.name', 't')
+  writeFileSync(join(work, 'a.txt'), 'one\n')
+  git(work, 'add', '-A'); git(work, 'commit', '-m', '最初のコミット')
+  git(work, 'remote', 'add', 'origin', base)
+  git(work, 'push', '-u', 'origin', 'main')
+})
+afterAll(() => rmSync(join(base, '..'), { recursive: true, force: true }))
+
+describe('リポジトリかどうか', () => {
+  it('git の中と外を見分ける', async () => {
+    expect(await isRepo(work)).toBe(true)
+    expect(await isRepo(outside)).toBe(false)
+  })
+
+  it('根と名前を返す', async () => {
+    expect(await repoRoot(work)).toBe(await repoRoot(work))
+    expect(await repoName(work)).toBe('work')
+  })
+
+  it('git でない場所は理由を言って落ちる', async () => {
+    await expect(repoRoot(outside)).rejects.toThrow()
+  })
+})
+
+describe('remote', () => {
+  it('一覧を返し、Forgejo の根で sandbox を見分ける', async () => {
+    const rs = await listRemotes(work, null)
+    expect(rs.map((r) => r.name)).toContain('origin')
+  })
+
+  it('sandbox の remote を足す。二度目は URL を合わせるだけ', async () => {
+    const first = await ensureSandboxRemote(work, 'http://localhost:4649/', 'me', 'repo', 'forgejo')
+    expect(first).toContain('forgejo')
+    const again = await ensureSandboxRemote(work, 'http://localhost:4649/', 'me', 'repo2', 'forgejo')
+    expect(again).toContain('合わせました')
+    const url = git(work, 'remote', 'get-url', 'forgejo').trim()
+    expect(url).toBe('http://localhost:4649/me/repo2.git')
+  })
+
+  it('いまのブランチ', async () => {
+    expect(await currentBranch(work)).toBe('main')
+  })
+
+  it('既定ブランチは refs から引く。**main と決め打たない**', async () => {
+    git(work, 'remote', 'set-head', 'origin', '-a')
+    expect(await defaultBranch(work, 'origin')).toBe('main')
+  })
+
+  it('分からなければ null（main に倒さない）', async () => {
+    expect(await defaultBranch(work, 'いない remote')).toBeNull()
+  })
+
+  it('push 済みかを見る', async () => {
+    expect(await isPushed(work, 'origin', 'main')).toBe(true)
+    expect(await isPushed(work, 'origin', 'いないブランチ')).toBe(false)
+  })
+
+  it('push して上流を張る', async () => {
+    git(work, 'checkout', '-q', '-b', 'feat')
+    writeFileSync(join(work, 'b.txt'), 'two\n')
+    git(work, 'add', '-A'); git(work, 'commit', '-m', '二つ目')
+    expect(await push(work, 'origin', 'feat')).toContain('push しました')
+    expect(await isPushed(work, 'origin', 'feat')).toBe(true)
+    git(work, 'checkout', '-q', 'main')
+  })
+
+  it('base からのコミットを新しい順に返す', async () => {
+    const list = await commitsSince(work, 'origin/main')
+    expect(list.some((c) => c.includes('最初のコミット'))).toBe(false)
+    expect(await commitsSince(work, 'いない参照')).toEqual([])
+  })
+})
+
+describe('worktree', () => {
+  it('本体だけのときも一覧が返り、先頭が本体', async () => {
+    const [first, ...rest] = await listWorktrees(work)
+    expect(first.main).toBe(true)
+    expect(rest.every((w) => !w.main)).toBe(true)
+  })
+
+  it('足したものが一覧に出る', async () => {
+    const at = join(work, '..', 'wt-feat')
+    git(work, 'worktree', 'add', '-q', at, 'feat')
+    const list = await listWorktrees(work)
+    expect(list.some((w) => w.branch === 'feat')).toBe(true)
+    await removeWorktree(work, at, true)
+    expect((await listWorktrees(work)).some((w) => w.branch === 'feat')).toBe(false)
+  })
+
+  it('変更の量とブランチを返す', async () => {
+    writeFileSync(join(work, 'a.txt'), 'one\ntwo\n')
+    const st = await worktreeStatus(work)
+    expect(st.branch).toBe('main')
+    expect(st.added).toBeGreaterThan(0)
+    git(work, 'checkout', '--', 'a.txt')
+  })
+
+  it('変更が無ければ 0', async () => {
+    const st = await worktreeStatus(work)
+    expect(st).toMatchObject({ added: 0, removed: 0 })
+  })
+})

@@ -9,3 +9,4 @@ out
 # 版管理に入れない(CLAUDE.md §11)。パーサの門は session-safe.ndjson が担う。
 test/fixtures/session-full.ndjson
 shots/
+coverage/
