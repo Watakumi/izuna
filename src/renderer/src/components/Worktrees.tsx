@@ -2,16 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
 import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
-import { F, C, MONO, ellipsis } from '../theme'
-import { Button, Tag } from './ui'
+import { F, C, MONO, ellipsis, S } from '../theme'
+import { Button, Result, Tag } from './ui'
 
 /**
  * worktree の一覧（段3 の見える化）。
  *
- * **人が自分で起こした分**を扱う。ブレイン配下の実行役は Claude Code の
+ * **いまあるものを見せて、消せるようにするだけ。** 作らない（§12 実測 ——
+ * worktree を作るのはエージェントで、`EnterWorktree` が
+ * `<project>/.claude/worktrees/` に作る）。ブレイン配下の実行役は Claude Code の
  * agent isolation が配るので、ここには出ない（CLAUDE.md §12）。
  *
- * 畳む操作は取り返しがつかないので、**未 push を警告してから**にする。
+ * 削除は取り返しがつかないので、**未 push を警告してから**にする。
  */
 type Row = Worktree & { status: WorktreeStatus | null; session: Panel | null }
 
@@ -26,7 +28,7 @@ export function Worktrees({
 }): React.JSX.Element {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
-  const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
+  const [msg, setMsg] = useState<{ text: string; bad: boolean; at: number } | null>(null)
   const [confirming, setConfirming] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -46,11 +48,11 @@ export function Worktrees({
     setMsg(null)
     try {
       await window.izuna.removeWorktree(cwd, row.path, force)
-      setMsg({ text: `${row.branch ?? row.path} を畳みました`, bad: false })
+      setMsg({ text: `${row.branch ?? row.path} を消しました`, bad: false, at: Date.now() })
       setConfirming(null)
       await load()
     } catch (e) {
-      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
+      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true, at: Date.now() })
     } finally {
       setBusy(null)
     }
@@ -61,7 +63,7 @@ export function Worktrees({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
         background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
         <span style={{ fontWeight: 600, fontSize: F.body }}>ブランチ</span>
-        <span style={{ fontSize: F.micro, color: C.faint }}>人が起こした分</span>
+
         <div style={{ flexGrow: 1 }} />
         <Button size="sm" onClick={() => void load()}>読み直す</Button>
       </div>
@@ -101,12 +103,12 @@ export function Worktrees({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: C.amberBg,
                   border: `1px solid ${C.amberLine}`, borderRadius: 7, padding: '8px 12px' }}>
                   <span style={{ fontSize: F.small, color: C.ink2, lineHeight: 1.6 }}>
-                    {unpushed ? '未 push の変更があります。畳むと戻せません' : '畳みます。ディレクトリは消えます'}
+                    {unpushed ? '未 push の変更があります。消すと戻せません' : 'ディレクトリを消します'}
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <Button disabled={busy !== null} kind="primary"
                       onClick={() => void remove(row, unpushed)}>
-                      {busy === row.path ? '畳んでいます…' : '畳む'}
+                      {busy === row.path ? '消しています…' : '消す'}
                     </Button>
                     <Button  onClick={() => setConfirming(null)}>やめる</Button>
                   </div>
@@ -116,7 +118,7 @@ export function Worktrees({
                   {!row.session && !row.main && (
                     <Button kind="primary" onClick={() => onOpen(row)}>ここで開く</Button>
                   )}
-                  {!blocked && <Button  onClick={() => setConfirming(row.path)}>畳む</Button>}
+                  {!blocked && <Button onClick={() => setConfirming(row.path)}>消す</Button>}
                   {blocked && <span style={{ fontSize: F.micro, color: C.faint, alignSelf: 'center' }}>{blocked}</span>}
                 </div>
               )}
@@ -126,8 +128,9 @@ export function Worktrees({
       </div>
 
       {msg && (
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: F.small,
-          color: msg.bad ? C.red : C.ink2 }}>{msg.text}</div>
+        <div style={{ padding: S.lg, borderTop: `1px solid ${C.line}` }}>
+          <Result {...msg} />
+        </div>
       )}
     </div>
   )

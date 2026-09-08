@@ -63,8 +63,8 @@ async function main(): Promise<void> {
   await shoot(page, '1-empty')
 
   // 起こす画面
-  await page.getByText('新しいセッションを起こす').click()
-  await page.waitForSelector('text=どのリポジトリ')
+  await page.getByText('新しいセッションを開く').click()
+  await page.waitForSelector('text=リポジトリ')
   await page.getByText('izuna', { exact: true }).first().click()
   await page.waitForTimeout(500)
   await shoot(page, '2-new-session')

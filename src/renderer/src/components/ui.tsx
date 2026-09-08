@@ -133,6 +133,30 @@ export function Check({
   )
 }
 
+/**
+ * 操作の結果。**時刻を必ず添える。**
+ *
+ * 「forgejo に main を push しました」だけだと**いつのものか分からない**。
+ * 画面に残り続けるので、次に開いたときも同じ文が出ていて、
+ * さっきやったのか 10 分前なのかが読めない。
+ */
+export function Result({ text, bad, at }: { text: string; bad: boolean; at: number }): React.JSX.Element {
+  const t = new Date(at)
+  const hhmmss = [t.getHours(), t.getMinutes(), t.getSeconds()]
+    .map((n) => String(n).padStart(2, '0')).join(':')
+  return (
+    <div style={{
+      border: `1px solid ${bad ? C.red : C.line2}`, borderRadius: R.md, padding: `${S.lg}px ${S.lg}px`,
+      display: 'flex', alignItems: 'flex-start', gap: S.md
+    }}>
+      <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0, paddingTop: 2 }}>{hhmmss}</span>
+      <span style={{ fontSize: F.body, color: bad ? C.red : C.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+        {text}
+      </span>
+    </div>
+  )
+}
+
 export function Card({
   tone = 'plain',
   style,

@@ -3,7 +3,7 @@ import type { ForgejoPull } from '../../../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
 import { C, F, MONO, S, ellipsis } from '../theme'
-import { Button, Card, Faint } from './ui'
+import { Button, Card, Faint, Result } from './ui'
 
 /**
  * 右ペインの「PR」タブ。二段の PR（docs/GOAL.md 柱2）。
@@ -62,7 +62,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
     seed?.bases ?? { sandbox: null, upstream: null }
   )
   const [busy, setBusy] = useState<string | null>(null)
-  const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
+  const [msg, setMsg] = useState<{ text: string; bad: boolean; at: number } | null>(null)
 
   const load = useCallback(async () => {
     const [rs, br, status] = await Promise.all([
@@ -117,10 +117,10 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
     setBusy(key)
     setMsg(null)
     try {
-      setMsg({ text: await work(), bad: false })
+      setMsg({ text: await work(), bad: false, at: Date.now() })
       await load()
     } catch (e) {
-      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
+      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true, at: Date.now() })
     } finally {
       setBusy(null)
     }
@@ -272,9 +272,8 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
       </div>
 
       {msg && (
-        <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`, fontSize: F.small,
-          color: msg.bad ? C.red : C.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-          {msg.text}
+        <div style={{ padding: S.lg, borderTop: `1px solid ${C.line}` }}>
+          <Result {...msg} />
         </div>
       )}
     </div>

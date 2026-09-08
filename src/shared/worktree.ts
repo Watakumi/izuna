@@ -19,7 +19,7 @@ export interface Worktree {
   locked: string | null
   /** 掃除対象なら理由 */
   prunable: string | null
-  /** 最初のエントリが本体。畳んではいけない */
+  /** 最初のエントリが本体。消してはいけない */
   main: boolean
 }
 
@@ -121,9 +121,9 @@ export function slugifyBranch(branch: string): string {
  * `slugifyBranch` は一覧の表示で使うので残す。
  */
 
-/** 畳んでよいか。本体とロック中は畳ませない */
+/** 消してよいか。本体とロック中は消させない */
 export function canRemove(worktree: Worktree): string | null {
-  if (worktree.main) return '本体の作業ツリーは畳めません'
+  if (worktree.main) return '本体の作業ツリーは消せません'
   if (worktree.locked !== null) {
     return worktree.locked ? `ロックされています: ${worktree.locked}` : 'ロックされています'
   }
