@@ -1,5 +1,4 @@
 import { useEffect, useId, useState } from 'react'
-import mermaid from 'mermaid'
 import { C, F, MONO, R, resolve, resolveMono, S } from '../theme'
 import { Button } from './ui'
 
@@ -21,9 +20,19 @@ import { Button } from './ui'
  * ユーザ権限のコード実行になる（§26）。
  */
 
-let ready = false
+type MermaidModule = typeof import('mermaid')['default']
+let loaded: Promise<MermaidModule> | null = null
 
-function init(): void {
+/**
+ * **図が出るまで読まない。** mermaid は展開で 83MB、束ねても本体だけで 1MB を超える。
+ * 先頭で import すると、図の無い会話でも起動時に読まれる（§27）。
+ */
+function load(): Promise<MermaidModule> {
+  loaded ??= import('mermaid').then((m) => { init(m.default); return m.default })
+  return loaded
+}
+
+function init(mermaid: MermaidModule): void {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
@@ -54,7 +63,6 @@ function init(): void {
       edgeLabelBackground: resolve('panel')
     }
   })
-  ready = true
 }
 
 /** 本文が変わらなくなってから描くまでの間。短すぎると途中の失敗を見せる */
@@ -69,14 +77,14 @@ export function Mermaid({ text }: { text: string }): React.JSX.Element {
 
   useEffect(() => {
     let live = true
-    if (!ready) init()
     /**
      * **落ち着いてから描く。** 逐次描画では 1 チャンクごとに本文が変わる。
      * そのたびに描くと、途中の文字列で失敗し続けたうえに CPU を食う。
      * 変わらなくなって少し待ってから 1 回描く。
      */
     const timer = setTimeout(() => {
-      mermaid.render(id.current, text)
+      load()
+        .then((mermaid) => mermaid.render(id.current, text))
         .then((r) => { if (live) { setSvg(r.svg); setFailed(null) } })
         .catch((e: unknown) => { if (live) setFailed(String(e).replace(/^Error:\s*/, '').split('\n')[0]) })
     }, SETTLE_MS)
