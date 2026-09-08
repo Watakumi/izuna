@@ -28,6 +28,37 @@ describe('preload', () => {
   it('contextIsolation が切れていたら露出せずに落とす', () => {
     expect(src).not.toMatch(/window\.izuna\s*=/)
   })
+
+  it('**口は CH から組む。手で並べない**（表が 3 つあると揃わなくなる。§27）', () => {
+    expect([...src.matchAll(/ipcRenderer\.invoke\(/g)]).toHaveLength(1)
+    expect(src).toContain('Object.entries(CH)')
+  })
+})
+
+describe('IPC の版', () => {
+  it('**手で上げない。** CH の鍵から導く', () => {
+    const src = read('src/shared/ipc.ts')
+    expect(src).not.toMatch(/IPC_VERSION = \d+/)
+    expect(src).toMatch(/Object\.keys\(CH\)/)
+  })
+})
+
+describe('外の道具を呼ぶ包み', () => {
+  it('**`execFile` を呼ぶのは exec.ts と locate.ts だけ**（5 つあった包みを 1 つにした。§27）', () => {
+    const walk = (dir: string, out: string[] = []): string[] => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name)
+        if (statSync(full).isDirectory()) walk(full, out)
+        else if (/\.ts$/.test(name)) out.push(full)
+      }
+      return out
+    }
+    const callers = walk(join(ROOT, 'src/main'))
+      .filter((f) => /promisify\(execFile\)|execFile\(/.test(readFileSync(f, 'utf8')))
+      .map((f) => f.replace(ROOT + '/', ''))
+      .sort()
+    expect(callers).toEqual(['src/main/claude/locate.ts', 'src/main/exec.ts'])
+  })
 })
 
 describe('BrowserWindow', () => {

@@ -184,16 +184,6 @@ export type TerminalEvent =
   | { id: string; kind: 'data'; data: string }
   | { id: string; kind: 'exit'; code: number }
 
-/**
- * renderer と main の版。**両方に同じ値が焼かれる。**
- *
- * `pnpm dev` は renderer を HMR で更新するが、**main の再起動は別**である。
- * 食い違ったまま動くと `No handler registered for '...'` のような、
- * 原因を指さないエラーになる（実際に 5 時間古い main で踏んだ）。
- *
- * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
- */
-export const IPC_VERSION = 19
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -252,3 +242,20 @@ export const CH = {
   stop: 'izuna:session:stop',
   event: 'izuna:session:event'
 } as const
+
+/**
+ * renderer と main の版。**両方に同じ値が焼かれる。**
+ *
+ * `pnpm dev` は renderer を HMR で更新するが、**main の再起動は別**である。
+ * 食い違ったまま動くと `No handler registered for '...'` のような、
+ * 原因を指さないエラーになる（実際に 5 時間古い main で踏んだ）。
+ *
+ * **手で上げない。** 以前は口を足すたびに数字を上げる決まりで、上げ忘れても
+ * 害は無い（検出できないだけ）とされていた。それは「検出しない」と同じである。
+ * `CH` の鍵から導けば、口が増えたり減ったりした時点で必ず変わる（§27）。
+ */
+export const IPC_VERSION = ((): number => {
+  let h = 5381
+  for (const c of Object.keys(CH).sort().join('|')) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0
+  return h
+})()
