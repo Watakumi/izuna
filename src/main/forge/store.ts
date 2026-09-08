@@ -45,6 +45,32 @@ async function readStored(): Promise<{ token: string; scopes: unknown } | null> 
   }
 }
 
+export type TokenStatus = 'none' | 'unreadable' | 'ok'
+
+/**
+ * 「無い」と「あるのに読めない」を分ける（2026-09-09、E2E で見つけた）。
+ *
+ * `loadToken()` はどちらも null で、画面は「未設定です」と言っていた。
+ * 実際には保管はあって、**keychain の `izuna Safe Storage` が 2 つ**でき、
+ * 暗号化した鍵と復号に使う鍵が別物になっていた。「未設定」と言われた人は
+ * 設定したのにと思うだけで、発行し直せば直るとは分からない。
+ */
+export async function tokenStatus(): Promise<TokenStatus> {
+  let buf: Buffer
+  try {
+    buf = await readFile(file())
+  } catch {
+    return 'none'
+  }
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return 'unreadable'
+    safeStorage.decryptString(buf)
+    return 'ok'
+  } catch {
+    return 'unreadable'
+  }
+}
+
 export async function loadToken(): Promise<string | null> {
   // 未保存・鍵が変わった・壊れた —— どれも「無い」として扱う
   return (await readStored())?.token ?? null

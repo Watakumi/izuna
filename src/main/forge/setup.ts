@@ -3,7 +3,7 @@ import { run as exec0 } from '../exec'
 import { join } from 'node:path'
 import { BOT_USER, GRANTED_SCOPES, parseAppIni, tokenMayTravel, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
-import { loadScopes, loadToken, saveToken } from './store'
+import { loadScopes, loadToken, saveToken, tokenStatus } from './store'
 import { listTokens } from './client'
 import { resolved } from '../config'
 
@@ -110,7 +110,7 @@ export async function gatherFacts(): Promise<ForgeFacts> {
   const binary = await which('forgejo')
   if (!binary) {
     return { binary: null, version: null, config: null, reachable: false,
-      tokenScopes: null, tokenWorks: null, runners: null }
+      tokenScopes: null, tokenWorks: null, tokenUnreadable: false, runners: null }
   }
   const [version, config, token] = await Promise.all([
     run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null),
@@ -119,7 +119,8 @@ export async function gatherFacts(): Promise<ForgeFacts> {
   ])
   const reachable = await probe(config?.rootUrl ?? null)
   const { scopes, works } = await inspectToken(config?.rootUrl ?? null, token)
-  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works, runners: null }
+  const tokenUnreadable = (await tokenStatus()) === 'unreadable'
+  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works, tokenUnreadable, runners: null }
 }
 
 /**

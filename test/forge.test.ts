@@ -50,6 +50,7 @@ const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   reachable: true,
   tokenScopes: ['write:user', 'write:repository'],
   tokenWorks: true,
+  tokenUnreadable: false,
   runners: null,
   ...over
 })
@@ -211,5 +212,15 @@ describe('トークンを載せてよい経路（§26）', () => {
 
   it('ループバックなら経路の行は出ない', () => {
     expect(diagnose(facts({})).find((x) => x.id === 'transport')).toBeUndefined()
+  })
+})
+
+describe('保管はあるのに読めない（2026-09-09、E2E で見つけた）', () => {
+  it('**「未設定」と言わない。** 鍵が変わったと言い、発行し直す釦を出す', () => {
+    const c = find(facts({ tokenScopes: null, tokenWorks: null, tokenUnreadable: true }), 'token')
+    expect(c.level).toBe('ng')
+    expect(c.detail).toContain('復号できません')
+    expect(c.detail).not.toContain('未設定')
+    expect(c.fix?.label).toBe('発行し直す')
   })
 })

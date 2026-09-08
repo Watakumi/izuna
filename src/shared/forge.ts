@@ -36,6 +36,8 @@ export interface ForgeFacts {
   tokenScopes: string[] | null
   /** トークンで /api/v1/user が通ったか */
   tokenWorks: boolean | null
+  /** 保管はあるのに復号できない（鍵が変わった）。「未設定」とは別の状態 */
+  tokenUnreadable: boolean
   /** 登録済み runner の数。Actions が無効なら null */
   runners: number | null
 }
@@ -173,7 +175,12 @@ export function diagnose(facts: ForgeFacts): Check[] {
 
   const lacking = missingScopes(facts.tokenScopes)
   checks.push(
-    facts.tokenScopes === null
+    facts.tokenUnreadable
+      ? { id: 'token', label: 'トークン', level: 'ng',
+          // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
+          detail: '保管したトークンを復号できません。暗号化の鍵が変わっています（keychain の izuna Safe Storage が 2 つあると起きる）',
+          fix: { label: '発行し直す', warning: '復号できない保管は捨てて、新しいトークンで置き換えます' } }
+    : facts.tokenScopes === null
       ? { id: 'token', label: 'トークン', level: 'ng',
           detail: '未設定です',
           fix: { label: 'トークンを発行する',

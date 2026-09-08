@@ -184,3 +184,9 @@ paths:
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
+
+- **keychain の `izuna Safe Storage` が 2 つできると、保管したトークンが復号できない**（2026-09-09、
+  `pnpm e2e` で見つけた）。account が `izuna` と `izuna Key` の 2 項目があり、暗号化に使った鍵と
+  復号に使う鍵が別物だった。`loadToken()` は null を返し、画面は「未設定です」と言っていた。
+  いまは `tokenStatus()` が「無い」と「読めない」を分け、診断は「復号できません。発行し直す」と出す。
+  古い項目を消すかは人が Keychain Access で決める。

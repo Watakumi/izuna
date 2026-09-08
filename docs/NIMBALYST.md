@@ -113,7 +113,7 @@ https://nimbalyst.com/features/ の全項目（10 節）を三本の柱に当て
 | --- | --- | --- | --- |
 | 1 | 承認待ちと、止まったときの OS 通知 | `shared/notice.ts`、`main/notify.ts`、`register.ts` の `emit` | **窓が前に無いときだけ**鳴る。押すと窓を前に出す。進捗では鳴らさない |
 | 2 | コミット文の釦と、起床の予約の画面 | `Forge.tsx`、`Loop.tsx` の `Wakeups` | 口は前からあり、renderer から呼ばれていなかった 9 つのうちの 5 つを繋いだ |
-| 3 | sandbox の PR の差分を見る | `shared/patch.ts`、`client.pullDiff`、`PullDiff.tsx` | 承認の `DiffView` で描く。読むだけで accept / reject はしない。`.diff` の口は**実機で未検証** |
+| 3 | sandbox の PR の差分を見る | `shared/patch.ts`、`client.pullDiff`、`PullDiff.tsx` | 承認の `DiffView` で描く。読むだけで accept / reject はしない。`.diff` の口は `pnpm e2e` が確かめる（2026-09-09 時点は保管したトークンが読めず skip。§7 の keychain の罠） |
 
 | 入れないもの | 理由 |
 | --- | --- |
