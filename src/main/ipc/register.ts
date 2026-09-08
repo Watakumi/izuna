@@ -12,6 +12,10 @@ import * as term from '../terminal'
 import { findRepos, pickDirectory } from '../repos'
 import { scanSessions, replaySession } from '../sessions'
 import { loadGhosttySkin } from '../ghostty'
+import { progressServer, readProgress, runLoop, type RunningLoop } from '../loop'
+import { Wakeups } from '../wakeup'
+import { canDraft, draftPrompt } from '../../shared/commit'
+import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
@@ -32,6 +36,12 @@ import { CH, IPC_VERSION, type PermissionAnswer, type RepoInfo, type SessionEven
  */
 
 const sessions = new Map<SessionId, ClaudeSession>()
+/** 回っているループ。セッションが終わったら必ず止める */
+const loops = new Map<string, RunningLoop>()
+/** セッションごとの共有フォルダと作業ディレクトリ。ループと予約が使う */
+const teams = new Map<string, string>()
+const cwds = new Map<string, string>()
+const wakeups = new Wakeups()
 
 function must(id: SessionId): ClaudeSession {
   const s = sessions.get(id)
@@ -133,16 +143,24 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
       // 'project' は残す —— 外すとプロジェクトの CLAUDE.md が読まれなくなる。
       settingSources: ['project', 'local'],
       additionalDirectories: [team],
-      appendSystemPrompt: teamInstructions(team)
+      appendSystemPrompt: teamInstructions(team),
+      // 自律ループが進捗を申告するための口。**ループでなくても渡してよい**
+      // （呼ばれなければ何も起きない）
+      mcpServers: { izuna: progressServer(team) }
     })
 
     session.on('message', (message) => emit({ kind: 'message', id, message }))
     session.on('permission', (request) => emit({ kind: 'permission', id, request }))
+    session.on('permissionExpired', (requestId) => emit({ kind: 'permissionExpired', id, requestId }))
     session.on('error', (err) => emit({ kind: 'error', id, message: err.message }))
     session.on('done', () => {
       sessions.delete(id)
+      loops.get(id)?.stop()
+      loops.delete(id)
       emit({ kind: 'exit', id })
     })
+    teams.set(id, team)
+    cwds.set(id, input.cwd)
 
     sessions.set(id, session)
     try {
@@ -155,6 +173,89 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   })
 
   ipcMain.handle(CH.send, (_e, id: SessionId, text: string) => { must(id).send(text) })
+
+  // ── 自律ループ（§23）──────────────────────────────────────
+  // **画面にはファイルの場所を持たせない。** セッションから引く
+  ipcMain.handle(CH.loopProgress, (_e, id: SessionId) => readProgress(teams.get(id) ?? ''))
+  ipcMain.handle(CH.stopLoop, (_e, id: SessionId) => {
+    loops.get(id)?.stop()
+    loops.delete(id)
+  })
+  ipcMain.handle(CH.startLoop, async (_e, input: { id: SessionId; maxIterations: number }) => {
+    const session = must(input.id)
+    if (loops.has(input.id)) throw new Error('このセッションでは既にループが回っています')
+    const teamDir = teams.get(input.id)
+    if (!teamDir) throw new Error('共有フォルダが分かりません')
+
+    /**
+     * **1 反復 = 1 ターン。** 文脈を捨てるのは CLI 側の仕事ではないので、
+     * ここでは「送って、結果が返るまで待つ」だけにする。
+     * 引き継ぎは `progress.json` に入っている（`shared/loop.ts` の註）。
+     */
+    const runIteration = (prompt: string): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const onMessage = (m: SDKMessage): void => {
+          if (m.type !== 'result') return
+          cleanup()
+          resolve()
+        }
+        const onError = (err: Error): void => { cleanup(); reject(err) }
+        const cleanup = (): void => {
+          session.off('message', onMessage)
+          session.off('error', onError)
+        }
+        session.on('message', onMessage)
+        session.on('error', onError)
+        session.send(prompt)
+      })
+
+    const loop = runLoop({
+      teamDir,
+      maxIterations: input.maxIterations,
+      runIteration,
+      onProgress: (progress, iteration) => emit({ kind: 'loopProgress', id: input.id, progress, iteration })
+    })
+    loops.set(input.id, loop)
+    void loop.done.then((stop) => {
+      loops.delete(input.id)
+      emit({ kind: 'loopStopped', id: input.id, stop })
+    })
+  })
+
+  // ── 起床の予約 ────────────────────────────────────────────
+  /**
+   * 時が来たら、そのセッションに送る。
+   *
+   * **もう無いセッションには送らない。** アプリを閉じたあとの予約は
+   * `overdue` として残り、人が改めて起こす（§23）。
+   */
+  wakeups.onFire((w) => {
+    const session = sessions.get(w.sessionId)
+    if (!session) return
+    session.send(w.prompt)
+    emit({ kind: 'wokeUp', id: w.sessionId, prompt: w.prompt })
+  })
+  void wakeups.start()
+
+  ipcMain.handle(CH.listWakeups, () => wakeups.list())
+  ipcMain.handle(CH.removeWakeup, (_e, wakeupId: string) => wakeups.remove(wakeupId))
+  ipcMain.handle(CH.fireWakeup, async (_e, wakeupId: string) => { await wakeups.fireNow(wakeupId) })
+  ipcMain.handle(CH.addWakeup, (_e, input: { id: SessionId; minutes: number; prompt: string }) =>
+    wakeups.add({
+      sessionId: input.id,
+      cwd: cwds.get(input.id) ?? '',
+      prompt: input.prompt,
+      fireAt: Date.now() + input.minutes * 60_000
+    }))
+
+  // ── コミット文の下書き ────────────────────────────────────
+  ipcMain.handle(CH.draftCommitMessage, async (_e, id: SessionId) => {
+    const session = must(id)
+    const context = await remote.commitContext(cwds.get(id) ?? '')
+    if (!canDraft(context)) throw new Error('コミットする変更がありません')
+    // **会話に流す。** 別のセッションを起こすと、この作業の文脈が使えない
+    session.send(draftPrompt(context))
+  })
   ipcMain.handle(CH.slashCommands, (_e, id: SessionId) => must(id).slashCommands())
   ipcMain.handle(CH.interrupt, (_e, id: SessionId) => must(id).interrupt())
   ipcMain.handle(CH.setPermissionMode, (_e, id: SessionId, mode: PermissionMode) =>

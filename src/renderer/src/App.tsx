@@ -12,6 +12,7 @@ import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
+import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Inspector } from './components/Inspector'
@@ -31,7 +32,7 @@ function App(): React.JSX.Element {
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
-  const [tab, setTab] = useState<'info' | 'pr' | 'branch'>('info')
+  const [tab, setTab] = useState<'info' | 'loop' | 'pr' | 'branch'>('info')
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
@@ -280,18 +281,19 @@ function App(): React.JSX.Element {
             <div style={{ width: tab === 'info' ? 288 : 360, flexShrink: 0, background: C.panel,
               borderLeft: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
-                {(['info', 'pr', 'branch'] as const).map((t) => (
+                {(['info', 'loop', 'pr', 'branch'] as const).map((t) => (
                   <div key={t} onClick={() => setTab(t)} style={{
                     flexGrow: 1, textAlign: 'center', padding: '8px 0', cursor: 'pointer',
                     fontSize: F.small, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                   }}>
-                    {t === 'info' ? '情報' : t === 'pr' ? 'PR' : 'ブランチ'}
+                    {t === 'info' ? '情報' : t === 'loop' ? 'ループ' : t === 'pr' ? 'PR' : 'ブランチ'}
                   </div>
                 ))}
               </div>
               <div style={{ flexGrow: 1, minHeight: 0 }}>
                 {tab === 'info' && <Inspector panel={active} onOpenForge={() => setTab('pr')} />}
+                {tab === 'loop' && <Loop panel={active} />}
                 {tab === 'pr' && <Forge cwd={active.cwd} onDone={() => setTab('info')} />}
                 {tab === 'branch' && (
                   <Worktrees cwd={active.cwd} panels={sessions.panels}

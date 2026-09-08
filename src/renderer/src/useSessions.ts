@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../../main/claude/session'
 import type { SessionId, StartSessionInput } from '../../shared/ipc'
+import type { Progress, Stop } from '../../shared/loop'
 import { appendUserText, applyMessage, emptyTranscript, type Transcript } from '../../shared/transcript'
 
 /**
@@ -25,8 +26,10 @@ export interface Panel {
   /** 入力欄はセッションごとに保つ。切り替えで書きかけが消えない */
   prompt: string
   commands: SlashCommand[]
-  /** 終了したセッション。畳むまで一覧には残す */
+  /** 終了したセッション。閉じるまで一覧には残す */
   ended: boolean
+  /** 自律ループが回っているか（§23）。回っていなければ null */
+  loop: { progress: Progress; iteration: number; stop: Stop | null } | null
 }
 
 export interface Sessions {
@@ -64,6 +67,35 @@ export function useSessions(): Sessions {
           return { ...p, transcript: applyMessage(p.transcript, event.message) }
         case 'permission':
           return { ...p, pending: event.request }
+        case 'permissionExpired':
+          // **出したままの札を消す。** 期限が来た要求はもう答えられない
+          return p.pending?.id === event.requestId ? { ...p, pending: null } : p
+        case 'loopProgress':
+          return { ...p, loop: { progress: event.progress, iteration: event.iteration, stop: null } }
+        case 'loopStopped':
+          return {
+            ...p,
+            loop: p.loop ? { ...p.loop, stop: event.stop } : null,
+            transcript: {
+              ...p.transcript,
+              items: [...p.transcript.items, {
+                kind: 'notice', id: `loop${p.transcript.items.length}`,
+                tone: event.stop.reason === 'completed' ? 'info' : 'bad',
+                text: `ループが止まりました: ${event.stop.detail}`
+              }]
+            }
+          }
+        case 'wokeUp':
+          return {
+            ...p,
+            transcript: {
+              ...p.transcript,
+              items: [...p.transcript.items, {
+                kind: 'notice', id: `wake${p.transcript.items.length}`, tone: 'info',
+                text: `予約の時刻になったので送りました: ${event.prompt.slice(0, 60)}`
+              }]
+            }
+          }
         case 'error':
           return {
             ...p,
@@ -100,7 +132,7 @@ export function useSessions(): Sessions {
 
     setPanels((prev) => [...prev, {
       id, label: input.label, cwd: input.cwd, branch: input.branch, team: input.team,
-      transcript: prior ?? emptyTranscript(), pending: null, prompt: '', commands, ended: false
+      transcript: prior ?? emptyTranscript(), pending: null, prompt: '', commands, ended: false, loop: null
     }])
     setActiveId(id)
 

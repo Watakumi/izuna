@@ -57,7 +57,7 @@ export interface TaskRun {
 export type Item =
   | { kind: 'user'; id: string; text: string }
   | { kind: 'assistant'; id: string; blocks: Block[] }
-  | { kind: 'notice'; id: string; tone: 'warn' | 'bad'; text: string }
+  | { kind: 'notice'; id: string; tone: 'warn' | 'bad' | 'info'; text: string }
 
 /** 表示用の途中経過。確定が来たら捨てる。状態の一部ではない */
 export interface Draft {

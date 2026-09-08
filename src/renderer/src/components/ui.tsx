@@ -185,6 +185,39 @@ export function Reload({ onClick, busy }: { onClick: () => void; busy?: boolean 
   )
 }
 
+/**
+ * 回数などの小さな数の入力。
+ *
+ * **素の `<input type="number">` を書かないこと。** 塗り忘れると
+ * ブラウザ既定の白が出る（§17 で一度出した）。
+ * 範囲は必ず受け取る —— 上限の無い回数を無人のループに渡さない。
+ */
+export function NumberInput({
+  value, min, max, onChange, disabled
+}: {
+  value: number
+  min: number
+  max: number
+  onChange: (v: number) => void
+  disabled?: boolean
+}): React.JSX.Element {
+  return (
+    <input
+      type="number"
+      value={value}
+      min={min}
+      max={max}
+      disabled={disabled}
+      onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || min)))}
+      style={{
+        width: 64, padding: `${S.xs}px ${S.sm}px`, borderRadius: R.sm,
+        border: `1px solid ${C.line2}`, background: C.bg, color: C.ink,
+        font: `${F.body}px ${MONO}`, outline: 'none'
+      }}
+    />
+  )
+}
+
 export function Card({
   tone = 'plain',
   style,

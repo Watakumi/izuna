@@ -9,6 +9,8 @@ import type { RemoteRef } from './remote'
 import type { FoundRepo } from '../main/repos'
 import type { WorktreeStatus } from '../main/git/worktree'
 import type { SessionSummary } from './sessions'
+import type { Progress, Stop } from './loop'
+import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
 import type { Transcript } from './transcript'
 
@@ -120,6 +122,23 @@ export interface IzunaApi {
    */
   ghosttySkin(): Promise<GhosttySkin | null>
 
+  /**
+   * 自律ループ。**文脈を毎回捨てて回す**（§23）。
+   * 承認は迂回しない —— 権限モードは人が選んだままである。
+   */
+  startLoop(input: { id: SessionId; maxIterations: number }): Promise<void>
+  stopLoop(id: SessionId): Promise<void>
+  loopProgress(id: SessionId): Promise<Progress>
+
+  /** あとで自動的に再開する予約。過ぎたものは勝手に走らせない */
+  listWakeups(): Promise<Wakeup[]>
+  addWakeup(input: { id: SessionId; minutes: number; prompt: string }): Promise<Wakeup>
+  removeWakeup(wakeupId: string): Promise<void>
+  fireWakeup(wakeupId: string): Promise<void>
+
+  /** コミット文の下書き。差分の中身は渡さない */
+  draftCommitMessage(id: SessionId): Promise<void>
+
   listSessions(): Promise<SessionSummary[]>
   /**
    * 記録から会話を組み立て直す。**組み立ては main でやる** ——
@@ -134,6 +153,14 @@ export interface IzunaApi {
 /** main から renderer に流れるもの */
 export type SessionEvent =
   | { kind: 'message'; id: SessionId; message: SDKMessage }
+  /** 誰も答えないまま期限が来た承認。画面から札を消す */
+  | { kind: 'permissionExpired'; id: SessionId; requestId: string }
+  /** 自律ループが 1 周した */
+  | { kind: 'loopProgress'; id: SessionId; progress: Progress; iteration: number }
+  /** 自律ループが止まった。理由を必ず持つ */
+  | { kind: 'loopStopped'; id: SessionId; stop: Stop }
+  /** 予約の時刻が来た */
+  | { kind: 'wokeUp'; id: SessionId; prompt: string }
   | { kind: 'permission'; id: SessionId; request: PermissionRequest }
   | { kind: 'error'; id: SessionId; message: string }
   | { kind: 'exit'; id: SessionId }
@@ -151,7 +178,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 15
+export const IPC_VERSION = 16
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -180,6 +207,14 @@ export const CH = {
   terminalEvent: 'izuna:term:event',
   configInfo: 'izuna:config:info',
   ghosttySkin: 'izuna:ghostty:skin',
+  startLoop: 'izuna:loop:start',
+  stopLoop: 'izuna:loop:stop',
+  loopProgress: 'izuna:loop:progress',
+  listWakeups: 'izuna:wakeup:list',
+  addWakeup: 'izuna:wakeup:add',
+  removeWakeup: 'izuna:wakeup:remove',
+  fireWakeup: 'izuna:wakeup:fire',
+  draftCommitMessage: 'izuna:commit:draft',
   listSessions: 'izuna:sessions:list',
   replaySession: 'izuna:sessions:replay',
   findRepos: 'izuna:repos:find',

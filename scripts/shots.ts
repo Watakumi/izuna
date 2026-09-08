@@ -113,6 +113,14 @@ async function main(): Promise<void> {
   const font = await styleOf(page, 'body', 'font-family')
   check(!font.includes('var('), `書体が var() のまま解決されていない: ${font}`)
 
+  // 自律ループ（§23）
+  await page.getByText('ループ', { exact: true }).click()
+  await page.waitForTimeout(400)
+  await shoot(page, '5-loop')
+  check(await page.getByText('回す').count() > 0, 'ループを始める釦が無い')
+  check(await page.getByText('止める').count() === 0, '回っていないのに止める釦が出ている')
+  await page.getByText('情報', { exact: true }).click()
+
   // ターミナル
   await page.getByText('ターミナル', { exact: true }).first().click()
   await page.waitForSelector('canvas', { timeout: 20_000 })

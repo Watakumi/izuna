@@ -36,8 +36,12 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
 
   if (item.kind === 'notice') {
     return (
-      <div style={{ border: `1px solid ${item.tone === 'bad' ? C.red : C.amberLine}`, borderRadius: 7,
-        padding: '12px 12px', fontSize: F.body, color: item.tone === 'bad' ? C.red : C.amber }}>
+      // **成功の知らせを警告の色で出さない。** アンバーは人の判断待ちだけ（§17）
+      <div style={{
+        border: `1px solid ${item.tone === 'bad' ? C.red : item.tone === 'info' ? C.line2 : C.amberLine}`,
+        borderRadius: 7, padding: '12px 12px', fontSize: F.body,
+        color: item.tone === 'bad' ? C.red : item.tone === 'info' ? C.dim : C.amber
+      }}>
         {item.text}
       </div>
     )
