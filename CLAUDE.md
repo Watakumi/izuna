@@ -8,6 +8,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 
 - リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （**private**・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
+- Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
