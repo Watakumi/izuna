@@ -84,12 +84,3 @@ const isWakeup = (v: unknown): v is Wakeup => {
     typeof w.cwd === 'string' && typeof w.createdAt === 'number' &&
     ['pending', 'overdue', 'fired', 'rejected'].includes(w.state)
 }
-
-/** 人に見せる待ち時間 */
-export function until(fireAt: number, now: number): string {
-  const m = Math.round((fireAt - now) / 60_000)
-  if (m <= 0) return 'まもなく'
-  if (m < 60) return `${m}分後`
-  if (m < 60 * 24) return `${Math.round(m / 60)}時間後`
-  return `${Math.round(m / 60 / 24)}日後`
-}

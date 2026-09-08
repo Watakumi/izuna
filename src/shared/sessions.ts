@@ -33,18 +33,6 @@ export interface SessionSummary {
   bytes: number
 }
 
-/**
- * ディレクトリ名は `/` を `-` に潰しただけで、**元に戻せない**。
- * `izuna-probe` のように `-` を含む名前と区別がつかず、
- * 実際に `-Users-watakumi---` のような潰れ方も観測している。
- *
- * だから逆算はせず、**中の `cwd` を読む**。この関数は
- * 「どのディレクトリを見ればよいか」の当たりを付けるためだけに使う。
- */
-export function projectDirName(cwd: string): string {
-  return cwd.replace(/[/.]/g, '-')
-}
-
 interface RawEntry {
   type?: string
   cwd?: string

@@ -56,8 +56,9 @@ const MAX = 300
 /**
  * 全プロジェクトのセッションを新しい順に返す。
  *
- * **どのリポジトリのものかは中の `cwd` で決める**（ディレクトリ名は
- * 元に戻せない。`shared/sessions.ts` の `projectDirName` の註を見よ）。
+ * **どのリポジトリのものかは中の `cwd` で決める**。ディレクトリ名は
+ * `/` と `.` を `-` に潰しただけなので元に戻せず、`izuna-probe` のように
+ * `-` を含む名前と区別がつかない（`-Users-watakumi---` のような潰れ方も観測した）。
  * 絞り込みは呼ぶ側の仕事。
  */
 export async function scanSessions(): Promise<SessionSummary[]> {

@@ -5,7 +5,6 @@ import {
   filterSessions,
   labelOf,
   persistedOutputPath,
-  projectDirName,
   replay,
   replayTask,
   summarize,
@@ -264,13 +263,5 @@ describe('実行役の記録', () => {
 
   it('親の会話を読むときは sidechain を飛ばす（混ぜない）', () => {
     expect(replay(lines).items).toHaveLength(0)
-  })
-})
-
-describe('ディレクトリ名', () => {
-  it('区切りを潰すだけ。**元には戻せない**ので当たりを付ける用途に限る', () => {
-    expect(projectDirName('/Users/x/work/repo')).toBe('-Users-x-work-repo')
-    // `.` も潰れる。実測で `-Users-watakumi---` のような名前が出ている
-    expect(projectDirName('/Users/x/.config/a')).toBe('-Users-x--config-a')
   })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { due, next, parseWakeups, reconcile, split, until, type Wakeup } from '../src/shared/wakeup'
+import { due, next, parseWakeups, reconcile, split, type Wakeup } from '../src/shared/wakeup'
 
 const w = (over: Partial<Wakeup> = {}): Wakeup => ({
   id: 'a', sessionId: 's', cwd: '/w', prompt: '続きを',
@@ -53,18 +53,6 @@ describe('記録の読み取り', () => {
 
   it('知らない状態は受け付けない', () => {
     expect(parseWakeups(JSON.stringify([w({ state: 'へんな状態' as never })]))).toEqual([])
-  })
-})
-
-describe('人に見せる待ち時間', () => {
-  it('単位を切り替える', () => {
-    expect(until(1_000 + 30 * 60_000, 1_000)).toBe('30分後')
-    expect(until(1_000 + 3 * 3600_000, 1_000)).toBe('3時間後')
-    expect(until(1_000 + 2 * 86400_000, 1_000)).toBe('2日後')
-  })
-
-  it('過ぎていたら「まもなく」（負の数を見せない）', () => {
-    expect(until(0, 1_000)).toBe('まもなく')
   })
 })
 

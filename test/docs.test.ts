@@ -32,14 +32,22 @@ function walk(dir: string, out: string[] = []): string[] {
 const srcFiles = walk(join(ROOT, 'src')).filter(
   (f) => /\.tsx?$/.test(f) && !f.endsWith('.d.ts')
 )
-const src = new Map(srcFiles.map((f) => [relative(ROOT, f), readFileSync(f, 'utf8')]))
+/**
+ * **コメントを剥がしてから数える。** 語で数えると、註に名前が出ているだけで
+ * 「使われている」ことになる。実際に `projectDirName` と `until` がそれで
+ * 通っていた（2026-09-08 に測った）。見たいのは呼び出しであって言及ではない。
+ */
+const stripComments = (text: string): string =>
+  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+const src = new Map(srcFiles.map((f) => [relative(ROOT, f), stripComments(readFileSync(f, 'utf8'))]))
 
 const outsideFiles = [
   ...walk(join(ROOT, 'test')),
   ...walk(join(ROOT, 'scripts')),
   ...walk(join(ROOT, 'harness'))
 ].filter((f) => /\.(tsx?|js|mjs)$/.test(f))
-const outside = outsideFiles.map((f) => readFileSync(f, 'utf8')).join('\n')
+const outside = outsideFiles.map((f) => stripComments(readFileSync(f, 'utf8'))).join('\n')
 
 /** ` で囲まれた語をすべて取り出す */
 const quoted = [...DOC.matchAll(/`([^`\n]+)`/g)].map((m) => m[1])
