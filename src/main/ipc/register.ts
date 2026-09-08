@@ -2,7 +2,7 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { applyFix, gatherFacts } from '../forge/setup'
-import { createPull, ensureRepo, listPulls, listRepos, listTokens, whoami } from '../forge/client'
+import { createPull, ensureRepo, listPulls, listRepos, listTokens, pullDiff, whoami } from '../forge/client'
 import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
@@ -13,6 +13,9 @@ import { loadGhosttySkin } from '../ghostty'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus } from '../git/worktree'
 import { SessionHub } from '../hub'
+import { notify } from '../notify'
+import { noticeFor } from '../../shared/notice'
+import { parseUnifiedDiff } from '../../shared/patch'
 import { CH, IPC_VERSION, type IzunaApi, type SessionEvent } from '../../shared/ipc'
 
 /**
@@ -35,8 +38,18 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   const emit = (event: SessionEvent): void => {
     const win = getWindow()
     if (win && !win.isDestroyed()) win.webContents.send(CH.event, event)
+    /**
+     * **窓が前に無いときだけ OS の通知を出す。** 見ているときに鳴らすと邪魔で、
+     * 見ていないときに黙っていると承認を取りこぼす（docs/NIMBALYST.md §7 の 1）。
+     * 押されたら窓を前に出す。
+     */
+    if (win && !win.isDestroyed() && !win.isFocused()) {
+      const notice = noticeFor(event, h.labelOf(event.id))
+      if (notice) notify(notice, () => { if (!win.isDestroyed()) { win.show(); win.focus() } })
+    }
   }
-  const h = new SessionHub(emit)
+  // emit は h を閉じ込めるが、呼ばれるのは登録より後（constructor は購読を張るだけ）
+  const h: SessionHub = new SessionHub(emit)
   hub = h
   void h.open()
 
@@ -57,6 +70,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     forgeFix: (id) => applyFix(id),
     forgeRepos: async () => listRepos(await forgeRoot()),
     forgePulls: async (owner, repo) => listPulls(await forgeRoot(), owner, repo),
+    forgePullDiff: async (owner, repo, index) => parseUnifiedDiff(await pullDiff(await forgeRoot(), owner, repo, index)),
     forgeCreatePull: async (owner, repo, input) => createPull(await forgeRoot(), owner, repo, input),
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
     forgeTokens: async () => {

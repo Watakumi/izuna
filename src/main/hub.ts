@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { basename } from 'node:path'
 import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../shared/wait'
 import { canDraft, draftPrompt } from '../shared/commit'
@@ -36,6 +37,8 @@ interface Record {
  */
 export class SessionHub {
   readonly #records = new Map<SessionId, Record>()
+  /** 人に見せる名前。**終わっても消さない** —— exit の通知は記録が消えたあとに出る */
+  readonly #labels = new Map<SessionId, string>()
   readonly #wakeups: Wakeups
   readonly #emit: (event: SessionEvent) => void
 
@@ -60,6 +63,11 @@ export class SessionHub {
   /** 起動時に 1 回。予約を読んでタイマーを張る */
   async open(): Promise<void> {
     await this.#wakeups.start()
+  }
+
+  /** 通知に出す名前。作業ディレクトリの末尾。知らない id は id の頭 */
+  labelOf(id: SessionId): string {
+    return this.#labels.get(id) ?? id.slice(0, 8)
   }
 
   #must(id: SessionId): Record {
@@ -110,6 +118,7 @@ export class SessionHub {
       kind: 'start', target: input.cwd, note: input.resume ? '続きから' : '新規' })
 
     this.#records.set(id, { session, team, cwd: input.cwd, loop: null })
+    this.#labels.set(id, basename(input.cwd) || input.cwd)
     try {
       await session.start()
     } catch (err) {
