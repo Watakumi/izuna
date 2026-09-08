@@ -13,6 +13,7 @@ import {
   type McpServerConfig
 } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
+import type { Attachment } from '../../shared/image'
 import { locateClaude, loginShellEnv } from './locate'
 
 /**
@@ -193,11 +194,20 @@ export class ClaudeSession extends EventEmitter<Events> {
   }
 
   /** 1 ターン進める。スラッシュコマンドも `/foo args` として渡す */
-  send(text: string): void {
+  send(text: string, images: Attachment[] = []): void {
     if (!this.#running) throw new Error('セッションが起動していません')
+    // 画像を先に置く。**後ろに置くと、指示より前に見てもらえない** ——
+    // 「この画面のここ」のような指示は、画像を見た後でしか意味を持たない
+    const content = [
+      ...images.map((a) => ({
+        type: 'image' as const,
+        source: { type: 'base64' as const, media_type: a.mediaType, data: a.data }
+      })),
+      { type: 'text' as const, text }
+    ]
     this.#input.push({
       type: 'user',
-      message: { role: 'user', content: [{ type: 'text', text }] },
+      message: { role: 'user', content },
       parent_tool_use_id: null,
       session_id: this.#sessionId ?? '',
       // 人間の打鍵であることを明示する。省略すると出所不明として扱われる

@@ -49,6 +49,24 @@ const MESSAGES = [
       '',
       '> 引用の中の文も読めること。',
       '',
+      '### 図',
+      '',
+      '```mermaid',
+      'flowchart LR',
+      '  A[人] --> B[Izuna]',
+      '  B --> C[ブレイン]',
+      '  C --> D[実行役]',
+      '  D --> C',
+      '  C --> E[承認]',
+      '  E --> A',
+      '```',
+      '',
+      '図にできないものは字のまま出ます:',
+      '',
+      '```mermaid',
+      'これは mermaid ではない',
+      '```',
+      '',
       'やりたいことを言ってもらえれば、共有フォルダに brief を切ってから進めます。'
     ].join('\n') },
     { type: 'tool_use', id: 't1', name: 'Read', input: { file_path: '/Users/x/work/izuna/CLAUDE.md' } }
@@ -118,8 +136,11 @@ export function installStub(): void {
       ready: []
     }),
     setTaskStatus: async () => true,
-    start: async () => {
-      // 起こしたら会話が流れてくる。**本物と同じ経路**で画面を埋める
+    start: async (input) => {
+      // **続きからのときは流さない。** 本物は記録を replaySession で戻してから、
+      // その後の分だけが流れてくる。両方流すと、触ったファイルの回数が倍になる
+      // （実際に一度、ハーネスの数字だけが 2 になった）
+      if (input?.resume) return 's1'
       setTimeout(() => {
         for (const m of MESSAGES) handler?.({ kind: 'message', id: 's1', message: m } as SessionEvent)
       }, 0)
@@ -144,3 +165,6 @@ export function installStub(): void {
 
 /** 画面に本物の会話を載せるための材料 */
 export const HARNESS_MESSAGES = MESSAGES
+
+/** 貼った画像の見え方を撮るための 1 枚 */
+export const HARNESS_IMAGE = { mediaType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAHElEQVQI12P4//8/AzYwiFGE0DEwMDAwMDAwAAAOEQIB9tKfAAAAAABJRU5ErkJggg==', name: 'shot.png' }

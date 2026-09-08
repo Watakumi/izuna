@@ -29,6 +29,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "ghostty-web": "^0.4.0",
+    "mermaid": "^11.17.2",
     "node-pty": "^1.1.0",
     "yaml": "^2.9.0",
     "zod": "^4.5.4"

@@ -113,6 +113,36 @@ async function main(): Promise<void> {
   const font = await styleOf(page, 'body', 'font-family')
   check(!font.includes('var('), `書体が var() のまま解決されていない: ${font}`)
 
+  /**
+   * **mermaid が図になっているか。**
+   *
+   * ここは端末と同じ罠がある —— mermaid は色を SVG の属性に直接書くので、
+   * `var()` のまま渡すと**黙って黒い図**になる。SVG が出たことだけでなく、
+   * 地の色が暗いままかを見る。
+   */
+  await page.waitForTimeout(1200)
+  const svgs = await page.locator('.izuna-md svg, svg[id^="m"]').count()
+  check(svgs > 0, 'mermaid が図になっていない')
+  check(await page.getByText('これは mermaid ではない').count() > 0,
+    '図にできない mermaid で、書いてあった字まで消えている')
+  await shoot(page, '6-mermaid')
+
+  // 触ったファイル
+  await page.getByText('ファイル', { exact: true }).click()
+  await page.waitForTimeout(300)
+  check(await page.getByText('書き換えた', { exact: false }).count() > 0,
+    '書き換えたファイルが出ていない')
+  check(await page.getByText('skin.ts', { exact: false }).count() > 0,
+    'Write したファイルが一覧に出ていない')
+  await shoot(page, '7-files')
+
+  // 共有フォルダの盤面（§16）
+  await page.getByText('盤面', { exact: true }).click()
+  await page.waitForTimeout(300)
+  check(await page.getByText('同時に走らせてはいけない組があります').count() > 0,
+    'paths の重なりが出ていない')
+  await shoot(page, '8-board')
+
   // 自律ループ（§23）
   await page.getByText('ループ', { exact: true }).click()
   await page.waitForTimeout(400)

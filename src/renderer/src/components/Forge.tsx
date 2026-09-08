@@ -30,7 +30,12 @@ interface Snapshot {
 }
 const remembered = makeCache<Snapshot>()
 
-export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): React.JSX.Element {
+export function Forge({ cwd, sessionId, onDone }: {
+  cwd: string
+  /** レビューを流し込む先。会話が無ければ頼めない */
+  sessionId: string | null
+  onDone: () => void
+}): React.JSX.Element {
   /**
    * **「まだ読んでいない」と「読んだ結果、無い」を区別する。**
    *
@@ -236,6 +241,15 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                 return url
               })}>
               {busy === 'gh' ? '作っています…' : 'Upstream に PR を作る'}
+            </Button>
+            {/* **PR を作る前でもレビューは頼める。** 出す前に読むほうが安い */}
+            <Button disabled={busy !== null || !bases.upstream || sessionId === null}
+              onClick={() => void act('review', async () => {
+                await window.izuna.requestReview(sessionId!, { base: bases.upstream! })
+                onDone()
+                return 'いまの会話にレビューを頼みました'
+              })}>
+              {busy === 'review' ? '頼んでいます…' : '差分のレビューを頼む'}
             </Button>
             {stage !== 'readyForUpstream' && (
               <span style={{ fontSize: F.micro, color: C.faint, lineHeight: 1.6 }}>

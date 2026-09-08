@@ -140,3 +140,27 @@ describe('実際に出た文面', () => {
     expect(text).not.toContain('`')
   })
 })
+
+describe('画像', () => {
+  it('`![alt](src)` を画像として読む', () => {
+    expect(parseInline('![図](/a.png)')).toEqual([{ kind: 'image', src: '/a.png', alt: '図' }])
+  })
+
+  it('**リンクより先に見る**（順が逆だと画像がリンクになる）', () => {
+    const [n] = parseInline('![図](/a.png)')
+    expect(n.kind).toBe('image')
+  })
+
+  it('`!` の付かないものはリンクのまま', () => {
+    const [n] = parseInline('[図](/a.png)')
+    expect(n.kind).toBe('link')
+  })
+
+  it('閉じていなければただの文字', () => {
+    expect(parseInline('![図(/a.png')).toEqual([{ kind: 'text', text: '![図(/a.png' }])
+  })
+
+  it('alt が空でも読む', () => {
+    expect(parseInline('![](/a.png)')).toEqual([{ kind: 'image', src: '/a.png', alt: '' }])
+  })
+})

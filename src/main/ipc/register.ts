@@ -15,8 +15,10 @@ import { loadGhosttySkin } from '../ghostty'
 import { progressServer, readProgress, runLoop, type RunningLoop } from '../loop'
 import { Wakeups } from '../wakeup'
 import { canDraft, draftPrompt } from '../../shared/commit'
+import { canReview, reviewPrompt } from '../../shared/review'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { TaskStatus } from '../../shared/team'
+import type { Attachment } from '../../shared/image'
 import { CONFIG_PATH, loadConfig } from '../config'
 import { access } from 'node:fs/promises'
 import { ClaudeSession } from '../claude/session'
@@ -191,7 +193,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     return id
   })
 
-  ipcMain.handle(CH.send, (_e, id: SessionId, text: string) => { must(id).send(text) })
+  ipcMain.handle(CH.send, (_e, id: SessionId, text: string, images?: Attachment[]) => {
+    must(id).send(text, images ?? [])
+  })
 
   // ── 自律ループ（§23）──────────────────────────────────────
   // **画面にはファイルの場所を持たせない。** セッションから引く
@@ -274,6 +278,14 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     if (!canDraft(context)) throw new Error('コミットする変更がありません')
     // **会話に流す。** 別のセッションを起こすと、この作業の文脈が使えない
     session.send(draftPrompt(context))
+  })
+  ipcMain.handle(CH.requestReview, async (_e, id: SessionId, input: { base: string; pull?: number }) => {
+    const session = must(id)
+    const head = await remote.currentBranch(cwds.get(id) ?? '')
+    const context = { head, base: input.base, pull: input.pull ?? null }
+    if (!canReview(context)) throw new Error('何と比べるかが決まりません')
+    // **差分は渡さない。** エージェントは同じ作業ディレクトリで git を持っている
+    session.send(reviewPrompt(context))
   })
   ipcMain.handle(CH.slashCommands, (_e, id: SessionId) => must(id).slashCommands())
   ipcMain.handle(CH.interrupt, (_e, id: SessionId) => must(id).interrupt())

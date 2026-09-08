@@ -13,6 +13,9 @@ import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
 import { Forge } from './components/Forge'
 import { Board } from './components/Board'
+import { Files } from './components/Files'
+import { Attachments, collectImages } from './components/Attachments'
+import type { Attachment } from '../../shared/image'
 import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
@@ -33,7 +36,7 @@ function App(): React.JSX.Element {
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
-  const [tab, setTab] = useState<'info' | 'board' | 'loop' | 'pr' | 'branch'>('info')
+  const [tab, setTab] = useState<'info' | 'files' | 'board' | 'loop' | 'pr' | 'branch'>('info')
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
@@ -54,6 +57,18 @@ function App(): React.JSX.Element {
   const [dismissed, setDismissed] = useState(false)
   const scroller = useRef<HTMLDivElement>(null)
   const box = useRef<HTMLTextAreaElement>(null)
+  // 貼った画像。**送るまでの控えで、どこにも保存しない**（送れば会話に残る）
+  const [images, setImages] = useState<Attachment[]>([])
+  const [rejected, setRejected] = useState<string[]>([])
+
+  const take = (files: readonly File[]): void => {
+    const pics = files.filter((f) => f.type.startsWith('image/'))
+    if (pics.length === 0) return
+    void collectImages(pics).then(({ ok, bad }) => {
+      setImages((prev) => [...prev, ...ok])
+      setRejected(bad)
+    })
+  }
 
   const slash = active ? parseSlashInput(active.prompt) : null
   const results = active && slash && !dismissed ? filterCommands(slash.name, active.commands) : []
@@ -82,12 +97,18 @@ function App(): React.JSX.Element {
   const send = (): void => {
     if (!active) return
     const text = active.prompt.trim()
+    // 画像だけ貼って送ろうとしたときは、何を見てほしいのかが無い。
+    // **こちらで文面を作らない**（§17.5）ので、本文が空なら送らない
     if (!text) return
+    const pics = images
     sessions.update(active.id, (p) => ({
-      ...p, prompt: '', transcript: appendUserText(p.transcript, text, `u${p.transcript.items.length}`)
+      ...p, prompt: '',
+      transcript: appendUserText(p.transcript, text, `u${p.transcript.items.length}`, pics)
     }))
     setDismissed(false)
-    void window.izuna.send(active.id, text)
+    setImages([])
+    setRejected([])
+    void window.izuna.send(active.id, text, pics)
   }
 
   const respond = (result: PermissionResult): void => {
@@ -242,7 +263,11 @@ function App(): React.JSX.Element {
               )}
               {/* 入力欄と送信を 1 つの枠に入れる。別々に置くと箱の高さが違って揃わない */}
               <div style={S.footer}>
-                <div style={S.inputBox}>
+                <div style={S.inputBox}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); take([...e.dataTransfer.files]) }}>
+                  <Attachments items={images} rejected={rejected}
+                    onRemove={(at) => setImages((prev) => prev.filter((_, i) => i !== at))} />
                   <TextArea
                     bare
                     // 打つ字と読む字が違うのは落ち着かない。同じ組みにする
@@ -250,7 +275,8 @@ function App(): React.JSX.Element {
                     ref={box}
                     value={active.prompt}
                     rows={2}
-                    placeholder={active.ended ? 'このセッションは終了しています' : '依頼を書く'}
+                    placeholder={active.ended ? 'このセッションは終了しています' : '依頼を書く（画像は貼るか落とす）'}
+                    onPaste={(e) => take([...e.clipboardData.files])}
                     disabled={active.ended}
                     onChange={(e) => {
                       setPrompt(e.target.value)
@@ -282,21 +308,22 @@ function App(): React.JSX.Element {
             <div style={{ width: tab === 'info' ? 288 : 360, flexShrink: 0, background: C.panel,
               borderLeft: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
-                {(['info', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
+                {(['info', 'files', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
                   <div key={t} onClick={() => setTab(t)} style={{
                     flexGrow: 1, textAlign: 'center', padding: '8px 0', cursor: 'pointer',
                     fontSize: F.small, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                   }}>
-                    {t === 'info' ? '情報' : t === 'board' ? '盤面' : t === 'loop' ? 'ループ' : t === 'pr' ? 'PR' : 'ブランチ'}
+                    {t === 'info' ? '情報' : t === 'files' ? 'ファイル' : t === 'board' ? '盤面' : t === 'loop' ? 'ループ' : t === 'pr' ? 'PR' : 'ブランチ'}
                   </div>
                 ))}
               </div>
               <div style={{ flexGrow: 1, minHeight: 0 }}>
                 {tab === 'info' && <Inspector panel={active} onOpenForge={() => setTab('pr')} />}
+                {tab === 'files' && <Files panel={active} />}
                 {tab === 'board' && <Board panel={active} />}
                 {tab === 'loop' && <Loop panel={active} />}
-                {tab === 'pr' && <Forge cwd={active.cwd} onDone={() => setTab('info')} />}
+                {tab === 'pr' && <Forge cwd={active.cwd} sessionId={active.id} onDone={() => setTab('info')} />}
                 {tab === 'branch' && (
                   <Worktrees cwd={active.cwd} panels={sessions.panels}
                     onOpen={(w) => void sessions.open({

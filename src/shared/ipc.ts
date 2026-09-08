@@ -13,6 +13,7 @@ import type { Progress, Stop } from './loop'
 import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
 import type { Transcript } from './transcript'
+import type { Attachment } from './image'
 import type { TeamBoard } from '../main/team'
 import type { TaskStatus } from './team'
 
@@ -112,7 +113,8 @@ export interface IzunaApi {
   removeWorktree(cwd: string, path: string, force?: boolean): Promise<void>
   worktreeStatus(path: string): Promise<WorktreeStatus>
   start(input: StartSessionInput): Promise<SessionId>
-  send(id: SessionId, text: string): Promise<void>
+  /** 画像は本文より前に置いて渡す（指示は画像を見た後でしか意味を持たない） */
+  send(id: SessionId, text: string, images?: Attachment[]): Promise<void>
   respondPermission(answer: PermissionAnswer): Promise<void>
   slashCommands(id: SessionId): Promise<SlashCommand[]>
   setPermissionMode(id: SessionId, mode: PermissionMode): Promise<void>
@@ -146,6 +148,11 @@ export interface IzunaApi {
 
   /** コミット文の下書き。差分の中身は渡さない */
   draftCommitMessage(id: SessionId): Promise<void>
+  /**
+   * 差分のレビューを、**いまの会話に**頼む。
+   * 別のセッションを起こすと、この作業で分かったことが使えない。
+   */
+  requestReview(id: SessionId, input: { base: string; pull?: number }): Promise<void>
 
   listSessions(): Promise<SessionSummary[]>
   /**
@@ -186,7 +193,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 17
+export const IPC_VERSION = 19
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -223,6 +230,7 @@ export const CH = {
   removeWakeup: 'izuna:wakeup:remove',
   fireWakeup: 'izuna:wakeup:fire',
   draftCommitMessage: 'izuna:commit:draft',
+  requestReview: 'izuna:review:request',
   listSessions: 'izuna:sessions:list',
   replaySession: 'izuna:sessions:replay',
   findRepos: 'izuna:repos:find',

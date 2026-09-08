@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Draft, Item } from '../../../shared/transcript'
-import { F, C, MONO, READ } from '../theme'
+import { toDataUrl } from '../../../shared/image'
+import { C, F, MONO, R, READ } from '../theme'
 import { ToolBlock } from './ToolBlock'
 import { Markdown } from './Markdown'
 
@@ -28,8 +29,19 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
   if (item.kind === 'user') {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '68%', background: C.raised,
-        padding: '12px 16px', borderRadius: '10px 10px 2px 10px', font: READ, whiteSpace: 'pre-wrap' }}>
-        {item.text}
+        padding: '12px 16px', borderRadius: '10px 10px 2px 10px', font: READ,
+        display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* **送った画像はここに残す。** 何を見せたのかが後から分からないと、
+            返事の意味も分からなくなる */}
+        {item.images && item.images.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {item.images.map((a, i) => (
+              <img key={i} src={toDataUrl(a)} alt={a.name}
+                style={{ maxHeight: 160, maxWidth: '100%', borderRadius: R.md, display: 'block' }} />
+            ))}
+          </div>
+        )}
+        <span style={{ whiteSpace: 'pre-wrap' }}>{item.text}</span>
       </div>
     )
   }

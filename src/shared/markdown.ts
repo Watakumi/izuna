@@ -21,6 +21,7 @@ export type Inline =
   | { kind: 'em'; children: Inline[] }
   | { kind: 'strike'; children: Inline[] }
   | { kind: 'link'; href: string; children: Inline[] }
+  | { kind: 'image'; src: string; alt: string }
 
 export interface ListItem {
   children: Inline[]
@@ -65,6 +66,20 @@ function matchAt(src: string, i: number): { node: Inline; next: number } | null 
   if (src[i] === '`') {
     const end = closing(src, i + 1, '`')
     if (end !== -1) return { node: { kind: 'code', text: src.slice(i + 1, end) }, next: end + 1 }
+  }
+
+  // `![alt](src)` を `[alt](src)` より先に見る。**順を逆にすると画像がリンクになる**
+  if (src[i] === '!' && src[i + 1] === '[') {
+    const close = closing(src, i + 2, ']')
+    if (close !== -1 && src[close + 1] === '(') {
+      const paren = closing(src, close + 2, ')')
+      if (paren !== -1) {
+        return {
+          node: { kind: 'image', src: src.slice(close + 2, paren).trim(), alt: src.slice(i + 2, close) },
+          next: paren + 1
+        }
+      }
+    }
   }
 
   if (src[i] === '[') {

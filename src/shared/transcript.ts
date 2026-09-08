@@ -1,3 +1,4 @@
+import type { Attachment } from './image'
 import type { PermissionMode, SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
 /**
@@ -55,7 +56,7 @@ export interface TaskRun {
 }
 
 export type Item =
-  | { kind: 'user'; id: string; text: string }
+  | { kind: 'user'; id: string; text: string; images?: Attachment[] }
   | { kind: 'assistant'; id: string; blocks: Block[] }
   | { kind: 'notice'; id: string; tone: 'warn' | 'bad' | 'info'; text: string }
 
@@ -131,8 +132,11 @@ export function setPermissionMode(t: Transcript, permissionMode: PermissionMode)
   return { ...t, permissionMode }
 }
 
-export function appendUserText(t: Transcript, text: string, id: string): Transcript {
-  return { ...t, items: [...t.items, { kind: 'user', id, text }], running: true }
+export function appendUserText(
+  t: Transcript, text: string, id: string, images: Attachment[] = []
+): Transcript {
+  const item = images.length > 0 ? { kind: 'user' as const, id, text, images } : { kind: 'user' as const, id, text }
+  return { ...t, items: [...t.items, item], running: true }
 }
 
 export function applyMessage(t: Transcript, m: SDKMessage): Transcript {

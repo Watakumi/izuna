@@ -115,7 +115,7 @@ describe('公開した値は製品コードから呼ばれている', () => {
 
 describe('節番号の参照', () => {
   const headings = new Set(
-    [...DOC.matchAll(/^#{2,3} (\d+(?:\.\d+)?)\./gm)].map((m) => m[1])
+    [...DOC.matchAll(/^#{2,3} (\d+(?:\.\d+)?)[.．]?[ 　]/gm)].map((m) => m[1])
   )
 
   const refs = new Map<string, string>()

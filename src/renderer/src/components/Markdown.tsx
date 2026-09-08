@@ -1,3 +1,4 @@
+import { Mermaid } from './Mermaid'
 import { parseMarkdown, type Inline, type ListItem, type Node } from '../../../shared/markdown'
 import { C, F, MONO, R, READ, S } from '../theme'
 
@@ -30,12 +31,21 @@ function Block({ node }: { node: Node }): React.JSX.Element {
       return <div><Spans nodes={node.children} /></div>
 
     case 'heading': {
-      // 見出しは 3 段まで。それ以上は本文と同じ扱いにする（会話に h4 は要らない）
-      const size = node.level <= 1 ? F.title : node.level === 2 ? F.base : F.body
+      /**
+       * 見出しは 3 段まで。それ以上は本文と同じ扱いにする（会話に h4 は要らない）。
+       *
+       * **段差を大きさだけで付けない。** 字の階梯は 13/14/16 と詰まっていて、
+       * 3 段を大きさで分けると h3 が本文より小さくなる（実際そうなっていた）。
+       * 段を下るごとに、大きさ → 余白 → 色、と手を変える。
+       * **本文より小さい見出しは作らない。**
+       */
+      const size = node.level <= 1 ? F.title : F.base
+      const top = node.level <= 1 ? S.lg : node.level === 2 ? S.md : S.sm
       return (
         <div style={{
-          fontSize: size, fontWeight: 600, color: C.ink,
-          marginTop: S.xs, lineHeight: 1.5
+          fontSize: size, fontWeight: 600,
+          color: node.level >= 3 ? C.dim2 : C.ink,
+          marginTop: top, lineHeight: 1.5
         }}>
           <Spans nodes={node.children} />
         </div>
@@ -43,17 +53,25 @@ function Block({ node }: { node: Node }): React.JSX.Element {
     }
 
     case 'code':
+      // mermaid は図にする。**駄目なら字に戻す**（Mermaid.tsx）ので、本文は失わない
+      if (node.lang === 'mermaid') return <Mermaid text={node.text} />
       return (
         // 横に長いコードは**この箱の中だけ**で流す。本文ごと横に伸ばさない
-        <pre style={{
-          margin: 0, padding: S.lg, background: C.bg, border: `1px solid ${C.line}`,
-          borderRadius: R.md, overflowX: 'auto', font: `${F.small}px/1.7 ${MONO}`, color: C.ink2
-        }}>
+        // **言語名を pre の中に入れない。** 中に置くと 1 行目のコードとして読める
+        // （`ts` がそのまま式に見えていた）。枠の外に、札として出す
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S.hair }}>
           {node.lang && (
-            <div style={{ font: `${F.micro}px ${MONO}`, color: C.faint, marginBottom: S.sm }}>{node.lang}</div>
+            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, letterSpacing: '0.06em' }}>
+              {node.lang}
+            </span>
           )}
-          <code>{node.text}</code>
-        </pre>
+          <pre style={{
+            margin: 0, padding: S.lg, background: C.bg, border: `1px solid ${C.line}`,
+            borderRadius: R.md, overflowX: 'auto', font: `${F.small}px/1.7 ${MONO}`, color: C.ink2
+          }}>
+            <code>{node.text}</code>
+          </pre>
+        </div>
       )
 
     case 'list':
@@ -154,9 +172,21 @@ function Spans({ nodes }: { nodes: Inline[] }): React.JSX.Element {
                 <Spans nodes={n.children} />
               </a>
             )
+          case 'image':
+            // **手元のファイルと data URL だけ出す。** 外の URL を出すと、
+            // 会話を開いただけで外に取りに行くことになる
+            return local(n.src)
+              ? <img key={i} src={n.src} alt={n.alt}
+                  style={{ maxWidth: '100%', borderRadius: R.md, display: 'block', margin: '6px 0' }} />
+              : <span key={i} style={{ color: C.dim2 }}>{n.alt || n.src}</span>
         }
       })}
     </>
   )
 }
 
+
+/** 画面に出してよい画像の出どころ。**外の URL は出さない**（開いただけで取りに行く） */
+function local(src: string): boolean {
+  return src.startsWith('data:image/') || src.startsWith('file://') || src.startsWith('/')
+}

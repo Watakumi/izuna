@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { CH, type IzunaApi, type TerminalEvent, type PermissionAnswer, type SessionEvent, type SessionId, type StartSessionInput } from '../shared/ipc'
+import type { Attachment } from '../shared/image'
 
 /**
  * renderer に出す面はここだけ。`contextIsolation` は既定のまま維持し、
@@ -34,6 +35,7 @@ const izuna: IzunaApi = {
   removeWakeup: (wakeupId) => ipcRenderer.invoke(CH.removeWakeup, wakeupId),
   fireWakeup: (wakeupId) => ipcRenderer.invoke(CH.fireWakeup, wakeupId),
   draftCommitMessage: (id) => ipcRenderer.invoke(CH.draftCommitMessage, id),
+  requestReview: (id: SessionId, input) => ipcRenderer.invoke(CH.requestReview, id, input),
   listSessions: () => ipcRenderer.invoke(CH.listSessions),
   replaySession: (sessionId) => ipcRenderer.invoke(CH.replaySession, sessionId),
   openTerminal: (input) => ipcRenderer.invoke(CH.openTerminal, input),
@@ -57,7 +59,7 @@ const izuna: IzunaApi = {
     ipcRenderer.invoke(CH.removeWorktree, cwd, path, force),
   worktreeStatus: (path: string) => ipcRenderer.invoke(CH.worktreeStatus, path),
   start: (input: StartSessionInput) => ipcRenderer.invoke(CH.start, input),
-  send: (id: SessionId, text: string) => ipcRenderer.invoke(CH.send, id, text),
+  send: (id: SessionId, text: string, images?: Attachment[]) => ipcRenderer.invoke(CH.send, id, text, images),
   respondPermission: (answer: PermissionAnswer) => ipcRenderer.invoke(CH.respondPermission, answer),
   slashCommands: (id: SessionId) => ipcRenderer.invoke(CH.slashCommands, id),
   setPermissionMode: (id: SessionId, mode) => ipcRenderer.invoke(CH.setPermissionMode, id, mode),
