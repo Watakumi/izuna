@@ -157,7 +157,7 @@ function App(): React.JSX.Element {
           {active?.transcript.limits && (
             // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
             // 実際の制約はサブスクリプションの枠のほう
-            <span style={S.note} title="Pro プランの枠の使用率。ターミナルの Claude Code と同じ窓を共有します">
+            <span style={S.note} title="Pro プランの使用量。ターミナルの Claude Code と同じ上限を共有します">
               枠 {Math.round(active.transcript.limits.fiveHour * 100)}%
               <span style={{ color: C.faint }}> / 5時間</span>
             </span>
@@ -208,7 +208,7 @@ function App(): React.JSX.Element {
                         ? { behavior: 'allow', updatedPermissions: active.pending.suggestions }
                         : { behavior: 'allow' }
                     )}
-                    onDeny={() => respond({ behavior: 'deny', message: '人間が拒否しました' })}
+                    onDeny={() => respond({ behavior: 'deny', message: '拒否しました' })}
                   />
                 </div>
               )}

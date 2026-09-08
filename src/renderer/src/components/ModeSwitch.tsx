@@ -22,8 +22,8 @@ export const MODES: Array<{ value: PermissionMode; hint: string; danger?: boolea
   { value: 'default', hint: '変更のたびに承認を求める' },
   { value: 'acceptEdits', hint: 'ファイル編集だけ自動で許可' },
   { value: 'auto', hint: 'Claude の判断に任せる' },
-  { value: 'dontAsk', hint: '承認を求めない。できないことは黙って諦める' },
-  { value: 'bypassPermissions', hint: 'すべての確認を飛ばす', danger: true }
+  { value: 'dontAsk', hint: '承認を求めない。許可されていない操作は実行しない' },
+  { value: 'bypassPermissions', hint: 'すべての確認を省く', danger: true }
 ]
 
 export function ModeSwitch({

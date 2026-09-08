@@ -3,7 +3,7 @@ import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import type { FixId } from '../../../main/forge/setup'
 import type { ForgejoToken } from '../../../main/forge/client'
 import { F, C, MONO, R, S, ellipsis } from '../theme'
-import { Button } from './ui'
+import { Button, Reload } from './ui'
 
 /**
  * Forgejo のセットアップ（段5 の入口）。
@@ -70,13 +70,13 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
         <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
           display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontWeight: 600 }}>Forgejo の準備</span>
-          <span style={{ fontSize: F.small, color: C.dim2 }}>検出は自動・変更は押したときだけ</span>
+          <span style={{ fontSize: F.small, color: C.dim2 }}>調べるだけ。変えるのは押したときだけ</span>
           <div style={{ flexGrow: 1 }} />
-          <Button size="sm" onClick={() => void refresh()}>調べ直す</Button>
+          <Reload onClick={() => void refresh()} />
         </div>
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>調べています…</div>}
+          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>}
           {checks?.map((c) => {
             const m = MARK[c.level]
             return (
@@ -87,12 +87,12 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
                   <span style={{ fontSize: F.body }}>{c.label}</span>
                   <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
                   {c.fix?.warning && (
-                    <span style={{ fontSize: F.small, color: C.faint }}>押すと: {c.fix.warning}</span>
+                    <span style={{ fontSize: F.small, color: C.faint }}>{c.fix.warning}</span>
                   )}
                 </div>
                 {c.fix && (
                   <Button kind="primary" size="sm" disabled={busy !== null} onClick={() => void fix(c)}>
-                    {busy === c.id ? '実行中…' : c.fix.label}
+                    {busy === c.id ? '実行しています…' : c.fix.label}
                   </Button>
                 )}
               </div>
@@ -118,7 +118,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
             </div>
             <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.6 }}>
               Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。
-              Docker で建てているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
+              Docker で動かしているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
             </span>
             {cfg.ignored.length > 0 && (
               <span style={{ fontSize: F.small, color: C.amber }}>
@@ -168,9 +168,9 @@ function Tokens(): React.JSX.Element | null {
         style={{ display: 'flex', alignItems: 'center', gap: S.md, padding: `${S.lg}px ${S.lg}px`,
           cursor: 'pointer' }}>
         <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
-        <span style={{ fontSize: F.body }}>トークン {data.tokens.length} 本</span>
+        <span style={{ fontSize: F.body }}>トークン {data.tokens.length} 件</span>
         {stale.length > 0 && (
-          <span style={{ fontSize: F.small, color: C.dim2 }}>使っていないもの {stale.length} 本</span>
+          <span style={{ fontSize: F.small, color: C.dim2 }}>使っていないもの {stale.length} 件</span>
         )}
       </div>
 

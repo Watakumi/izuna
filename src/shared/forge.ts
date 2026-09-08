@@ -111,9 +111,9 @@ export function diagnose(facts: ForgeFacts): Check[] {
   const checks: Check[] = []
 
   checks.push(facts.binary
-    ? { id: 'installed', label: 'Forgejo が入っている', level: 'ok',
+    ? { id: 'installed', label: 'インストール', level: 'ok',
         detail: `${facts.version ?? '版不明'} · ${facts.binary}`, fix: null }
-    : { id: 'installed', label: 'Forgejo が入っている', level: 'ng',
+    : { id: 'installed', label: 'インストール', level: 'ng',
         detail: '見つかりません',
         fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' } })
 
@@ -121,50 +121,50 @@ export function diagnose(facts: ForgeFacts): Check[] {
 
   const cfg = facts.config
   checks.push(!cfg
-    ? { id: 'configured', label: '初期設定が済んでいる', level: 'ng',
+    ? { id: 'configured', label: '初期設定', level: 'ng',
         detail: 'app.ini が見つかりません', fix: null }
     : cfg.installLocked
-      ? { id: 'configured', label: '初期設定が済んでいる', level: 'ok',
+      ? { id: 'configured', label: '初期設定', level: 'ok',
           detail: `${cfg.rootUrl ?? '(ROOT_URL 未設定)'} · ${cfg.path}`, fix: null }
-      : { id: 'configured', label: '初期設定が済んでいる', level: 'warn',
+      : { id: 'configured', label: '初期設定', level: 'warn',
           detail: 'INSTALL_LOCK が false。ブラウザで初期設定を終えてください', fix: null })
 
   checks.push(facts.reachable
-    ? { id: 'running', label: '動いている', level: 'ok',
+    ? { id: 'running', label: '起動', level: 'ok',
         detail: `${cfg?.rootUrl ?? ''} が応答しました`, fix: null }
-    : { id: 'running', label: '動いている', level: 'ng',
+    : { id: 'running', label: '起動', level: 'ng',
         detail: '応答がありません',
         fix: { label: '起動する', warning: 'brew services start forgejo を実行します' } })
 
   const lacking = missingScopes(facts.tokenScopes)
   checks.push(
     facts.tokenScopes === null
-      ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+      ? { id: 'token', label: 'トークン', level: 'ng',
           detail: '未設定です',
           fix: { label: 'トークンを発行する', warning: 'Forgejo に izuna という名前のトークンを作ります' } }
       : facts.tokenScopes.length === 0
-        ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'warn',
+        ? { id: 'token', label: 'トークン', level: 'warn',
             // **分からないことを「足りない」と言わない。** 古い版で発行した
             // トークンは権限の記録を持たないので、判定のしようがない
             detail: '古い版で発行されたため、権限が分かりません',
             fix: { label: '発行し直す', warning: '確実に必要な権限を付けて作り直します' } }
       : lacking.length > 0
-        ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+        ? { id: 'token', label: 'トークン', level: 'ng',
             detail: `スコープが足りません: ${lacking.join(', ')}`,
             fix: { label: '発行し直す', warning: '足りないスコープを付けて作り直します' } }
         : facts.tokenWorks === false
-          ? { id: 'token', label: 'Izuna 用のトークンがある', level: 'ng',
+          ? { id: 'token', label: 'トークン', level: 'ng',
               detail: 'トークンが拒否されました。作り直してください',
               fix: { label: '発行し直す', warning: '古いトークンは無効になります' } }
-          : { id: 'token', label: 'Izuna 用のトークンがある', level: 'ok',
+          : { id: 'token', label: 'トークン', level: 'ok',
               detail: (facts.tokenScopes ?? []).join(', '), fix: null }
   )
 
   // Actions は v1 の必須ではない。無くても PR は作れる
   checks.push(cfg?.actionsEnabled
-    ? { id: 'actions', label: 'Actions が有効（任意）', level: 'ok', detail: '有効です', fix: null }
-    : { id: 'actions', label: 'Actions が有効（任意）', level: 'warn',
-        detail: '無効です。CI を自宅で回さないなら、このままで構いません',
+    ? { id: 'actions', label: 'Actions（任意）', level: 'ok', detail: '有効です', fix: null }
+    : { id: 'actions', label: 'Actions（任意）', level: 'warn',
+        detail: '無効です。CI を自分で実行しないなら、このままで構いません',
         fix: { label: '有効にする', warning: 'app.ini を書き換えて Forgejo を再起動します' } })
 
   if (cfg?.actionsEnabled) {

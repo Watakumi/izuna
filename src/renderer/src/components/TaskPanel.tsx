@@ -4,12 +4,12 @@ import { F, C, MONO, ellipsis } from '../theme'
 import { ToolBlock } from './ToolBlock'
 
 /**
- * 実行役の一覧（段4）。
+ * Agentの一覧（段4）。
  *
  * ブレインの会話とは別に出す。**誰が言ったのかが分からなくなるのが
  * 並列で一番効く事故**なので、混ぜて表示しない。
  *
- * 承認はここには出さない。実行役の要求でも人間に上げる（GOAL.md 完成の定義5）。
+ * 承認はここには出さない。Agentの要求でも人間に上げる（GOAL.md 完成の定義5）。
  */
 const STATUS: Record<TaskRun['status'], { label: string; color: string }> = {
   running: { label: '実行中', color: C.teal },
@@ -35,7 +35,7 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
           border: task.status === 'running' ? 'none' : `1.5px solid ${s.color}`
         }} />
         <span style={{ fontSize: F.body, fontWeight: 500, flexShrink: 0 }}>
-          {task.subagentType ?? '実行役'}
+          {task.subagentType ?? 'Agent'}
         </span>
         <span style={{ fontSize: F.body, color: C.dim2, flexGrow: 1, ...ellipsis }}>
           {task.description}
@@ -82,7 +82,7 @@ export function TaskPanel({ tasks }: { tasks: TaskRun[] }): React.JSX.Element | 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 24px 4px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>実行役</span>
+        <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>Agent</span>
         <span style={{ font: `${F.small}px ${MONO}`, color: C.faint }}>
           {tasks.length} 人{running > 0 && ` · ${running} 実行中`}
         </span>

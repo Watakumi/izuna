@@ -3,7 +3,7 @@ import type { WorktreeStatus } from '../../../main/git/worktree'
 import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
 import { F, C, MONO, ellipsis, S } from '../theme'
-import { Button, Result, Tag } from './ui'
+import { Button, Reload, Result, Tag } from './ui'
 
 /**
  * worktree の一覧（段3 の見える化）。
@@ -65,11 +65,11 @@ export function Worktrees({
         <span style={{ fontWeight: 600, fontSize: F.body }}>ブランチ</span>
 
         <div style={{ flexGrow: 1 }} />
-        <Button size="sm" onClick={() => void load()}>読み直す</Button>
+        <Reload onClick={() => void load()} />
       </div>
 
       <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {!rows && <span style={{ color: C.faint, fontSize: F.small }}>調べています…</span>}
+        {!rows && <span style={{ color: C.faint, fontSize: F.small }}>読んでいます…</span>}
 
         {rows?.map((row) => {
           const blocked = canRemove(row)

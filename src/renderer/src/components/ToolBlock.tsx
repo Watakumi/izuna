@@ -10,7 +10,7 @@ const STATE: Record<Tool['state'], { label: string; color: string }> = {
   running: { label: '実行中', color: C.dim2 },
   done: { label: '完了', color: C.teal },
   error: { label: '失敗', color: C.red },
-  denied: { label: '拒否した', color: C.amber }
+  denied: { label: '拒否しました', color: C.amber }
 }
 
 export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {

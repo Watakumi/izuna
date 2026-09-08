@@ -98,7 +98,7 @@ export function Inspector({
           <span style={{ fontSize: F.small, color: C.dim2 }}>
             {/* 読み終わるまで断定しない。`[]` を「無い」と読むと一瞬だけ嘘が出る */}
             {remotes === null
-              ? '確認しています…'
+              ? '読んでいます…'
               : !sandbox ? 'sandbox 未設定' : pushed ? 'sandbox に push 済み' : 'push していません'}
           </span>
         </div>

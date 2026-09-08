@@ -157,6 +157,34 @@ export function Result({ text, bad, at }: { text: string; bad: boolean; at: numb
   )
 }
 
+/**
+ * 取り直す。**文字にしない。**
+ *
+ * 「読み直す」「調べ直す」と 2 通りの言葉で書いていた。よく押す小さな操作に
+ * 文字を割くと、その画面で一番大事なものと同じ重さに見える。
+ */
+export function Reload({ onClick, busy }: { onClick: () => void; busy?: boolean }): React.JSX.Element {
+  return (
+    <button
+      title="取り直す"
+      onClick={onClick}
+      disabled={busy}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width: 24, height: 24, borderRadius: R.md, border: 'none',
+        background: 'transparent', color: C.dim2, cursor: busy ? 'default' : 'pointer',
+        opacity: busy ? 0.4 : 1, flexShrink: 0
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 12a9 9 0 1 1-3-6.7" />
+        <path d="M21 3v6h-6" />
+      </svg>
+    </button>
+  )
+}
+
 export function Card({
   tone = 'plain',
   style,

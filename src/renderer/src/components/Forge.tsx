@@ -177,7 +177,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                 <Faint>{branch} はまだ sandbox にありません</Faint>
                 <Button disabled={busy !== null} kind="primary"
                   onClick={() => void act('push', () => window.izuna.push(cwd, sandbox.name, branch))}>
-                  {busy === 'push' ? 'push 中…' : `${sandbox.name} に push`}
+                  {busy === 'push' ? 'push しています…' : `${sandbox.name} に push`}
                 </Button>
               </>
             )}
@@ -202,7 +202,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                   })
                   return `sandbox に PR !${pr.number} を作りました`
                 })}>
-                {busy === 'pr' ? '作成中…' : 'sandbox で PR を作る'}
+                {busy === 'pr' ? '作っています…' : 'sandbox で PR を作る'}
               </Button>
             )}
           </>
@@ -217,7 +217,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
           stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
-        <span style={{ fontSize: F.micro, color: C.faint }}>通ったものだけ</span>
+        <span style={{ fontSize: F.micro, color: C.faint }}>承認したものだけ</span>
       </div>
 
       {/* Upstream */}
@@ -225,7 +225,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
         sub={gh?.ok ? gh.detail : 'gh が使えません'}
         note={upstreamNote} />
       <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
-        {!gh?.ok && <Faint>{gh?.detail ?? '確認しています…'}</Faint>}
+        {!gh?.ok && <Faint>{gh?.detail ?? '読んでいます…'}</Faint>}
         {gh?.ok && branch && (
           <Card tone="attention">
             <span style={{ font: `${F.small}px ${MONO}` }}>
@@ -246,7 +246,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
                 onDone()
                 return url
               })}>
-              {busy === 'gh' ? '作成中…' : 'Upstream に PR を作る'}
+              {busy === 'gh' ? '作っています…' : 'Upstream に PR を作る'}
             </Button>
             {stage !== 'readyForUpstream' && (
               <span style={{ fontSize: F.micro, color: C.faint, lineHeight: 1.6 }}>
@@ -258,7 +258,7 @@ export function Forge({ cwd, onDone }: { cwd: string; onDone: () => void }): Rea
 
         {gh?.ok && issues && issues.length > 0 && (
           <>
-            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>元になる Issue</span>
+            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>Issue</span>
             {issues.slice(0, 4).map((i) => (
               <Card key={i.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>

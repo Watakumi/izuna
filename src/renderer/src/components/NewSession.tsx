@@ -155,7 +155,7 @@ export function NewSession({
               フォルダを選ぶ…
             </Button>
           }>
-            {found === null && <Faint>探しています…</Faint>}
+            {found === null && <Faint>読んでいます…</Faint>}
             {found !== null && (
               <>
                 <Input value={query} placeholder={`${found.length} 本から絞り込む`}
@@ -172,7 +172,7 @@ export function NewSession({
                         textAlign: 'right', ...ellipsis }}>{r.group}</span>
                     </div>
                   ))}
-                  {matches.length === 0 && <Faint style={{ padding: '12px 12px' }}>当たるものがありません</Faint>}
+                  {matches.length === 0 && <Faint style={{ padding: '12px 12px' }}>見つかりません</Faint>}
                 </div>
               </>
             )}
@@ -184,7 +184,7 @@ export function NewSession({
             <Section label="続きから" action={
               resumable.length > 4
                 ? <Button size="sm" onClick={() => setShowAllPast((v) => !v)}>
-                    {showAllPast ? '畳む' : `ほか ${resumable.length - 4} 件`}
+                    {showAllPast ? '閉じる' : `ほか ${resumable.length - 4} 件`}
                   </Button>
                 : undefined
             }>
@@ -251,7 +251,7 @@ export function NewSession({
               : 'そのまま開きます。依頼は会話で伝えられます'}
           </span>
           <div style={{ flexGrow: 1 }} />
-          <Button onClick={onCancel} >やめる</Button>
+          <Button onClick={onCancel} >閉じる</Button>
           <Button kind="primary" onClick={() => void start()} disabled={!ready}>
             {busy ? '用意しています…' : '開く'}
           </Button>
