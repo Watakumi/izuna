@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -46,7 +46,7 @@ describe('保管', () => {
   it('**暗号化されていない形では置かない**', async () => {
     const { saveToken } = await import('../src/main/forge/store')
     await saveToken('tok_1234')
-    const raw = require('node:fs').readFileSync(join(dir, 'forge-token.bin'), 'utf8')
+    const raw = readFileSync(join(dir, 'forge-token.bin'), 'utf8')
     expect(raw.startsWith(MARK)).toBe(true)
   })
 
