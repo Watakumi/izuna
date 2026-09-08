@@ -36,6 +36,15 @@ export interface ForgeFacts {
   tokenScopes: string[] | null
   /** トークンで /api/v1/user が通ったか */
   tokenWorks: boolean | null
+  /**
+   * 通らなかったときの**実際の理由**。
+   *
+   * ここが無かったせいで、拒否されたトークンを「古い版で発行された」と
+   * 表示していた。発行し直しても拒否の原因は変わらないので、
+   * **押すたびにトークンが 1 本増えるだけ**だった（Forgejo は API でも CLI でも
+   * 消せないので、溜まる一方になる）。
+   */
+  tokenRejection: { status: number | null; detail: string } | null
   /** 保管はあるのに復号できない（鍵が変わった）。「未設定」とは別の状態 */
   tokenUnreadable: boolean
   /** 登録済み runner の数。Actions が無効なら null */
@@ -138,6 +147,71 @@ export function missingScopes(have: string[] | null): string[] {
 }
 
 /** 事実 → 画面に出す診断。上から順に潰す想定で並べる */
+/**
+ * **発行し直しても増えるだけ**という状態があるので、順番が意味を持つ。
+ *
+ * Forgejo のトークンは Izuna から消せない（API は `auth method not allowed`、
+ * CLI に削除の口が無い。2026-09-08 / 09 に実測）。だから
+ * **「発行し直す」を出してよいのは、発行し直せば直るときだけ**である。
+ *
+ * 以前は「通らなかった」を `scopes: []` で表していて、その枝が
+ * 「通ったか」の枝より前にあった。結果、拒否されたトークンが
+ * 「古い版で発行されたため、権限が分かりません」と出て、
+ * 押しても直らず、押すたびに 1 本増えた。
+ */
+function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
+  const id = 'token'
+  const label = 'トークン'
+
+  if (facts.tokenUnreadable) {
+    return { id, label, level: 'ng',
+      // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
+      detail: '保管したトークンを復号できません。暗号化の鍵が変わっています（keychain の izuna Safe Storage が 2 つあると起きる）',
+      fix: { label: '発行し直す', warning: REISSUE } }
+  }
+
+  // **通らなかったことを最初に見る。** 権限の話はその後でしか意味を持たない
+  if (facts.tokenWorks === false) {
+    const r = facts.tokenRejection
+    // 繋がらないのはトークンのせいではない。**押しても増えるだけ**なので釦を出さない
+    const reissuable = r?.status === 401 || r?.status === 403
+    return { id, label, level: 'ng',
+      detail: r ? `通りませんでした: ${r.detail}` : '通りませんでした',
+      fix: reissuable
+        ? { label: '発行し直す', warning: REISSUE }
+        : null }
+  }
+
+  if (facts.tokenScopes === null) {
+    return { id, label, level: 'ng', detail: '未設定です',
+      fix: { label: 'トークンを発行する',
+        warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します` } }
+  }
+
+  if (facts.tokenScopes.length === 0) {
+    // **分からないことを「足りない」と言わない**
+    return { id, label, level: 'warn',
+      detail: '権限が分かりません（古い版で発行されたか、サーバが返しませんでした）',
+      fix: { label: '発行し直す', warning: REISSUE } }
+  }
+
+  if (lacking.length > 0) {
+    return { id, label, level: 'ng',
+      detail: `スコープが足りません: ${lacking.join(', ')}`,
+      fix: { label: '発行し直す', warning: REISSUE } }
+  }
+
+  return { id, label, level: 'ok', detail: facts.tokenScopes.join(', '), fix: null }
+}
+
+/**
+ * 発行の警告。**増えることを隠さない。**
+ * Izuna は古いトークンを消せないので、押すたびに Forgejo に 1 本残る。
+ */
+const REISSUE =
+  '新しいトークンを作ります。**古いトークンは Izuna からは消せない**ので、' +
+  'Forgejo 側に残ります（設定 → アプリケーション で消せます）'
+
 export function diagnose(facts: ForgeFacts): Check[] {
   const checks: Check[] = []
 
@@ -174,34 +248,7 @@ export function diagnose(facts: ForgeFacts): Check[] {
         fix: { label: '起動する', warning: 'brew services start forgejo を実行します' } })
 
   const lacking = missingScopes(facts.tokenScopes)
-  checks.push(
-    facts.tokenUnreadable
-      ? { id: 'token', label: 'トークン', level: 'ng',
-          // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
-          detail: '保管したトークンを復号できません。暗号化の鍵が変わっています（keychain の izuna Safe Storage が 2 つあると起きる）',
-          fix: { label: '発行し直す', warning: '復号できない保管は捨てて、新しいトークンで置き換えます' } }
-    : facts.tokenScopes === null
-      ? { id: 'token', label: 'トークン', level: 'ng',
-          detail: '未設定です',
-          fix: { label: 'トークンを発行する',
-            warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します` } }
-      : facts.tokenScopes.length === 0
-        ? { id: 'token', label: 'トークン', level: 'warn',
-            // **分からないことを「足りない」と言わない。** 古い版で発行した
-            // トークンは権限の記録を持たないので、判定のしようがない
-            detail: '古い版で発行されたため、権限が分かりません',
-            fix: { label: '発行し直す', warning: '確実に必要な権限を付けて作り直します' } }
-      : lacking.length > 0
-        ? { id: 'token', label: 'トークン', level: 'ng',
-            detail: `スコープが足りません: ${lacking.join(', ')}`,
-            fix: { label: '発行し直す', warning: '足りないスコープを付けて作り直します' } }
-        : facts.tokenWorks === false
-          ? { id: 'token', label: 'トークン', level: 'ng',
-              detail: 'トークンが拒否されました。作り直してください',
-              fix: { label: '発行し直す', warning: '古いトークンは無効になります' } }
-          : { id: 'token', label: 'トークン', level: 'ok',
-              detail: (facts.tokenScopes ?? []).join(', '), fix: null }
-  )
+  checks.push(tokenCheck(facts, lacking))
 
   // Actions は v1 の必須ではない。無くても PR は作れる
   checks.push(cfg?.actionsEnabled

@@ -68,21 +68,41 @@ async function probe(rootUrl: string | null): Promise<boolean> {
   }
 }
 
-/** トークンが通るか、どのスコープを持つかを本人に聞く */
-async function inspectToken(
-  rootUrl: string | null,
-  token: string | null
-): Promise<{ scopes: string[] | null; works: boolean | null }> {
-  if (!token) return { scopes: null, works: null }
-  if (!rootUrl) return { scopes: null, works: null }
+type TokenFacts = {
+  scopes: string[] | null
+  works: boolean | null
+  rejection: { status: number | null; detail: string } | null
+}
+
+/**
+ * トークンが通るか、どのスコープを持つかを本人に聞く。
+ *
+ * **「通らなかった」を `scopes: []` で表さない。** 以前そうしていたせいで、
+ * 診断が拒否を「古い版で発行された」と表示し、発行し直しても直らないのに
+ * 釦だけが出続けた。Forgejo のトークンは Izuna から消せないので、
+ * **押すたびに 1 本増えていた**。理由は理由として返す。
+ */
+async function inspectToken(rootUrl: string | null, token: string | null): Promise<TokenFacts> {
+  if (!token) return { scopes: null, works: null, rejection: null }
+  if (!rootUrl) return { scopes: null, works: null, rejection: null }
   // 経路が危なければ聞きに行かない。分からないまま返す（診断が経路の行を出す）
-  if (!tokenMayTravel(rootUrl)) return { scopes: null, works: null }
+  if (!tokenMayTravel(rootUrl)) return { scopes: null, works: null, rejection: null }
+  const url = new URL('api/v1/user', rootUrl)
   try {
-    const res = await fetch(new URL('api/v1/user', rootUrl), {
+    const res = await fetch(url, {
       headers: { Authorization: `token ${token}` },
       signal: AbortSignal.timeout(4000)
     })
-    if (!res.ok) return { scopes: [], works: false }
+    if (!res.ok) {
+      return { scopes: null, works: false, rejection: {
+        status: res.status,
+        detail: res.status === 401
+          ? `${url.href} が 401 を返しました（トークンが無効か、失効しています）`
+          : res.status === 403
+            ? `${url.href} が 403 を返しました（権限が足りません）`
+            : `${url.href} が ${res.status} ${res.statusText} を返しました`
+      } }
+    }
     /**
      * **サーバが持っている権限を見る。**
      *
@@ -92,17 +112,22 @@ async function inspectToken(
      * 末尾 8 文字で、手元のトークンがどれかを突き合わせる。
      */
     const me = (await res.json()) as { login?: string }
-    if (!me.login) return { scopes: await loadScopes(), works: true }
+    if (!me.login) return { scopes: await loadScopes(), works: true, rejection: null }
     try {
       const tokens = await listTokens(rootUrl, me.login)
       const mine = tokens.find((t) => token.endsWith(t.last8))
-      return { scopes: mine?.scopes ?? (await loadScopes()), works: true }
+      return { scopes: mine?.scopes ?? (await loadScopes()), works: true, rejection: null }
     } catch {
       // 一覧が引けない版もありうる。そのときは記録に落とす
-      return { scopes: await loadScopes(), works: true }
+      return { scopes: await loadScopes(), works: true, rejection: null }
     }
-  } catch {
-    return { scopes: [], works: false }
+  } catch (e) {
+    // **繋がらないのはトークンのせいではない。** status を付けないことで、
+    // 診断は「発行し直す」を出さない（出しても増えるだけだから）
+    return { scopes: null, works: false, rejection: {
+      status: null,
+      detail: `${url.href} に繋がりません（${String(e).replace(/^\w*Error:\s*/, '')}）`
+    } }
   }
 }
 
@@ -110,7 +135,7 @@ export async function gatherFacts(): Promise<ForgeFacts> {
   const binary = await which('forgejo')
   if (!binary) {
     return { binary: null, version: null, config: null, reachable: false,
-      tokenScopes: null, tokenWorks: null, tokenUnreadable: false, runners: null }
+      tokenScopes: null, tokenWorks: null, tokenRejection: null, tokenUnreadable: false, runners: null }
   }
   const [version, config, token] = await Promise.all([
     run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null),
@@ -118,9 +143,10 @@ export async function gatherFacts(): Promise<ForgeFacts> {
     loadToken()
   ])
   const reachable = await probe(config?.rootUrl ?? null)
-  const { scopes, works } = await inspectToken(config?.rootUrl ?? null, token)
+  const { scopes, works, rejection } = await inspectToken(config?.rootUrl ?? null, token)
   const tokenUnreadable = (await tokenStatus()) === 'unreadable'
-  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works, tokenUnreadable, runners: null }
+  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works,
+    tokenRejection: rejection, tokenUnreadable, runners: null }
 }
 
 /**
