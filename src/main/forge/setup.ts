@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { GRANTED_SCOPES, parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
 import { loadScopes, loadToken, saveToken } from './store'
+import { listTokens } from './client'
 import { resolved } from '../config'
 
 const exec = promisify(execFile)
@@ -85,10 +86,24 @@ async function inspectToken(
       signal: AbortSignal.timeout(4000)
     })
     if (!res.ok) return { scopes: [], works: false }
-    // **Forgejo はスコープを返さない。** 分からないものを分かったふりで
-    // 埋めていたので、作り直しても判定が変わらなかった。
-    // 発行したときに記録した権限を見る（古い形式なら null ＝ 分からない）
-    return { scopes: await loadScopes(), works: true }
+    /**
+     * **サーバが持っている権限を見る。**
+     *
+     * 最初は「発行したときに要求した一覧」を返していた。それは記録であって
+     * 事実ではないので、作り直しても判定が変わらなかった。
+     * `GET /users/{u}/tokens` は token 認証で通り、`scopes` を返す（実測）。
+     * 末尾 8 文字で、手元のトークンがどれかを突き合わせる。
+     */
+    const me = (await res.json()) as { login?: string }
+    if (!me.login) return { scopes: await loadScopes(), works: true }
+    try {
+      const tokens = await listTokens(rootUrl, me.login)
+      const mine = tokens.find((t) => token.endsWith(t.last8))
+      return { scopes: mine?.scopes ?? (await loadScopes()), works: true }
+    } catch {
+      // 一覧が引けない版もありうる。そのときは記録に落とす
+      return { scopes: await loadScopes(), works: true }
+    }
   } catch {
     return { scopes: [], works: false }
   }

@@ -3,7 +3,7 @@ import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
 import type { FixId } from '../main/forge/setup'
-import type { ForgejoPull, ForgejoRepo } from '../main/forge/client'
+import type { ForgejoPull, ForgejoRepo, ForgejoToken } from '../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../main/forge/github'
 import type { RemoteRef } from './remote'
 import type { FoundRepo } from '../main/repos'
@@ -59,6 +59,11 @@ export interface IzunaApi {
   forgePulls(owner: string, repo: string): Promise<ForgejoPull[]>
   forgeCreatePull(owner: string, repo: string, input: { title: string; head: string; base: string; body?: string }): Promise<ForgejoPull>
   forgeEnsureRepo(name: string): Promise<ForgejoRepo>
+  /**
+   * トークンの一覧。**消すのはここからできない**（Forgejo が
+   * パスワード認証を要求する）ので、画面は見せるところまでをやる。
+   */
+  forgeTokens(): Promise<{ tokens: ForgejoToken[]; mineLast8: string | null; settingsUrl: string }>
   /** 出口（GitHub · gh に任せる） */
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
@@ -146,7 +151,7 @@ export type TerminalEvent =
  *
  * **口を足したらここを上げること。** 上げ忘れても害はない（検出できないだけ）。
  */
-export const IPC_VERSION = 14
+export const IPC_VERSION = 15
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
@@ -156,6 +161,7 @@ export const CH = {
   forgePulls: 'izuna:forge:pulls',
   forgeCreatePull: 'izuna:forge:create-pull',
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
+  forgeTokens: 'izuna:forge:tokens',
   ghStatus: 'izuna:gh:status',
   ghIssues: 'izuna:gh:issues',
   ghPulls: 'izuna:gh:pulls',

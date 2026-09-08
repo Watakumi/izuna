@@ -13,6 +13,7 @@ const izuna: IzunaApi = {
   forgePulls: (owner, repo) => ipcRenderer.invoke(CH.forgePulls, owner, repo),
   forgeCreatePull: (owner, repo, input) => ipcRenderer.invoke(CH.forgeCreatePull, owner, repo, input),
   forgeEnsureRepo: (name) => ipcRenderer.invoke(CH.forgeEnsureRepo, name),
+  forgeTokens: () => ipcRenderer.invoke(CH.forgeTokens),
   ghStatus: (cwd) => ipcRenderer.invoke(CH.ghStatus, cwd),
   ghIssues: (cwd) => ipcRenderer.invoke(CH.ghIssues, cwd),
   ghPulls: (cwd) => ipcRenderer.invoke(CH.ghPulls, cwd),

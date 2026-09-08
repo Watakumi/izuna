@@ -162,3 +162,30 @@ export async function ensureRepo(rootUrl: string, name: string): Promise<Forgejo
 }
 
 export const forgeHostOf = hostOf
+
+export interface ForgejoToken {
+  id: number
+  name: string
+  /** 実際に与えられている権限。**記録ではなくサーバが持つ事実** */
+  scopes: string[]
+  /** 末尾 8 文字。手元のトークンと突き合わせて「いまのもの」を見分ける */
+  last8: string
+  createdAt: string
+}
+
+/**
+ * トークンの一覧。
+ *
+ * **削除はここからできない。** `DELETE /users/{u}/tokens/{id}` は
+ * `auth method not allowed` を返す（パスワード認証が要る。実測 2026-09-08）。
+ * だから Izuna は**見せるところまで**をやり、消すのは Forgejo の画面に任せる。
+ */
+export async function listTokens(rootUrl: string, user: string): Promise<ForgejoToken[]> {
+  const raw = await call<Array<{ id: number; name: string; scopes: string[] | null; token_last_eight: string; created_at: string }>>(
+    rootUrl, `users/${encodeURIComponent(user)}/tokens`
+  )
+  return raw.map((t) => ({
+    id: t.id, name: t.name, scopes: t.scopes ?? [],
+    last8: t.token_last_eight, createdAt: t.created_at
+  }))
+}

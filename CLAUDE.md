@@ -406,6 +406,21 @@ type PermissionResult =
   「ユーザーの下に作る」ので、どちらの権限も要求される。
   `REQUIRED_SCOPES`（**`src/shared/forge.ts`**）が唯一の定義。
 
+  **権限は記録ではなくサーバに聞く**（2026-09-08 に測り直した）。
+  `GET /users/{u}/tokens` は **token 認証で通り、`scopes` を返す**。
+  手元のトークンとは**末尾 8 文字**（`token_last_eight`）で突き合わせる。
+  最初は「発行時に要求した一覧」を覚えていたが、それは記録であって事実ではない。
+
+  | 操作 | token 認証 |
+  | --- | --- |
+  | 一覧 `GET /users/{u}/tokens` | **200**（`scopes` 付き） |
+  | 削除 `DELETE .../tokens/{id}` | **不可**（`auth method not allowed`＝パスワードが要る） |
+
+  **Izuna は発行するたびに 1 本増やす**（同名は作れないので時刻を混ぜている）。
+  溜めた本人が片付けられないのは筋が通らないので、準備画面に一覧を出し、
+  いま使っているものに印を付け、Forgejo の設定画面へ導く。
+  **消す機能は持たない** —— API が許さないので、持てるふりをしない。
+
   **同じ名前の定数を 2 箇所に作って踏んだ。** 判定側は `shared` の
   `['read:user','write:repository']`、発行側は `main/forge/setup.ts` の
   `['write:user',…]` を見ていて、**判定はその 2 つのハードコードを

@@ -4,7 +4,8 @@ import type { PermissionMode } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import { ensureTeam, teamInstructions, teamPathFor } from '../team'
 import { applyFix, gatherFacts, type FixId } from '../forge/setup'
-import { createPull, ensureRepo, listPulls, listRepos } from '../forge/client'
+import { createPull, ensureRepo, listPulls, listRepos, listTokens, whoami } from '../forge/client'
+import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
 import * as term from '../terminal'
@@ -64,6 +65,15 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   ipcMain.handle(CH.forgeCreatePull, async (_e, owner: string, repo: string, input) =>
     createPull(await forgeRoot(), owner, repo, input))
   ipcMain.handle(CH.forgeEnsureRepo, async (_e, name: string) => ensureRepo(await forgeRoot(), name))
+  ipcMain.handle(CH.forgeTokens, async () => {
+    const root = await forgeRoot()
+    const [user, token] = await Promise.all([whoami(root), loadToken()])
+    return {
+      tokens: await listTokens(root, user),
+      mineLast8: token ? token.slice(-8) : null,
+      settingsUrl: new URL('user/settings/applications', root).toString()
+    }
+  })
 
   ipcMain.handle(CH.ghStatus, (_e, cwd: string) => gh.ghStatus(cwd))
   ipcMain.handle(CH.ghIssues, (_e, cwd: string) => gh.listIssues(cwd))

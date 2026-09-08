@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import type { FixId } from '../../../main/forge/setup'
-import { F, C, MONO } from '../theme'
+import type { ForgejoToken } from '../../../main/forge/client'
+import { F, C, MONO, R, S, ellipsis } from '../theme'
 import { Button } from './ui'
 
 /**
@@ -98,6 +99,8 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
             )
           })}
 
+          <Tokens />
+
           {message && (
             <div style={{ border: `1px solid ${message.bad ? C.red : C.line2}`, borderRadius: 7,
               padding: '12px 12px', fontSize: F.body, color: message.bad ? C.red : C.ink2,
@@ -138,3 +141,68 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   )
 }
 
+/**
+ * Forgejo に溜まったトークンの一覧。
+ *
+ * **Izuna は発行するたびに 1 本増やす。** 同じ名前は作れないので時刻を混ぜており、
+ * 作り直すほど溜まる。溜めた本人が片付けられないのは筋が通らない。
+ *
+ * ただし**ここから消せない** —— `DELETE /users/{u}/tokens/{id}` は
+ * `auth method not allowed` を返す（パスワード認証が要る。実測 2026-09-08）。
+ * だから**見せるところまで**をやり、消すのは Forgejo の画面に任せる。
+ */
+function Tokens(): React.JSX.Element | null {
+  const [data, setData] = useState<{
+    tokens: ForgejoToken[]; mineLast8: string | null; settingsUrl: string
+  } | null>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => { void window.izuna.forgeTokens().then(setData).catch(() => setData(null)) }, [])
+  if (!data || data.tokens.length === 0) return null
+
+  const stale = data.tokens.filter((t) => !t.last8 || !data.mineLast8 || t.last8 !== data.mineLast8)
+
+  return (
+    <div style={{ border: `1px solid ${C.line}`, borderRadius: R.md, overflow: 'hidden' }}>
+      <div onClick={() => setOpen((v) => !v)}
+        style={{ display: 'flex', alignItems: 'center', gap: S.md, padding: `${S.lg}px ${S.lg}px`,
+          cursor: 'pointer' }}>
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
+        <span style={{ fontSize: F.body }}>トークン {data.tokens.length} 本</span>
+        {stale.length > 0 && (
+          <span style={{ fontSize: F.small, color: C.dim2 }}>使っていないもの {stale.length} 本</span>
+        )}
+      </div>
+
+      {open && (
+        <div style={{ borderTop: `1px solid ${C.line}`, padding: S.lg,
+          display: 'flex', flexDirection: 'column', gap: S.md }}>
+          {data.tokens.map((t) => {
+            const mine = data.mineLast8 !== null && t.last8 === data.mineLast8
+            return (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: S.md }}>
+                <span style={{ font: `${F.small}px ${MONO}`, color: mine ? C.teal : C.dim2,
+                  flexShrink: 0, width: 16 }}>{mine ? '●' : '○'}</span>
+                <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>{t.name}</span>
+                <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                  …{t.last8}
+                </span>
+                <div style={{ flexGrow: 1 }} />
+                <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                  {t.scopes.join(' ')}
+                </span>
+              </div>
+            )
+          })}
+          <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.6 }}>
+            ● がいま使っているもの。消すのは Forgejo の画面から（API はパスワード認証を要求します）
+          </span>
+          <a href={data.settingsUrl} target="_blank" rel="noreferrer"
+            style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}>
+            {data.settingsUrl}
+          </a>
+        </div>
+      )}
+    </div>
+  )
+}
