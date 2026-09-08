@@ -42,7 +42,9 @@ describe('pre-push', () => {
   })
 
   it('prepare が hooksPath を設定する', () => {
-    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
+    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>
+    }
     expect(pkg.scripts.prepare).toContain('core.hooksPath .githooks')
   })
 })
@@ -60,7 +62,8 @@ describe('コミットの門', () => {
 
   it('コミット以外の呼び出しでは何もせず 0 で返る', () => {
     const r = spawnSync('node', [join(ROOT, 'scripts', 'commit-gate.mjs')], {
-      input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'ls' } }), encoding: 'utf8'
+      input: JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'ls' } }),
+      encoding: 'utf8'
     })
     expect(r.status).toBe(0)
   })

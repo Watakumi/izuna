@@ -8,17 +8,32 @@ afterEach(cleanup)
 
 /** エージェントの問いに人が答える（docs/NIMBALYST.md §3 の 2） */
 const request = {
-  id: 'p1', toolName: 'AskUserQuestion',
-  input: { questions: [
-    { question: 'どれにする？', header: '選択', options: [{ label: 'A', description: '速い' }, { label: 'B' }] },
-    { question: '要るもの', options: [{ label: 'x' }, { label: 'y' }], multiSelect: true }
-  ] }
+  id: 'p1',
+  toolName: 'AskUserQuestion',
+  input: {
+    questions: [
+      {
+        question: 'どれにする？',
+        header: '選択',
+        options: [{ label: 'A', description: '速い' }, { label: 'B' }]
+      },
+      { question: '要るもの', options: [{ label: 'x' }, { label: 'y' }], multiSelect: true }
+    ]
+  }
 }
 
 const mount = (): { answers: unknown[]; denied: number } => {
   const got = { answers: [] as unknown[], denied: 0 }
-  render(<PermissionBar request={request} onAllow={() => {}} onDeny={() => { got.denied++ }}
-    onAnswer={(a) => got.answers.push(a)} />)
+  render(
+    <PermissionBar
+      request={request}
+      onAllow={() => {}}
+      onDeny={() => {
+        got.denied++
+      }}
+      onAnswer={(a) => got.answers.push(a)}
+    />
+  )
   return got
 }
 
@@ -39,7 +54,7 @@ describe('問いの受け皿', () => {
     fireEvent.click(screen.getByText('x'))
     expect(send.disabled).toBe(false)
     fireEvent.click(send)
-    expect(got.answers).toEqual([{ 'どれにする？': ['A'], '要るもの': ['x'] }])
+    expect(got.answers).toEqual([{ 'どれにする？': ['A'], 要るもの: ['x'] }])
   })
 
   it('単一選択は押し直せる。複数選択は足し引きできる', () => {
@@ -50,7 +65,7 @@ describe('問いの受け皿', () => {
     fireEvent.click(screen.getByText('y'))
     fireEvent.click(screen.getByText('x'))
     fireEvent.click(screen.getByText('答える'))
-    expect(got.answers[0]).toEqual({ 'どれにする？': ['B'], '要るもの': ['y'] })
+    expect(got.answers[0]).toEqual({ 'どれにする？': ['B'], 要るもの: ['y'] })
   })
 
   it('**選択肢に無い答えも書ける**（無いと近いものを選んで嘘をつくことになる）', () => {
@@ -59,7 +74,7 @@ describe('問いの受け皿', () => {
     fireEvent.change(first, { target: { value: 'C にする' } })
     fireEvent.change(second, { target: { value: 'z' } })
     fireEvent.click(screen.getByText('答える'))
-    expect(got.answers[0]).toEqual({ 'どれにする？': ['C にする'], '要るもの': ['z'] })
+    expect(got.answers[0]).toEqual({ 'どれにする？': ['C にする'], 要るもの: ['z'] })
   })
 
   it('答えないこともできる', () => {
@@ -69,8 +84,14 @@ describe('問いの受け皿', () => {
   })
 
   it('形が違えば、ふつうの許可として描く', () => {
-    render(<PermissionBar request={{ id: 'p2', toolName: 'Bash', input: { command: 'ls' } }}
-      onAllow={() => {}} onDeny={() => {}} onAnswer={() => {}} />)
+    render(
+      <PermissionBar
+        request={{ id: 'p2', toolName: 'Bash', input: { command: 'ls' } }}
+        onAllow={() => {}}
+        onDeny={() => {}}
+        onAnswer={() => {}}
+      />
+    )
     expect(screen.getByText('許可')).toBeTruthy()
   })
 })

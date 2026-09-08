@@ -34,13 +34,20 @@ export function questionsOf(toolName: string, input: unknown): Question[] | null
   if (!Array.isArray(raw) || raw.length === 0) return null
   const out: Question[] = []
   for (const q of raw) {
-    const o = q as { question?: unknown; header?: unknown; options?: unknown; multiSelect?: unknown }
+    const o = q as {
+      question?: unknown
+      header?: unknown
+      options?: unknown
+      multiSelect?: unknown
+    }
     const question = str(o?.question)
     if (!question) return null
     const options = Array.isArray(o.options)
       ? o.options.flatMap((x) => {
           const label = str((x as { label?: unknown })?.label)
-          return label ? [{ label, description: str((x as { description?: unknown }).description) }] : []
+          return label
+            ? [{ label, description: str((x as { description?: unknown }).description) }]
+            : []
         })
       : []
     out.push({ question, header: str(o.header), options, multiSelect: o.multiSelect === true })
@@ -57,7 +64,10 @@ export function answered(questions: Question[], answers: Record<string, string[]
  * CLI に返す形。元の入力に `answers` を足す。複数選択は `, ` で繋ぐ
  * （CLI が複数の答えをそう受けている前提。未検証）。
  */
-export function answerInput(input: unknown, answers: Record<string, string[]>): Record<string, unknown> {
+export function answerInput(
+  input: unknown,
+  answers: Record<string, string[]>
+): Record<string, unknown> {
   const base = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
   const joined: Record<string, string> = {}
   for (const [q, a] of Object.entries(answers)) {
