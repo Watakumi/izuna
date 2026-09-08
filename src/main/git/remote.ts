@@ -1,8 +1,6 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
 import type { CommitContext } from '../../shared/commit'
-import { loginShellEnv } from '../claude/locate'
+import { run } from '../exec'
 import { resolved } from '../config'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -11,20 +9,10 @@ import { loadToken } from '../forge/store'
 import { whoami } from '../forge/client'
 import { tokenMayTravel, transportRefusal } from '../../shared/forge'
 
-const exec = promisify(execFile)
-
 /** remote の操作（段5）。解釈は `shared/remote.ts` が持つ */
 
-async function git(cwd: string, args: string[], extra: NodeJS.ProcessEnv = {}): Promise<string> {
-  const env = { ...(await loginShellEnv()), ...extra }
-  try {
-    const { stdout } = await exec('git', args, { cwd, env, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 })
-    return stdout
-  } catch (err) {
-    const e = err as { stderr?: string; message?: string }
-    throw new Error((e.stderr || e.message || String(err)).trim())
-  }
-}
+const git = (cwd: string, args: string[], extra: NodeJS.ProcessEnv = {}): Promise<string> =>
+  run('git', args, { cwd, env: extra })
 
 /**
  * sandbox（Forgejo）へ渡す資格情報。

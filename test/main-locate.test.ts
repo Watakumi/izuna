@@ -119,3 +119,21 @@ describe('ログインシェルの環境', () => {
     expect(Object.keys(await loginShellEnv()).length).toBeGreaterThan(0)
   })
 })
+
+describe('環境は一度取ったら覚える（§27）', () => {
+  it('**二度目はシェルを起こさない**（git を呼ぶたびに .zshrc を評価していた）', async () => {
+    out = ['PATH=/a\0HOME=/h\0', 'PATH=/b\0']
+    const { loginShellEnv } = await load()
+    expect((await loginShellEnv()).PATH).toBe('/a')
+    expect((await loginShellEnv()).PATH).toBe('/a')
+    expect(runs.filter((r) => r.includes('env -0'))).toHaveLength(1)
+  })
+
+  it('取り直せば新しいものになる', async () => {
+    out = ['PATH=/a\0', 'PATH=/b\0']
+    const { loginShellEnv, refreshLoginShellEnv } = await load()
+    await loginShellEnv()
+    expect((await refreshLoginShellEnv()).PATH).toBe('/b')
+    expect((await loginShellEnv()).PATH).toBe('/b')
+  })
+})

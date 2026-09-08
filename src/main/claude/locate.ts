@@ -43,11 +43,28 @@ export async function locateClaude(): Promise<string> {
   )
 }
 
+let cachedEnv: Promise<NodeJS.ProcessEnv> | null = null
+
 /**
  * ログインシェルの環境変数一式を取り出す。
  * claude 自身が git や node を呼ぶので、PATH だけ足しても足りない。
+ *
+ * **一度取ったら覚える。** `-ilc` は `.zshrc` を毎回評価するので、
+ * git を 1 回呼ぶたびにシェルを起こしていた（8 か所から、0.13 秒ずつ）。
+ * rc を書き換えたあとは `refreshLoginShellEnv()` で取り直す（セッションの起動時）。
  */
-export async function loginShellEnv(): Promise<NodeJS.ProcessEnv> {
+export function loginShellEnv(): Promise<NodeJS.ProcessEnv> {
+  cachedEnv ??= readLoginShellEnv()
+  return cachedEnv
+}
+
+/** 取り直す。人が rc を直したあとに新しいセッションを起こすときに呼ぶ */
+export function refreshLoginShellEnv(): Promise<NodeJS.ProcessEnv> {
+  cachedEnv = readLoginShellEnv()
+  return cachedEnv
+}
+
+async function readLoginShellEnv(): Promise<NodeJS.ProcessEnv> {
   const shell = process.env.SHELL ?? '/bin/zsh'
   try {
     // 区切りに NUL を使い、値に改行が含まれても壊れないようにする

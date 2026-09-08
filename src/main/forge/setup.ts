@@ -1,14 +1,11 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { readFile, writeFile } from 'node:fs/promises'
+import { run as exec0 } from '../exec'
 import { join } from 'node:path'
 import { BOT_USER, GRANTED_SCOPES, parseAppIni, tokenMayTravel, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
 import { loadScopes, loadToken, saveToken } from './store'
 import { listTokens } from './client'
 import { resolved } from '../config'
-
-const exec = promisify(execFile)
 
 /**
  * Forgejo の環境を調べ、押されたら直す（段5 の入口）。
@@ -21,10 +18,9 @@ const exec = promisify(execFile)
 
 
 
+/** forgejo / brew の出力は末尾の改行を落として使う */
 async function run(cmd: string, args: string[]): Promise<string> {
-  const env = await loginShellEnv()
-  const { stdout } = await exec(cmd, args, { env, timeout: 60_000, maxBuffer: 4 * 1024 * 1024 })
-  return stdout.trim()
+  return (await exec0(cmd, args, { timeoutMs: 60_000, maxBuffer: 4 * 1024 * 1024 })).trim()
 }
 
 async function which(cmd: string): Promise<string | null> {
@@ -33,9 +29,8 @@ async function which(cmd: string): Promise<string | null> {
   } catch {
     // command はシェル組み込みなので execFile では動かない。ログインシェル経由で聞く
     try {
-      const env = await loginShellEnv()
-      const { stdout } = await exec(env.SHELL ?? '/bin/zsh', ['-ilc', `command -v ${cmd}`], { env, timeout: 8000 })
-      return stdout.trim() || null
+      const shell = (await loginShellEnv()).SHELL ?? '/bin/zsh'
+      return (await exec0(shell, ['-ilc', `command -v ${cmd}`], { timeoutMs: 8000 })).trim() || null
     } catch {
       return null
     }

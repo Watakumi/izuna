@@ -28,7 +28,9 @@ let hangOnReturn = false
 
 vi.mock('../src/main/claude/locate', () => ({
   locateClaude: async () => '/opt/claude',
-  loginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' })
+  loginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' }),
+  // 起動時は取り直す（人が rc を直すのは新しいセッションを起こす前）
+  refreshLoginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' })
 }))
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({

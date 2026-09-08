@@ -1,11 +1,7 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { realpathSync } from 'node:fs'
 import { basename } from 'node:path'
 import { parseWorktrees, canRemove, type Worktree } from '../../shared/worktree'
-import { loginShellEnv } from '../claude/locate'
-
-const exec = promisify(execFile)
+import { run } from '../exec'
 
 /**
  * git worktree を実際に操作する。
@@ -14,17 +10,8 @@ const exec = promisify(execFile)
  * この分け方のおかげで、並列の要である検査に git も実リポジトリも要らない。
  */
 
-async function git(cwd: string, args: string[]): Promise<string> {
-  const env = await loginShellEnv()
-  try {
-    const { stdout } = await exec('git', args, { cwd, env, maxBuffer: 8 * 1024 * 1024 })
-    return stdout
-  } catch (err) {
-    // git の言い分をそのまま人に見せる。握りつぶすと原因が分からなくなる
-    const e = err as { stderr?: string; message?: string }
-    throw new Error((e.stderr || e.message || String(err)).trim())
-    }
-}
+// git の言い分はそのまま人に見せる（`main/exec.ts`）。握りつぶすと原因が分からなくなる
+const git = (cwd: string, args: string[]): Promise<string> => run('git', args, { cwd })
 
 
 /** cwd を含むリポジトリの本体。worktree の中から呼んでも本体を返す */

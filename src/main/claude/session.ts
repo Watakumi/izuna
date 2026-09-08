@@ -15,7 +15,7 @@ import {
 } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import type { Attachment } from '../../shared/image'
-import { locateClaude, loginShellEnv } from './locate'
+import { locateClaude, refreshLoginShellEnv } from './locate'
 
 /**
  * claude との 1 会話。
@@ -155,9 +155,10 @@ export class ClaudeSession extends EventEmitter<Events> {
 
     // Finder 起動の Electron は PATH を継承しない。ログインシェルから解く。
     // env を渡しても keychain 経由の OAuth はそのまま効く（API キーには落ちない）。
+    // **ここで取り直す。** 人が rc を直すのは、新しいセッションを起こす前である
     const [pathToClaudeCodeExecutable, env] = await Promise.all([
       locateClaude(),
-      loginShellEnv()
+      refreshLoginShellEnv()
     ])
 
     this.#query = query({

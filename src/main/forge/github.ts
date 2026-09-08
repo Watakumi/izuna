@@ -1,8 +1,4 @@
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
-import { loginShellEnv } from '../claude/locate'
-
-const exec = promisify(execFile)
+import { run } from '../exec'
 
 /**
  * GitHub 側（段5 の出口）。
@@ -32,17 +28,8 @@ export interface GitHubPull {
   isDraft: boolean
 }
 
-async function gh(cwd: string, args: string[]): Promise<string> {
-  const env = await loginShellEnv()
-  try {
-    const { stdout } = await exec('gh', args, { cwd, env, timeout: 30_000, maxBuffer: 8 * 1024 * 1024 })
-    return stdout
-  } catch (err) {
-    const e = err as { stderr?: string; message?: string }
-    // gh の言い分をそのまま見せる。握りつぶすと原因が分からなくなる
-    throw new Error((e.stderr || e.message || String(err)).trim())
-  }
-}
+// gh の言い分はそのまま見せる（`main/exec.ts`）。握りつぶすと原因が分からなくなる
+const gh = (cwd: string, args: string[]): Promise<string> => run('gh', args, { cwd, timeoutMs: 30_000 })
 
 export async function listIssues(cwd: string, limit = 30): Promise<GitHubIssue[]> {
   const out = await gh(cwd, [
