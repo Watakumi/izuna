@@ -17,6 +17,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
   2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直した。
   次は v1 の 7 手を通しで実機確認（docs/GOAL.md）と、`docs/NIMBALYST.md` §3 の 7 件
 - **`pnpm verify` は緑**（929件）。壊したら直してから進むこと
+- **失敗の記録は [.claude/agent-mistakes.md](.claude/agent-mistakes.md)。作業を始める前に読む**
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
 ---
@@ -176,4 +177,6 @@ pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが�
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
    新しい節を足すなら番号は続きから（いまの最後は §28）。既存の番号は変えない。
-4. **`pnpm verify` を通す。**
+4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
+   `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
+5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。
