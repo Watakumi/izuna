@@ -117,8 +117,23 @@ const toPull = (p: RawPull): ForgejoPull => ({
   createdAt: p.created_at
 })
 
+/**
+ * open な PR の一覧。
+ *
+ * **中身の無いリポジトリは 404 を返す**（2026-09-08 実測。リポジトリ自体は 200、
+ * `/branches` も 200 なのに `/pulls` だけ 404）。作った直後の sandbox が
+ * まさにその状態なので、画面を開くたびに例外が飛んでいた。
+ *
+ * **コミットが 1 つも無ければ PR は存在しえない。** 404 は異常ではなく
+ * 「まだ無い」なので、空で返す。**それ以外の失敗は握りつぶさない。**
+ */
 export async function listPulls(rootUrl: string, owner: string, repo: string): Promise<ForgejoPull[]> {
-  return (await call<RawPull[]>(rootUrl, `repos/${owner}/${repo}/pulls?state=open&limit=50`)).map(toPull)
+  try {
+    return (await call<RawPull[]>(rootUrl, `repos/${owner}/${repo}/pulls?state=open&limit=50`)).map(toPull)
+  } catch (e) {
+    if (e instanceof ForgeError && e.status === 404) return []
+    throw e
+  }
 }
 
 export async function createPull(
