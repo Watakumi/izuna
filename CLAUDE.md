@@ -2141,9 +2141,51 @@ postinstall を electron / esbuild / node-pty に限定、更新機構は無い�
 
 ### やっていないこと
 
-- `register.ts` の駆動部（ループ・起床・レビュー依頼）を検査できる場所に出すこと。
-  4 本の Map を 1 つの record にする作り直しで、330 行が検査対象外のまま
-- renderer の単体検査。`Files` / `Board` / `Markdown` は props だけの純粋な部品なので安く書ける
+- （`register.ts` の駆動部と renderer の単体検査は §28 でやった）
 - lint。エラー 28、警告 1590 で `verify` に入っていない。prettier を守るか外すかは書き手が決めること
 - 握りつぶした例外 57 か所の仕分け
 - 使われていない 9 つの口（`listWakeups` ほか。起床の予約は UI がまるごと無い）
+
+---
+
+## 28. 測っていない場所を減らす（2026-09-08）
+
+カバレッジは行 97.8% だったが、**測っていた範囲**が全体の 6 割だった。
+`src/renderer` の 3,762 行は対象外で、`register.ts` の 330 行は「登録だけ」の建前で除外されていた。
+建前に反して、ループの反復・起床の配送・レビュー依頼の組み立てがその中にあった。
+
+### 駆動部を `main/hub.ts` に出した
+
+`SessionHub` が走っているセッションを **1 件 1 record**（session・共有フォルダ・cwd・ループ）で持つ。
+以前は同じ id で引く Map が 4 本あり、片方だけ消して片方が残る形だった。
+`register.ts` は口を関数に繋ぐ表だけになり、`Handlers` の型が
+**口の数だけ手があること**を型検査に見させる（1 つ欠けても余っても落ちる）。
+
+`test/main-hub.test.ts` は claude・git・関所を差し替え、ループと予約は本物を回す。
+見ているのは、反復の依頼が `auto-continuation` で送られること、結果が返ると次へ進み
+上限で止まること、人が止めれば次の反復に入らないこと、起床が `scheduled-trigger` で届き
+無いセッションには送らないこと、全部止めるのが上限で必ず返ること。
+
+### renderer を jsdom で描く
+
+`@testing-library/react` と `jsdom` を入れ、`test/renderer/` に置いた。
+ファイル先頭の `@vitest-environment jsdom` で切り替えるので、他の検査は node のまま。
+描いたのは `Markdown`（mermaid は差し替え）・`Files`・`Board`・`Sidebar`・`Conversation`・
+`ToolBlock`・`PermissionBar`・`Attachments`。どれも props だけで決まる部品で、9 割を超えた。
+
+**`render` は検査ごとに `cleanup` すること。** vitest は自動で片付けないので、
+残った要素を次の検査が見つけて「複数ある」と落ちる（実際に 3 件落ちた）。
+
+### 線は範囲ごとに引く
+
+全体で 1 本にすると、renderer を足した瞬間に main の線が下がる。
+`vitest.config.ts` の thresholds は glob ごとになった。**shared と main は以前の線のまま**
+（行 97、分岐 84）。renderer の部品は測った床（行 30、分岐 28）から始める ——
+`Forge` / `ForgeSetup` / `NewSession` / `Inspector` / `Loop` / `Palette` / `TaskPanel` /
+`TerminalPane` / `Worktrees` / `ModeSwitch` は画面全体を持っていて、まだ描いていない。
+床は下がったら落ちる線であって、目標ではない。
+
+### まだ測っていないもの
+
+- 上の 10 部品と `App.tsx`（387 行）、`useSessions.ts`（163 行）
+- `main/index.ts`（Electron の起動そのもの。実機で起動して見る）
