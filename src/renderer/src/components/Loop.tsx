@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Panel } from '../useSessions'
-import { C, F, MONO, R, S } from '../theme'
-import { Button, Faint, Meter, NumberInput } from './ui'
+import { until, WAKEUP_STATE_LABEL, type Wakeup } from '../../../shared/wakeup'
+import { C, ellipsis, F, MONO, R, S } from '../theme'
+import { Button, Faint, Input, Meter, NumberInput, Reload } from './ui'
 
 /**
  * 自律ループ（§23）。
@@ -93,6 +94,95 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
         </Button>
       )}
 
+      {failure && <span style={{ fontSize: F.small, color: C.red }}>{failure}</span>}
+
+      <Wakeups panel={panel} />
+    </div>
+  )
+}
+
+/**
+ * 時刻を決めて送る予約（§23、docs/NIMBALYST.md §7 の 2）。
+ *
+ * 口は前からあったが、画面から呼ばれていなかった。予約する・消す・過ぎたものを
+ * いま送る、の 3 つ。**過ぎたものは勝手に走らない**（`shared/wakeup.ts`）ので、
+ * ここで人が送る。覚えの無いものは送らないと書いて見せる。
+ */
+function Wakeups({ panel }: { panel: Panel }): React.JSX.Element {
+  // null は「まだ読んでいない」。読むまで何も断定しない
+  const [list, setList] = useState<Wakeup[] | null>(null)
+  const [minutes, setMinutes] = useState(30)
+  const [prompt, setPrompt] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [failure, setFailure] = useState<string | null>(null)
+  // 待ち時間の基準。描くたびに取ると純粋でなくなるので、読んだときの時刻を持つ
+  const [now, setNow] = useState(0)
+
+  const load = useCallback((): void => {
+    void window.izuna.listWakeups()
+      .then((all) => { setNow(Date.now()); setList(all.filter((w) => w.sessionId === panel.id)) })
+      .catch(() => setList([]))
+  }, [panel.id])
+  // 起きたら一覧も変わる。会話に知らせが足されたときに読み直す
+  useEffect(load, [load, panel.transcript.items.length])
+
+  const act = async (work: () => Promise<unknown>): Promise<void> => {
+    setBusy(true)
+    setFailure(null)
+    try {
+      await work()
+      load()
+    } catch (e) {
+      setFailure(String(e).replace(/^Error:\s*/, ''))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S.md, borderTop: `1px solid ${C.line}`, paddingTop: S.lg }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}>時刻を決めて送る</span>
+        <Reload onClick={load} busy={busy} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: S.sm, fontSize: F.body }}>
+        <NumberInput value={minutes} min={1} max={60 * 24 * 7} onChange={setMinutes} disabled={busy || panel.ended} />
+        分後に
+      </div>
+      <Input placeholder="時刻が来たら送る依頼" value={prompt} disabled={busy || panel.ended}
+        onChange={(e) => setPrompt(e.target.value)} />
+      <Button kind="primary" disabled={busy || panel.ended || prompt.trim() === ''}
+        onClick={() => void act(async () => {
+          await window.izuna.addWakeup({ id: panel.id, minutes, prompt: prompt.trim() })
+          setPrompt('')
+        })}>
+        予約する
+      </Button>
+
+      {list === null && <Faint>読んでいます…</Faint>}
+      {list?.length === 0 && <Faint>予約はありません</Faint>}
+      {(list ?? []).map((w) => (
+        <div key={w.id} style={{ display: 'flex', flexDirection: 'column', gap: S.xs,
+          padding: `${S.sm}px ${S.md}px`, border: `1px solid ${w.state === 'overdue' ? C.amberLine : C.line}`,
+          borderRadius: R.md }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: S.md }}>
+            <span style={{ font: `${F.micro}px ${MONO}`, color: w.state === 'overdue' ? C.amber : C.dim2, flexShrink: 0 }}>
+              {WAKEUP_STATE_LABEL[w.state]}{w.state === 'pending' ? ` · ${until(w.fireAt, now)}` : ''}
+            </span>
+            <span style={{ fontSize: F.small, color: C.ink2, flexGrow: 1, ...ellipsis }}>{w.prompt}</span>
+          </div>
+          {(w.state === 'pending' || w.state === 'overdue') && (
+            <div style={{ display: 'flex', gap: S.sm }}>
+              {w.state === 'overdue' && !panel.ended && (
+                <Button size="sm" kind="primary" disabled={busy}
+                  onClick={() => void act(() => window.izuna.fireWakeup(w.id))}>いま送る</Button>
+              )}
+              <Button size="sm" disabled={busy}
+                onClick={() => void act(() => window.izuna.removeWakeup(w.id))}>消す</Button>
+            </div>
+          )}
+        </div>
+      ))}
       {failure && <span style={{ fontSize: F.small, color: C.red }}>{failure}</span>}
     </div>
   )

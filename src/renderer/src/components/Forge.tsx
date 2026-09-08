@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ForgejoPull } from '../../../main/forge/client'
+import type { FileDiff } from '../../../shared/diff'
 import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, type RemoteRef } from '../../../shared/remote'
 import { makeCache } from '../remember'
 import { C, F, MONO, S, ellipsis } from '../theme'
 import { Button, Card, Faint, Result } from './ui'
+import { PullDiff } from './PullDiff'
 
 /**
  * 右ペインの「PR」タブ。二段の PR（docs/GOAL.md 柱2）。
@@ -107,6 +109,14 @@ export function Forge({ cwd, sessionId, onDone }: {
 
   useEffect(() => { void load() }, [load])
 
+  const [openPull, setOpenPull] = useState<number | null>(null)
+  // PullDiff は load の同一性で読み直す。番号ごとに 1 つ作って持つ
+  const diffLoader = useCallback(
+    (owner: string, repo: string, index: number) => (): Promise<FileDiff[]> =>
+      window.izuna.forgePullDiff(owner, repo, index),
+    []
+  )
+
   const act = async (key: string, work: () => Promise<string>): Promise<void> => {
     setBusy(key)
     setMsg(null)
@@ -178,11 +188,21 @@ export function Forge({ cwd, sessionId, onDone }: {
 
             {(pulls ?? []).map((p) => (
               <Card key={p.number}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                {/* 押すと差分。柱 2 の「sandbox でまとめて見る」の見る側（docs/NIMBALYST.md §7 の 3） */}
+                <div onClick={() => setOpenPull(openPull === p.number ? null : p.number)}
+                  style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
                   <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
                   <span style={{ fontSize: F.body, ...ellipsis }}>{p.title}</span>
+                  <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                    {openPull === p.number ? '閉じる' : '差分'}
+                  </span>
                 </div>
                 <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
+                {openPull === p.number && sandbox.owner && sandbox.repo && (
+                  <div style={{ marginTop: S.md }}>
+                    <PullDiff load={diffLoader(sandbox.owner, sandbox.repo, p.number)} />
+                  </div>
+                )}
               </Card>
             ))}
 
@@ -241,6 +261,15 @@ export function Forge({ cwd, sessionId, onDone }: {
                 return url
               })}>
               {busy === 'gh' ? '作っています…' : 'Upstream に PR を作る'}
+            </Button>
+            {/* コミット文も会話に頼む。口は前からあったが、釦が無かった（docs/NIMBALYST.md §7 の 2） */}
+            <Button disabled={busy !== null || sessionId === null}
+              onClick={() => void act('commit', async () => {
+                await window.izuna.draftCommitMessage(sessionId!)
+                onDone()
+                return 'いまの会話にコミット文を頼みました'
+              })}>
+              {busy === 'commit' ? '頼んでいます…' : 'コミット文を頼む'}
             </Button>
             {/* **PR を作る前でもレビューは頼める。** 出す前に読むほうが安い */}
             <Button disabled={busy !== null || !bases.upstream || sessionId === null}
