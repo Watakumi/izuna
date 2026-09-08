@@ -1,3 +1,4 @@
+import type { Attachment } from './image'
 import {
   emptyTranscript, appendUserText, applyMessage,
   type TaskRun, type Transcript
@@ -76,6 +77,19 @@ const isHuman = (e: RawEntry): boolean => {
   const c = e.message?.content
   if (!Array.isArray(c)) return true // 文字列そのままは常に発話
   return !c.some((b) => typeof b === 'object' && b !== null && (b as { type?: string }).type === 'tool_result')
+}
+
+/** 貼った画像。**復元でも残す** —— 何を見せたのかが分からないと、返事の意味も分からない */
+const imagesOf = (content: unknown): Attachment[] => {
+  if (!Array.isArray(content)) return []
+  const out: Attachment[] = []
+  for (const b of content) {
+    const src = (b as { type?: string; source?: { type?: string; media_type?: string; data?: string } })
+    if (src?.type !== 'image' || src.source?.type !== 'base64') continue
+    if (typeof src.source.media_type !== 'string' || typeof src.source.data !== 'string') continue
+    out.push({ mediaType: src.source.media_type, data: src.source.data, name: '' })
+  }
+  return out
 }
 
 const textOf = (content: unknown): string | null => {
@@ -268,7 +282,7 @@ export function replay(lines: string[], includeSidechain = false): Transcript {
     // **実行役の記録は全行が sidechain。** そのファイルを読むときは飛ばさない
     if (!e || (e.isSidechain && !includeSidechain)) continue
     if (isHuman(e)) {
-      t = appendUserText(t, textOf(e.message?.content) ?? '', `replay-${n++}`)
+      t = appendUserText(t, textOf(e.message?.content) ?? '', `replay-${n++}`, imagesOf(e.message?.content))
       continue
     }
     if (e.type === 'user' || e.type === 'assistant') {

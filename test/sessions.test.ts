@@ -198,6 +198,22 @@ describe('会話の復元', () => {
     expect(replay(withSide).items).toHaveLength(2)
   })
 
+  it('**貼った画像は復元でも残る**（何を見せたのかが分からないと返事の意味も分からない）', () => {
+    const withImage = [
+      j({ type: 'user', origin: { kind: 'human' }, message: { content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } },
+        { type: 'text', text: 'この画面のここ' }
+      ] } })
+    ]
+    const item = replay(withImage).items[0]
+    expect(item).toMatchObject({ kind: 'user', text: 'この画面のここ',
+      images: [{ mediaType: 'image/png', data: 'iVBORw0KGgo=' }] })
+  })
+
+  it('画像の無い発話には images を付けない（形を増やさない）', () => {
+    expect(replay(lines).items[0]).not.toHaveProperty('images')
+  })
+
   it('復元した時点では走っていない（走ったままだと止められない画面になる）', () => {
     expect(replay(lines).running).toBe(false)
     expect(replay(lines).draft).toBeNull()
