@@ -312,7 +312,7 @@ function App(): React.JSX.Element {
               borderLeft: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
                 {(['info', 'files', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
-                  <div key={t} onClick={() => setTab(t)} style={{
+                  <div key={t} data-tab={t} aria-selected={tab === t} onClick={() => setTab(t)} style={{
                     flexGrow: 1, textAlign: 'center', padding: '8px 0', cursor: 'pointer',
                     fontSize: F.small, color: tab === t ? C.ink : C.dim2,
                     borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`

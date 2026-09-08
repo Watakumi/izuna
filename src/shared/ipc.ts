@@ -92,6 +92,8 @@ export interface IzunaApi {
   isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
   /** その remote のブランチ一覧。作業ブランチが GitHub に漏れていないかを見る（`shared/remote.ts`） */
   remoteHeads(cwd: string, remote: string): Promise<string[]>
+  /** remote のブランチを消す。7 手目「sandbox の作業ブランチは捨てる」。main / master は拒む */
+  deleteRemoteBranch(cwd: string, remote: string, branch: string): Promise<string>
   push(cwd: string, remote: string, branch: string): Promise<string>
   commitsSince(cwd: string, base: string): Promise<string[]>
 
@@ -219,6 +221,7 @@ export const CH = {
   defaultBranch: 'izuna:git:default-branch',
   isPushed: 'izuna:git:is-pushed',
   remoteHeads: 'izuna:git:remote-heads',
+  deleteRemoteBranch: 'izuna:git:delete-remote-branch',
   push: 'izuna:git:push',
   commitsSince: 'izuna:git:commits',
   openTerminal: 'izuna:term:open',

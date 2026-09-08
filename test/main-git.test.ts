@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   commitContext, commitsSince, currentBranch, defaultBranch, ensureSandboxRemote,
-  isPushed, listRemotes, push, remoteHeads
+  deleteRemoteBranch, isPushed, listRemotes, push, remoteHeads
 } from '../src/main/git/remote'
 import {
   listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
@@ -102,6 +102,12 @@ describe('remote', () => {
     expect(await remoteHeads(work, 'いない remote')).toEqual([])
   })
 
+  it('remote のブランチを消す。**main / master は拒む**', async () => {
+    await expect(deleteRemoteBranch(work, 'origin', 'main')).rejects.toThrow(/消しません/)
+    expect(await deleteRemoteBranch(work, 'origin', 'feat')).toContain('消しました')
+    expect(await isPushed(work, 'origin', 'feat')).toBe(false)
+  })
+
   it('base からのコミットを新しい順に返す', async () => {
     const list = await commitsSince(work, 'origin/main')
     expect(list.some((c) => c.includes('最初のコミット'))).toBe(false)
@@ -130,6 +136,22 @@ describe('コミット文の材料', () => {
     const c = await commitContext(outside)
     expect(c.changed).toEqual([])
     expect(c.branch).toBeNull()
+  })
+})
+
+describe('worktree のロック', () => {
+  it('主が死んでいるロックは外して消す。生きているロックは拒む', async () => {
+    const { listWorktrees, removeWorktree } = await import('../src/main/git/worktree')
+    const dir = join(work, '..', 'wt-locked')
+    git(work, 'worktree', 'add', '-q', dir, '-b', 'locked-branch')
+    git(work, 'worktree', 'lock', '--reason', `claude agent x (pid ${process.pid} start now)`, dir)
+    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(false)
+    await expect(removeWorktree(work, dir, true)).rejects.toThrow(/ロック/)
+    git(work, 'worktree', 'unlock', dir)
+    git(work, 'worktree', 'lock', '--reason', 'claude agent x (pid 999999999 start then)', dir)
+    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(true)
+    await removeWorktree(work, dir, true)
+    expect((await listWorktrees(work)).some((w) => w.branch === 'locked-branch')).toBe(false)
   })
 })
 

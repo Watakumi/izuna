@@ -15,10 +15,11 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
   セッションの一覧と resume・画像・mermaid・盤面・自律ループ）。
   2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直し、
-  `docs/NIMBALYST.md` §3 の 7 件を入れた。2026-09-09 に features ページの 3 件（§7）と
-  `pnpm e2e`（§30）を入れた。**次は v1 の 7 手を通しで実機確認**（docs/GOAL.md の測り方に
-  今の状態がある）。Forgejo Actions の状態を読む口は未実装
-- **`pnpm verify` は緑**（1,030件）。壊したら直してから進むこと
+  `docs/NIMBALYST.md` §3 の 7 件を入れた。2026-09-09 に features ページの 3 件（§7）、
+  `pnpm e2e`（§30）、**v1 の 7 手の通し**（`pnpm walk`。§31、`docs/v1-walk/`）を入れた。
+  Actions の状態を読む口・実行役の節目・GitHub への漏れの判定も同日。
+  次は runner を回すかの判断（docs/ACTIONS.md）と、`docs/NIMBALYST.md` §7 の保留 2 件
+- **`pnpm verify` は緑**（1,090件）。壊したら直してから進むこと
 - **失敗の記録は [.claude/agent-mistakes.md](.claude/agent-mistakes.md)。作業を始める前に読む**
 - 最終更新の根拠となった CLI: `claude 2.1.263` / macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
@@ -88,6 +89,8 @@ src/shared/links.ts         外に出してよいリンクの判定（純粋関�
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
+src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
+src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
 src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 盤面 / ループ / PR / ブランチ
 
@@ -96,6 +99,9 @@ scripts/record-fixture.ts   実セッションの NDJSON を fixture として�
 scripts/smoke-session.ts    人が目で見る疎通確認。実 API を呼ぶ
 scripts/smoke-permission.ts 権限承認の握手が成立するかを見る。実 API を呼ぶ
 scripts/shots.ts            実 renderer を作り物の window.izuna で撮る（§22）
+scripts/e2e.ts              本物の Electron を起動して口を叩く（§30）。起動は scripts/lib/electron.ts
+scripts/walk.ts             v1 の 7 手を本物で通し、docs/v1-walk/ に撮る（§31）。実 API を呼ぶ
+scripts/probe-team.ts       実行役 2 つを並走させて hook と worktree を測る（§12）。実 API を呼ぶ
 
 test/docs.test.ts           **文書と実装のズレの門**（§24）
 test/surface.test.ts        renderer に出す面・HTML の注入口・execFile の呼び手の門（§26–27）
@@ -147,7 +153,7 @@ Windows / Linux、複数エージェント対応。
 | --- | --- | --- |
 | `.claude/rules/claude-cli.md` | claude の駆動 | §5, §6, §13, §14 |
 | `.claude/rules/pitfalls.md` | 実装上の罠 | §7 |
-| `.claude/rules/testing.md` | 検査 | §10, §11, §24, §28, §30 |
+| `.claude/rules/testing.md` | 検査 | §10, §11, §24, §28, §30, §31 |
 | `.claude/rules/team.md` | ブレインと実行役 | §12 |
 | `.claude/rules/config.md` | 設定 | §15 |
 | `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29 |
@@ -168,6 +174,7 @@ Windows / Linux、複数エージェント対応。
 pnpm verify     # typecheck + test + カバレッジの線。緑にならないものを完了としない
 pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが要るので verify には入れない
 pnpm e2e        # 本物の Electron を起動して口を叩く（§30）。Forgejo とトークンが要る
+pnpm walk       # v1 の 7 手を本物で通して撮る（§31）。実 API を呼び、GitHub と Forgejo に書く
 ```
 
 線と数え方は `.claude/rules/testing.md`（§10、§28）。
@@ -179,7 +186,7 @@ pnpm e2e        # 本物の Electron を起動して口を叩く（§30）。For
 1. **変えたい挙動を検査で先に書く。** 不変条件に触る変更では、守るものを明示してから直す（§11）。
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
-   新しい節を足すなら番号は続きから（いまの最後は §30）。既存の番号は変えない。
+   新しい節を足すなら番号は続きから（いまの最後は §31）。既存の番号は変えない。
 4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
    `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
 5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。

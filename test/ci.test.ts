@@ -7,8 +7,17 @@ import type { ForgejoRun } from '../src/main/forge/client'
  * **無いのと赤は別。** 回していないブランチを赤く出すと、直す必要の無いものを直しに行く。
  */
 const run = (o: Partial<ForgejoRun>): ForgejoRun => ({
-  id: 1, title: 't', status: 'success', event: 'push', ref: 'refs/heads/feat/x', sha: 'abc1234',
-  htmlUrl: 'http://x/run/1', workflow: 'verify.yml', startedAt: null, stoppedAt: null, ...o
+  id: 1,
+  title: 't',
+  status: 'success',
+  event: 'push',
+  ref: 'refs/heads/feat/x',
+  sha: 'abc1234',
+  htmlUrl: 'http://x/run/1',
+  workflow: 'verify.yml',
+  startedAt: null,
+  stoppedAt: null,
+  ...o
 })
 
 describe('ref の突き合わせ', () => {
@@ -31,7 +40,10 @@ describe('畳み', () => {
   })
 
   it('一番新しいものだけを見る（古い失敗は数えない）', () => {
-    const s = summarizeRuns([run({ id: 1, status: 'failure' }), run({ id: 2, status: 'success' })], 'feat/x')
+    const s = summarizeRuns(
+      [run({ id: 1, status: 'failure' }), run({ id: 2, status: 'success' })],
+      'feat/x'
+    )
     expect(s.level).toBe('ok')
     expect(s.latest?.id).toBe(2)
     expect(s.label).toBe('CI 緑')
@@ -52,6 +64,8 @@ describe('畳み', () => {
   })
 
   it('別のブランチの実行は見ない', () => {
-    expect(summarizeRuns([run({ ref: 'refs/heads/main', status: 'failure' })], 'feat/x').level).toBe('none')
+    expect(
+      summarizeRuns([run({ ref: 'refs/heads/main', status: 'failure' })], 'feat/x').level
+    ).toBe('none')
   })
 })

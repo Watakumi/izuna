@@ -7,8 +7,17 @@ import type { ForgejoRun } from '../../src/main/forge/client'
 afterEach(cleanup)
 
 const run = (o: Partial<ForgejoRun>): ForgejoRun => ({
-  id: 1, title: 't', status: 'success', event: 'push', ref: 'refs/heads/feat/x', sha: 'abcdef0123',
-  htmlUrl: 'http://forge/r/actions/runs/1', workflow: 'verify.yml', startedAt: null, stoppedAt: null, ...o
+  id: 1,
+  title: 't',
+  status: 'success',
+  event: 'push',
+  ref: 'refs/heads/feat/x',
+  sha: 'abcdef0123',
+  htmlUrl: 'http://forge/r/actions/runs/1',
+  workflow: 'verify.yml',
+  startedAt: null,
+  stoppedAt: null,
+  ...o
 })
 
 /** sandbox の PR に付ける CI の札。読むだけ */
@@ -26,7 +35,13 @@ describe('CI の札', () => {
 
   it('あれば一番新しいものの状態を出し、その実行の頁へ繋ぐ', () => {
     const { container } = render(
-      <CiBadge runs={[run({ id: 1, status: 'failure' }), run({ id: 2, status: 'success', htmlUrl: 'http://forge/r/actions/runs/2' })]} ref="feat/x" />
+      <CiBadge
+        runs={[
+          run({ id: 1, status: 'failure' }),
+          run({ id: 2, status: 'success', htmlUrl: 'http://forge/r/actions/runs/2' })
+        ]}
+        ref="feat/x"
+      />
     )
     expect(screen.getByText('CI 緑')).toBeTruthy()
     const a = container.querySelector('a')!

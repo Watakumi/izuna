@@ -11,3 +11,4 @@ test/fixtures/session-full.ndjson
 shots/
 coverage/
 *.tsbuildinfo
+scripts/probe-team*.result.json

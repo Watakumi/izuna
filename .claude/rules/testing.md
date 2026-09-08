@@ -303,3 +303,44 @@ Playwright の `connectOverCDP` で renderer に繋いで `window.izuna` を呼�
 Forgejo の段の材料は **`izuna/izuna-e2e`**（ボットの下。同日に Izuna 自身の口で作った。
 main と feat に 1 コミットずつ、PR !1 は閉じない）。ボットのトークンでは人の下の sandbox が
 見えないので、ボットの下に置いてある。消したら `forgeEnsureRepo` → `push` → `forgeCreatePull` で作り直せる。
+
+---
+
+## 31. v1 の 7 手を通す（2026-09-09）
+
+`pnpm walk`（`scripts/walk.ts`）。本物の Izuna を起動し（`scripts/lib/electron.ts`。§30 と同じ起こし方）、
+**人の役をスクリプトが演じて** 7 手（docs/GOAL.md 完成の定義）を通し、`docs/v1-walk/` に PNG と
+README.md を残す。釦を押す・Issue を選ぶ・依頼を打つ・承認するは画面を操作し、`window.izuna` を
+直接呼ぶのは画面に無い確認（remote のブランチ一覧、PR の存在）だけ。
+
+**実 API を呼び、GitHub と Forgejo に書く。** 使い捨ての `Watakumi/izuna-v1-walk`
+（`~/work/personal/izuna-v1-walk`。Issue #1 は「greet と math に検査を足す」）で回す。
+`--reset` で前回の worktree・作業ブランチ・sandbox のブランチ・共有フォルダ・GitHub の PR を片付ける。
+
+| 手 | 画面でやること | 通ったと言える条件 |
+| --- | --- | --- |
+| 1 | `forgeEnsureRepo` → `ensureSandboxRemote` → 既定ブランチを push | `forgeRepos` で `empty: false` になる（push 直後は 404 の罠。§7） |
+| 2 | 「新しいセッション」→ リポジトリ → Issue の札（`#1`）→「開く」 | 会話の入力欄が出る |
+| 3 | 依頼を打つ（2 つに分けて `Agent` を `isolation: "worktree"` で 2 つ） | 「実行役 … を開きました」が 2 つ、worktree が 2 本 |
+| 4 | 待つ。ブレインが `SendMessage` で追加指示を送り「BRANCH:」で報告する | 「手を止めました」が 4 回以上（起き直した分を含む） |
+| 5 | 出た承認の札を「許可」で押す | 押した数を README に書く |
+| 6 | 「forgejo に push」→「sandbox で PR を作る」→「差分」→ upstream に push →「Upstream に PR を作る」 | 差分が描ける。`ghPulls` に出るブランチの PR がある。漏れの判定が「出ていません」 |
+| 7 | 実行役のブランチを sandbox に push → PR タブの「作業ブランチ」を消す → 「ブランチ」タブを撮る → セッションを閉じる → worktree を消す | worktree が本体だけ、sandbox のブランチが main と出したブランチだけ。**残っていれば落ちる** |
+
+### 通すまでに直したもの
+
+- 区切りの検出。節目の数で待つと、実行役が 5 分かかったときに切れた。**ブレインの報告（印）で待つ**
+- 印は依頼文にも入るので、**送った時点より増えたか**で見る
+- Issue の札を題名で探すと「続きから」の行に当たる。`#<番号>` で探す
+- 「Upstream に PR を作る」を押すと「情報」タブに戻るので、URL は画面ではなく `ghPulls` で確かめる
+- ブレインが共有フォルダへ `cd` したまま `Agent` を起こして失敗した → 申し送りに書いた
+- 出すブランチは回すたびに別名（`issue-1-<MMDDhhmm>`）。sandbox の前回の PR は閉じられないので、同名だと non-fast-forward
+- 走行を途中で殺すと CLI のロックが worktree に残る。`--reset` は unlock してから消す。製品側も pid が死んでいれば外す（§7）
+- 前の Electron が残ると次の走行がそちらに繋がる → `lib/electron.ts` が port を見て断る
+- 通った走行は 251 秒、承認 20 件前後（実行役の Bash / Write / Edit を人の役が許可する）
+
+### 実行役の実測は `scripts/probe-team.ts`
+
+walk の前に、一時リポジトリで実行役 2 つを並走させて測った（`.claude/rules/team.md` §12 の
+2026-09-09 の表）。`--isolation` で `Agent` の `isolation: "worktree"` を使う方式に切り替える。
+結果は `scripts/probe-team*.result.json`（gitignore）。

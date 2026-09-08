@@ -34,6 +34,8 @@ interface Snapshot {
   bases: { sandbox: string | null; upstream: string | null }
   /** upstream に出ている作業ブランチ。無ければ空。読めなければ null */
   leaks: string[] | null
+  /** sandbox にあるブランチ。7 手目で捨てる候補 */
+  sandboxHeads: string[] | null
 }
 const remembered = makeCache<Snapshot>()
 
@@ -64,6 +66,7 @@ export function Forge({ cwd, sessionId, onDone }: {
     seed?.bases ?? { sandbox: null, upstream: null }
   )
   const [leaks, setLeaks] = useState<string[] | null>(seed?.leaks ?? null)
+  const [sandboxHeads, setSandboxHeads] = useState<string[] | null>(seed?.sandboxHeads ?? null)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ text: string; bad: boolean; at: number } | null>(null)
 
@@ -92,6 +95,7 @@ export function Forge({ cwd, sessionId, onDone }: {
     let nextGhPulls: GitHubPull[] = []
     let nextCommits: string[] = []
     let nextLeaks: string[] | null = null
+    let nextSandboxHeads: string[] | null = null
 
     if (sb && br) {
       nextPushed = await window.izuna.isPushed(cwd, sb.name, br).catch(() => false)
@@ -116,19 +120,23 @@ export function Forge({ cwd, sessionId, onDone }: {
 
     // **GitHub に出るのは二段目だけ**（GOAL.md 測り方）。sandbox にある作業ブランチが
     // upstream にもあれば、漏れている。いま出すブランチと既定ブランチは除く
-    if (sb && up) {
+    if (sb) {
       const [upHeads, sbHeads] = await Promise.all([
-        window.izuna.remoteHeads(cwd, up.name).catch(() => []),
+        up ? window.izuna.remoteHeads(cwd, up.name).catch(() => []) : Promise.resolve([]),
         window.izuna.remoteHeads(cwd, sb.name).catch(() => [])
       ])
-      nextLeaks = upstreamLeaks({ upstreamHeads: upHeads, sandboxHeads: sbHeads, allowed: [upstreamBase, br] })
-      setLeaks(nextLeaks)
+      nextSandboxHeads = sbHeads
+      setSandboxHeads(sbHeads)
+      if (up) {
+        nextLeaks = upstreamLeaks({ upstreamHeads: upHeads, sandboxHeads: sbHeads, allowed: [upstreamBase, br] })
+        setLeaks(nextLeaks)
+      }
     }
 
     remembered.set(cwd, {
       remotes: rs, branch: br, gh: status, pushed: nextPushed, pulls: nextPulls, runs: nextRuns,
       issues: nextIssues, ghPulls: nextGhPulls, commits: nextCommits,
-      bases: { sandbox: sandboxBase, upstream: upstreamBase }, leaks: nextLeaks
+      bases: { sandbox: sandboxBase, upstream: upstreamBase }, leaks: nextLeaks, sandboxHeads: nextSandboxHeads
     })
   }, [cwd])
 
@@ -156,6 +164,10 @@ export function Forge({ cwd, sessionId, onDone }: {
   }
 
   const { sandbox, upstream } = rolesIn(remotes ?? [])
+  // 7 手目で捨てる候補。既定ブランチといまのブランチは出さない。
+  // sandbox の既定ブランチが取れないこと（remote の HEAD が無い）があるので、main / master も名指しで外す
+  const keep = new Set([bases.sandbox, bases.upstream, branch, 'main', 'master'])
+  const workBranches = (sandboxHeads ?? []).filter((b) => !keep.has(b))
 
   /**
    * 見出しの右には**事実を置く**。
@@ -233,6 +245,23 @@ export function Forge({ cwd, sessionId, onDone }: {
                 )}
               </Card>
             ))}
+
+            {/* 7 手目: 作業ブランチは sandbox で捨てる */}
+            {workBranches.length > 0 && (
+              <>
+                <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>作業ブランチ</span>
+                {workBranches.map((b) => (
+                  <div key={b} style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
+                    <span style={{ font: `${F.small}px ${MONO}`, ...ellipsis }}>{b}</span>
+                    <div style={{ flexGrow: 1 }} />
+                    <Button size="sm" disabled={busy !== null}
+                      onClick={() => void act(`del:${b}`, () => window.izuna.deleteRemoteBranch(cwd, sandbox.name, b))}>
+                      {busy === `del:${b}` ? '消しています…' : '消す'}
+                    </Button>
+                  </div>
+                ))}
+              </>
+            )}
 
             {pulls?.length === 0 && pushed && branch && (
               <Button disabled={busy !== null} kind="primary"

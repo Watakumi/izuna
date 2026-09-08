@@ -17,6 +17,12 @@ export interface Worktree {
   bare: boolean
   /** ロックされていれば理由（理由なしのときは空文字） */
   locked: string | null
+  /**
+   * ロックの主がもういない（理由に書かれた pid が死んでいる）。main が `git worktree list` を
+   * 読むときに埋める。CLI は実行役の worktree を `claude agent … (pid N …)` でロックし、
+   * 終わっても外さないことがある（2026-09-09 に踏んだ）。生きているロックは今までどおり拒む
+   */
+  lockStale?: boolean
   /** 掃除対象なら理由 */
   prunable: string | null
   /** 最初のエントリが本体。消してはいけない */
@@ -124,8 +130,14 @@ export function slugifyBranch(branch: string): string {
 /** 消してよいか。本体とロック中は消させない */
 export function canRemove(worktree: Worktree): string | null {
   if (worktree.main) return '本体の作業ツリーは消せません'
-  if (worktree.locked !== null) {
+  if (worktree.locked !== null && !worktree.lockStale) {
     return worktree.locked ? `ロックされています: ${worktree.locked}` : 'ロックされています'
   }
   return null
+}
+
+/** ロックの理由に書かれた pid。CLI は `claude agent <id> (pid 4221 start …)` の形で書く */
+export function lockPid(reason: string | null): number | null {
+  const m = /\(pid (\d+)\b/.exec(reason ?? '')
+  return m ? Number(m[1]) : null
 }

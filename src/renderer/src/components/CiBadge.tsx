@@ -16,21 +16,49 @@ const DOT: Record<CiLevel, string> = {
   none: C.faint
 }
 
-export function CiBadge({ runs, ref }: { runs: ForgejoRun[] | null; ref: string | null }): React.JSX.Element {
+export function CiBadge({
+  runs,
+  ref
+}: {
+  runs: ForgejoRun[] | null
+  ref: string | null
+}): React.JSX.Element {
   // 読み終わるまでは何も断定しない
   if (runs === null) {
     return <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>CI …</span>
   }
   const s = summarizeRuns(runs, ref)
   const body = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: S.xs, font: `${F.micro}px ${MONO}`, color: C.dim2 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: DOT[s.level], flexShrink: 0 }} />
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: S.xs,
+        font: `${F.micro}px ${MONO}`,
+        color: C.dim2
+      }}
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: DOT[s.level],
+          flexShrink: 0
+        }}
+      />
       {s.label}
     </span>
   )
   return s.latest ? (
-    <a href={s.latest.htmlUrl} title={`${s.latest.workflow} · ${s.latest.sha.slice(0, 7)}`} style={{ textDecoration: 'none' }}>
+    <a
+      href={s.latest.htmlUrl}
+      title={`${s.latest.workflow} · ${s.latest.sha.slice(0, 7)}`}
+      style={{ textDecoration: 'none' }}
+    >
       {body}
     </a>
-  ) : body
+  ) : (
+    body
+  )
 }

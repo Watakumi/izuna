@@ -98,6 +98,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     isPushed: async (cwd, r, b) => remote.isPushed(cwd, r, b, await forgeRoot().catch(() => null)),
     push: async (cwd, r, b) => remote.push(cwd, r, b, await forgeRoot().catch(() => null)),
     remoteHeads: async (cwd, r) => remote.remoteHeads(cwd, r, await forgeRoot().catch(() => null)),
+    deleteRemoteBranch: async (cwd, r, b) => remote.deleteRemoteBranch(cwd, r, b, await forgeRoot().catch(() => null)),
     commitsSince: (cwd, base) => remote.commitsSince(cwd, base),
 
     openTerminal: (input) => term.openTerminal(getWindow, CH.terminalEvent, input),

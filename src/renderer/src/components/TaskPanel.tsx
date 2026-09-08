@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Block, TaskRun } from '../../../shared/transcript'
 import { F, C, MONO, ellipsis } from '../theme'
 import { ToolBlock } from './ToolBlock'
+import { Markdown } from './Markdown'
 
 /**
  * Agentの一覧（段4）。
@@ -10,6 +11,9 @@ import { ToolBlock } from './ToolBlock'
  * 並列で一番効く事故**なので、混ぜて表示しない。
  *
  * 承認はここには出さない。Agentの要求でも人間に上げる（GOAL.md 完成の定義5）。
+ *
+ * **実行役の文も本文と同じ markdown で描く。** 生の文字列で出していたので、
+ * `` `code` `` や `**強調**` がそのまま見えていた（2026-09-09 に指摘された）。
  */
 const STATUS: Record<TaskRun['status'], { label: string; color: string }> = {
   running: { label: '実行中', color: C.teal },
@@ -55,18 +59,19 @@ function One({ task }: { task: TaskRun }): React.JSX.Element {
         <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {task.prompt && (
             <div style={{ borderLeft: `2px solid ${C.line2}`, paddingLeft: 12, fontSize: F.body,
-              color: C.dim2, lineHeight: 1.65 }}>{task.prompt}</div>
+              color: C.dim2, lineHeight: 1.65 }}><Markdown text={task.prompt} /></div>
           )}
           {tools.map((b, i) => <ToolBlock key={i} block={b} />)}
           {texts.map((b, i) => (
-            <div key={i} style={{ color: C.ink2, fontSize: F.body, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-              {b.text}
+            <div key={i} style={{ color: C.ink2, fontSize: F.body, lineHeight: 1.75 }}>
+              <Markdown text={b.text} />
             </div>
           ))}
-          {task.summary && task.status !== 'running' && (
+          {/* 要約は最後の発話と同じ文で来ることが多い。同じなら二重に出さない */}
+          {task.summary && task.status !== 'running' && task.summary.trim() !== texts.at(-1)?.text.trim() && (
             <div style={{ background: C.code, borderRadius: 7, padding: '12px 12px',
-              fontSize: F.body, color: C.dim, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-              {task.summary}
+              fontSize: F.body, color: C.dim, lineHeight: 1.7 }}>
+              <Markdown text={task.summary} />
             </div>
           )}
         </div>

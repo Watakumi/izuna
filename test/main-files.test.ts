@@ -92,4 +92,15 @@ describe('共有フォルダ', () => {
     expect(text).toContain('/x/teams/t')
     expect(text).toMatch(/summaries|tasks/)
   })
+
+  it('実行役の起こし方を書く（isolation: "worktree"、EnterWorktree は呼ばせない、追加指示は SendMessage）', async () => {
+    const { teamInstructions } = await import('../src/main/team')
+    const text = teamInstructions('/x/teams/t')
+    expect(text).toContain('isolation: "worktree"')
+    expect(text).toContain('run_in_background: true')
+    expect(text).toMatch(/EnterWorktree.*呼ばせない/)
+    expect(text).toContain('SendMessage')
+    expect(text).toContain('.claude/worktrees/agent-')
+    expect(text).toMatch(/cd.*しないでください/)
+  })
 })

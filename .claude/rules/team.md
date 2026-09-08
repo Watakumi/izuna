@@ -260,12 +260,31 @@ Izuna が Issue から作る必要がなくなった。
 足して読んでいた。** しかも誤った結論を §12 に書いたまま、それと矛盾する
 UI（人に worktree を選ばせる）を作り、指摘されるまで 2 回その画面を直した。
 
+### 実測（2026-09-09）—— 実行役 2 つを並走させ、hook と追加指示を測った
+
+`scripts/probe-team.ts`（実 API を呼ぶ。`--isolation` で方式を切り替える）。一時リポジトリで
+ブレインを起こし、背景の実行役 2 つ（alpha / beta）にファイルを書かせて commit させた。
+結果は `scripts/probe-team*.result.json`（gitignore）に残る。
+
+| 問い | 答え |
+| --- | --- |
+| 実行役（サブエージェント）は `EnterWorktree` を呼べるか | **呼べない。** 「EnterWorktree cannot create a worktree from a subagent with a cwd override … spawn an Agent with `cwd` set to it」と「cwd is the repository root, not an isolated worktree」の 2 通りで拒まれ、実行役は `git worktree add` に逃げた |
+| ではどう分けるか | **`Agent` ツールに `isolation: "worktree"` を付ける。** worktree は `<project>/.claude/worktrees/agent-<id>`、ブランチは `worktree-agent-<id>`。2 つとも自分の worktree に commit し、**本体の作業ツリーと HEAD は無傷**だった |
+| SDK の `hooks` で鳴るもの | **`SubagentStart` と `SubagentStop`** だけ（`agent_id` 付き。Stop は `last_assistant_message` を持つ）。`TeammateIdle` / `TaskCreated` / `TaskCompleted` は鳴らなかった（サブエージェントはチームメイトではない） |
+| **`WorktreeCreate` を張るとどうなるか** | **Agent の起動が失敗する。** あれは観察の口ではなく作成を委ねる口で、hook が `worktreePath` を返さないと「hook succeeded but returned no worktree path」で spawn ごと落ちる。Izuna は張らない（`shared/teammate.ts`） |
+| 実行役の承認は誰に来るか | host（人）に `agentID` 付きで来る（2026-09-07 の再確認） |
+| 実行役が止まったあと、ブレインは続けるか | 続ける。`task_notification` が届き、ブレインが目を覚まして返事をする |
+| ブレイン → 実行役の追加指示は届くか | **届く。** `SendMessage` に実行役の id を渡すと「Resuming agent …」で止まっていた実行役が起き、追記して commit し、また `SubagentStop` が鳴った。同じセッションの中なので `crossSessionInbound` の保留は起きない |
+
+**決めたこと。** `teamInstructions` に起こし方を書く（`isolation: "worktree"`、`EnterWorktree` は
+呼ばせない、追加指示は `SendMessage`）。hook は `SubagentStart` / `SubagentStop` を主に見て、
+`TeammateIdle` / `Task*` は鳴れば拾う。鳴らないものを画面に約束しない。
+
 ### まだ測っていないこと
 
-- `TeammateIdle` hook が Agent SDK 経由でも発火するか（今回の probe では
-  `Agent` ツールが同期で完了したため、idle に入る場面が無かった）
-- `SendMessage` の宛先解決（`ListAgents` が返す名前の形）
+- `TeammateIdle` / `TaskCreated` / `TaskCompleted` が鳴る条件（`teammateMode` で
+  チームメイトとして起こしたとき、と思われる。Izuna はサブエージェント方式なので急がない）
 - `teammateMode` ごとの挙動差
 - ~~agent isolation を有効にしたときの worktree の実際の置き場所~~ → **測った（上）**
-- `EnterWorktree` を実行役（サブエージェント）が呼べるか。
-  上の実測はブレイン本体が呼んだもの
+- ~~`EnterWorktree` を実行役（サブエージェント）が呼べるか~~ → **呼べない（2026-09-09）**
+- ~~`SendMessage` の宛先解決~~ → **実行役の id で届く（2026-09-09）**

@@ -355,11 +355,11 @@ describe('実行役の節目（§12）', () => {
   const hooksOf = (s: FakeSession): Record<string, Array<{ hooks: Hook[] }>> =>
     s.options.hooks as Record<string, Array<{ hooks: Hook[] }>>
 
-  it('SubagentStart / SubagentStop / TeammateIdle / Task / Worktree の hook を張る', async () => {
+  it('SubagentStart / SubagentStop / TeammateIdle / Task の hook を張る。**Worktree は張らない**', async () => {
     const { hub } = await load()
     await hub.start({ cwd: '/w' })
     expect(Object.keys(hooksOf(FakeSession.created[0])).sort()).toEqual(
-      ['SubagentStart', 'SubagentStop', 'TaskCompleted', 'TaskCreated', 'TeammateIdle', 'WorktreeCreate', 'WorktreeRemove']
+      ['SubagentStart', 'SubagentStop', 'TaskCompleted', 'TaskCreated', 'TeammateIdle']
     )
   })
 

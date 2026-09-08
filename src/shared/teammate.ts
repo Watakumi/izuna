@@ -11,8 +11,7 @@ import type { LogEntry } from './team'
  * **どの hook が実際に鳴るかは実測で決める**（`scripts/probe-team.ts`）。
  * 鳴らないものを画面に約束しない。
  */
-export type TeammateKind =
-  | 'start' | 'stop' | 'idle' | 'taskCreated' | 'taskCompleted' | 'worktreeCreated' | 'worktreeRemoved'
+export type TeammateKind = 'start' | 'stop' | 'idle' | 'taskCreated' | 'taskCompleted'
 
 export interface TeammateEvent {
   kind: TeammateKind
@@ -28,31 +27,59 @@ export interface TeammateEvent {
 /** `query()` に渡す hook の表 */
 export type TeammateHooks = Partial<{ [K in HookEvent]: HookCallbackMatcher[] }>
 
-/** 張る hook。**`hooks` の鍵はこれから導く**（手で並べない。§27 と同じ理屈） */
+/**
+ * 張る hook。**`hooks` の鍵はこれから導く**（手で並べない。§27 と同じ理屈）。
+ *
+ * **`WorktreeCreate` / `WorktreeRemove` は張らない**（2026-09-09 に `scripts/probe-team.ts` で踏んだ）。
+ * あれは観察の口ではなく**作成を委ねる口**で、張ると CLI は hook が返す `worktreePath` を待つ。
+ * 返さなければ「hook succeeded but returned no worktree path」で **Agent の起動ごと失敗する**。
+ * Izuna は worktree を作らない（§12）ので、見るだけなら `git worktree list` で足りる。
+ */
 export const TEAMMATE_HOOKS: readonly HookEvent[] = [
-  'SubagentStart', 'SubagentStop', 'TeammateIdle', 'TaskCreated', 'TaskCompleted', 'WorktreeCreate', 'WorktreeRemove'
+  'SubagentStart',
+  'SubagentStop',
+  'TeammateIdle',
+  'TaskCreated',
+  'TaskCompleted'
 ]
 
 const oneLine = (s: string | undefined, max = 160): string =>
   (s ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 
 /** hook の入力を節目に変える。関係の無い hook なら null */
-export function teammateEventOf(input: HookInput, at = new Date().toISOString()): TeammateEvent | null {
+export function teammateEventOf(
+  input: HookInput,
+  at = new Date().toISOString()
+): TeammateEvent | null {
   switch (input.hook_event_name) {
     case 'SubagentStart':
       return { kind: 'start', agent: input.agent_id, target: input.agent_type, note: '', at }
     case 'SubagentStop':
-      return { kind: 'stop', agent: input.agent_id, target: input.agent_type, note: oneLine(input.last_assistant_message), at }
+      return {
+        kind: 'stop',
+        agent: input.agent_id,
+        target: input.agent_type,
+        note: oneLine(input.last_assistant_message),
+        at
+      }
     case 'TeammateIdle':
       return { kind: 'idle', agent: input.teammate_name, target: '', note: '', at }
     case 'TaskCreated':
-      return { kind: 'taskCreated', agent: input.teammate_name ?? '-', target: `${input.task_id} ${input.task_subject}`.trim(), note: '', at }
+      return {
+        kind: 'taskCreated',
+        agent: input.teammate_name ?? '-',
+        target: `${input.task_id} ${input.task_subject}`.trim(),
+        note: '',
+        at
+      }
     case 'TaskCompleted':
-      return { kind: 'taskCompleted', agent: input.teammate_name ?? '-', target: `${input.task_id} ${input.task_subject}`.trim(), note: '', at }
-    case 'WorktreeCreate':
-      return { kind: 'worktreeCreated', agent: input.agent_id ?? '-', target: input.name, note: '', at }
-    case 'WorktreeRemove':
-      return { kind: 'worktreeRemoved', agent: input.agent_id ?? '-', target: input.worktree_path, note: '', at }
+      return {
+        kind: 'taskCompleted',
+        agent: input.teammate_name ?? '-',
+        target: `${input.task_id} ${input.task_subject}`.trim(),
+        note: '',
+        at
+      }
     default:
       return null
   }
@@ -77,12 +104,15 @@ export function logEntryOf(e: TeammateEvent): LogEntry {
 export function teammateNotice(e: TeammateEvent): string {
   const who = e.agent === '-' ? '実行役' : `実行役 ${e.agent.slice(0, 8)}`
   switch (e.kind) {
-    case 'start': return `${who} を開きました（${e.target}）`
-    case 'stop': return `${who} が手を止めました${e.note ? `: ${e.note}` : ''}`
-    case 'idle': return `${who} が手を止めました（ブレインが読む番）`
-    case 'taskCreated': return `作業単位を作りました: ${e.target}`
-    case 'taskCompleted': return `作業単位が終わりました: ${e.target}`
-    case 'worktreeCreated': return `worktree を作りました: ${e.target}`
-    case 'worktreeRemoved': return `worktree を消しました: ${e.target}`
+    case 'start':
+      return `${who} を開きました（${e.target}）`
+    case 'stop':
+      return `${who} が手を止めました${e.note ? `: ${e.note}` : ''}`
+    case 'idle':
+      return `${who} が手を止めました（ブレインが読む番）`
+    case 'taskCreated':
+      return `作業単位を作りました: ${e.target}`
+    case 'taskCompleted':
+      return `作業単位が終わりました: ${e.target}`
   }
 }
