@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -26,8 +26,10 @@ vi.mock('../src/main/claude/locate', () => ({
 vi.mock('../src/main/forge/store', () => ({
   loadToken: async () => 'tok_abcdefgh',
   loadScopes: async () => null,
+  tokenStatus: async () => tokenState,
   saveToken: async (token: string, scopes?: readonly string[]) => { saved = { token, scopes } }
 }))
+let tokenState: 'none' | 'unreadable' | 'ok' = 'ok'
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
     const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
@@ -54,6 +56,7 @@ const load = async (): Promise<typeof import('../src/main/forge/setup')> => {
 }
 
 beforeEach(() => {
+  tokenState = 'ok'
   work = mkdtempSync(join(tmpdir(), 'izuna-f-'))
   runs = []
   out = []
@@ -104,6 +107,14 @@ describe('調べる', () => {
     }))
     const { gatherFacts } = await load()
     expect((await gatherFacts()).tokenScopes).toEqual(['write:user', 'write:repository'])
+  })
+
+  it('保管はあるのに復号できなければ、そう言う（「未設定」ではない）', async () => {
+    setUp()
+    tokenState = 'unreadable'
+    out = ['/opt/homebrew/bin/forgejo', 'version 16.0.3']
+    const { gatherFacts } = await load()
+    expect((await gatherFacts()).tokenUnreadable).toBe(true)
   })
 
   it('トークンが拒まれたら works: false', async () => {

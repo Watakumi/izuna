@@ -157,6 +157,16 @@ describe('起動', () => {
   })
 })
 
+describe('名前', () => {
+  it('通知に出す名前は作業ディレクトリの末尾。終わっても消えない', async () => {
+    const { hub, id, s } = await started()
+    expect(hub.labelOf(id)).toBe('repo')
+    s.emit('done')
+    expect(hub.labelOf(id)).toBe('repo')
+    expect(hub.labelOf('0123456789')).toBe('01234567')
+  })
+})
+
 describe('会話の口', () => {
   it('send は画像と出どころをそのまま渡す', async () => {
     const { hub, id, s } = await started()

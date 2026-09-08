@@ -84,3 +84,20 @@ const isWakeup = (v: unknown): v is Wakeup => {
     typeof w.cwd === 'string' && typeof w.createdAt === 'number' &&
     ['pending', 'overdue', 'fired', 'rejected'].includes(w.state)
 }
+
+/** 人に見せる待ち時間。画面の予約一覧が使う（2026-09-09 に戻した。§7 のとき使い手が無くて消していた） */
+export function until(fireAt: number, now: number): string {
+  const m = Math.round((fireAt - now) / 60_000)
+  if (m <= 0) return 'まもなく'
+  if (m < 60) return `${m}分後`
+  if (m < 60 * 24) return `${Math.round(m / 60)}時間後`
+  return `${Math.round(m / 60 / 24)}日後`
+}
+
+/** 状態を人の言葉で。`rejected` は Izuna が作った覚えの無いもの（§26） */
+export const WAKEUP_STATE_LABEL: Record<WakeupState, string> = {
+  pending: '予約中',
+  overdue: '過ぎている',
+  fired: '送った',
+  rejected: '覚えが無い（送らない）'
+}

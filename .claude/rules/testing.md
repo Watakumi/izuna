@@ -280,3 +280,26 @@ Izuna は library ではない。**外部の利用者という逃げ道が無い
 ### 失敗の記録（2026-09-08、docs/NIMBALYST.md §3 の 4）
 
 `.claude/agent-mistakes.md`。日付、何が起きたか、根本原因、教訓。作業を始める前に読む。
+
+---
+
+## 30. 本物を起動する検査（2026-09-09）
+
+`pnpm e2e`（`scripts/e2e.ts`）。素の `electron .` を `--remote-debugging-port` 付きで起動し、
+Playwright の `connectOverCDP` で renderer に繋いで `window.izuna` を呼び、返りの形を見る。
+**`_electron.launch` は使わない** —— `--use-mock-keychain` を付けるので `safeStorage` が本物と
+違う鍵になる（§7 の罠）。**`shots.ts` は main を動かさない**ので、
+「口を足したのに handler が無い」「Forgejo の口のパスが違う」はここでしか分からない。
+
+見るもの: 窓の題、preload の面が `CH` と一致すること、`IPC_VERSION` が main と renderer で同じこと、
+読むだけの口 12 個が返ること、Forgejo に届いてトークンが通るなら `forgeRepos` → `forgePulls` →
+`forgePullDiff` が差分を返すこと、画面の見出しと釦。**書く口は呼ばない**（push、worktree の削除、セッションの起動）。
+
+要るものが多い（組み立て済みのアプリ、Forgejo、保管したトークン）ので `verify` には入れない。
+初回（2026-09-09）は `_electron.launch` で書いていて、Forgejo の段が「トークンが読めない」で skip した。
+それを本物の不具合と誤診した（§7）。**ハーネスが「本物が壊れている」と言ったら、ハーネス無しで
+再現してから人に言うこと。** 素の起動に直したあとはトークンが通り、Forgejo の段に入る。
+
+Forgejo の段の材料は **`izuna/izuna-e2e`**（ボットの下。同日に Izuna 自身の口で作った。
+main と feat に 1 コミットずつ、PR !1 は閉じない）。ボットのトークンでは人の下の sandbox が
+見えないので、ボットの下に置いてある。消したら `forgeEnsureRepo` → `push` → `forgeCreatePull` で作り直せる。

@@ -181,6 +181,43 @@ paths:
   403 の文面は**足りない権限を名指しする** —— 「スコープが足りません」
   だけでは、何をどう直すのか分からない。
 
+  **「発行し直す」を出してよいのは、発行し直せば直るときだけ**（2026-09-09）。
+  消せない以上、外れた釦は**トークンを増やすだけ**である。
+
+  `inspectToken` は「通らなかった」を `tokenScopes: []` で表していて、
+  その枝が「通ったか」の枝より**前**にあった。結果:
+
+  | 実際 | 画面 | 押すと |
+  | --- | --- | --- |
+  | 401 で拒否された | 「古い版で発行されたため、権限が分かりません」 | 1 本増え、表示は変わらない |
+  | 繋がらない | 同上 | 1 本増え、表示は変わらない |
+
+  「トークンが拒否されました」という文面は**一度も出なかった** ——
+  `[]` は必ず `works: false` と一緒に返るのに、`[]` の枝が先にあったからである。
+  死んだ枝と嘘の文面が同時にあった。
+
+  いまは `tokenRejection: { status, detail }` で理由を返し、判定は
+  **通ったかを最初に見る**。釦を出すのは **401 / 403 のときだけ** ——
+  繋がらないのはトークンのせいではないので、押しても増えるだけである。
+  警告文には「古いトークンは Izuna からは消せない」と書く。
+
 - **pnpm 11 は `allowBuilds` を埋めるまで install を拒む**。`pnpm-workspace.yaml` が
   雛形のまま(`set this to true or false`)だったので、`pnpm verify` が**起動もしなかった**。
   `package.json` の `pnpm.onlyBuiltDependencies` は 11 では読まれない(移設先が workspace 側)
+
+- **Playwright の `_electron.launch` は `--use-mock-keychain` を付ける**（2026-09-09 に踏んだ。
+  `playwright-core/lib/server/electron/loader.js`）。`safeStorage` が本物と違う鍵で動くので、
+  保管したトークンが「復号できない」になる。**本物のアプリは壊れていない。** これを「鍵が変わった」と
+  誤診し、人にトークンの発行し直しを頼んでしまった。keychain に `izuna Safe Storage` が
+  `izuna` と `izuna Key` の 2 項目あるのは事実だが、原因ではなかった。
+  `scripts/e2e.ts` は素の `electron .` を起動して CDP で繋ぐ。`tokenStatus()` の「無い」と
+  「読めない」の区別はそのまま残す —— 本物の起動で「読めない」が出たら、そのときは鍵が違う。
+- **push の直後に PR を作ると 404 になる**（2026-09-09 に踏んだ）。`empty` のリポジトリに
+  main と feat を push し、続けて `POST /pulls` したら「The target couldn't be found」。
+  数秒置いて同じ呼び出しをしたら通った（`empty: false` になっていた）。push の後始末が
+  API の状態に反映されるまで間がある。`forgeCreatePull` を push の直後に呼ぶ画面は無いが、
+  作るなら `forgeRepos` で `empty` が落ちるのを待つこと。
+- **ボットのトークンでは、人の下にある sandbox が見えない**（2026-09-09、`pnpm e2e` で実測。
+  `forgeRepos()` が 0 件）。§26 でトークンを `izuna` のものにしたので、`watakumi/…` の
+  リポジトリは Forgejo で `izuna` を協力者に足すまで一覧に出ない。新しく作るものは
+  `ensureRepo` がボットの下に作る。

@@ -50,6 +50,8 @@ const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   reachable: true,
   tokenScopes: ['write:user', 'write:repository'],
   tokenWorks: true,
+  tokenUnreadable: false,
+  tokenRejection: null,
   runners: null,
   ...over
 })
@@ -211,5 +213,85 @@ describe('トークンを載せてよい経路（§26）', () => {
 
   it('ループバックなら経路の行は出ない', () => {
     expect(diagnose(facts({})).find((x) => x.id === 'transport')).toBeUndefined()
+  })
+})
+
+describe('保管はあるのに読めない（2026-09-09、E2E で見つけた）', () => {
+  it('**「未設定」と言わない。** 鍵が変わったと言い、発行し直す釦を出す', () => {
+    const c = find(facts({ tokenScopes: null, tokenWorks: null, tokenUnreadable: true }), 'token')
+    expect(c.level).toBe('ng')
+    expect(c.detail).toContain('復号できません')
+    expect(c.detail).not.toContain('未設定')
+    expect(c.fix?.label).toBe('発行し直す')
+  })
+})
+
+/**
+ * 押しても直らないのに釦を出すと、**トークンだけが増える**（2026-09-09）。
+ *
+ * Forgejo のトークンは Izuna から消せない —— `DELETE /users/{u}/tokens/{id}` は
+ * `auth method not allowed` を返し、`forgejo admin user` に削除の口が無い。
+ *
+ * 以前は「通らなかった」を `tokenScopes: []` で表していて、その枝が
+ * 「通ったか」の枝より**前**にあった。だから拒否されたトークンが
+ * 「古い版で発行されたため、権限が分かりません」と出て、
+ * 発行し直しても原因は変わらず、押すたびに 1 本ずつ溜まった。
+ */
+describe('発行し直して直るときだけ、発行し直すと言う', () => {
+  const rejected = (status: number | null, detail = 'x'): ForgeFacts =>
+    facts({ tokenScopes: null, tokenWorks: false, tokenRejection: { status, detail } })
+
+  it('**通らなかったことを、権限の話より先に言う**', () => {
+    const c = find(rejected(401, 'http://localhost:4649/api/v1/user が 401 を返しました'), 'token')
+    expect(c.detail).toContain('通りませんでした')
+    expect(c.detail).not.toContain('古い版')
+    expect(c.detail).not.toContain('未設定')
+  })
+
+  it('401 は作り直せば直るので、釦を出す', () => {
+    expect(find(rejected(401), 'token').fix?.label).toBe('発行し直す')
+  })
+
+  it('403 も作り直せば直る', () => {
+    expect(find(rejected(403), 'token').fix?.label).toBe('発行し直す')
+  })
+
+  it('**繋がらないときは釦を出さない**（押しても増えるだけ）', () => {
+    const c = find(rejected(null, 'localhost:4649 に繋がりません'), 'token')
+    expect(c.fix).toBeNull()
+    expect(c.detail).toContain('繋がりません')
+  })
+
+  it('500 も釦を出さない（サーバ側の話で、トークンのせいではない）', () => {
+    expect(find(rejected(500), 'token').fix).toBeNull()
+  })
+
+  it('理由が無くても「通りませんでした」とは言う', () => {
+    const c = find(facts({ tokenScopes: null, tokenWorks: false, tokenRejection: null }), 'token')
+    expect(c.detail).toBe('通りませんでした')
+    expect(c.fix).toBeNull()
+  })
+
+  it('**増えることを警告に書く**（消せないので）', () => {
+    const w = find(facts({ tokenScopes: ['write:repository'] }), 'token').fix?.warning ?? ''
+    expect(w).toContain('消せない')
+    expect(w).toContain('残ります')
+  })
+
+  it('通っていれば、これまでどおり権限を見る', () => {
+    expect(find(facts({ tokenScopes: ['write:repository'] }), 'token').detail)
+      .toContain('write:user')
+    expect(find(facts({}), 'token').level).toBe('ok')
+  })
+
+  it('未設定は「発行する」であって「発行し直す」ではない', () => {
+    const c = find(facts({ tokenScopes: null, tokenWorks: null }), 'token')
+    expect(c.fix?.label).toBe('トークンを発行する')
+  })
+
+  it('権限が分からないときは「足りない」と言わない', () => {
+    const c = find(facts({ tokenScopes: [] }), 'token')
+    expect(c.level).toBe('warn')
+    expect(c.detail).toContain('分かりません')
   })
 })

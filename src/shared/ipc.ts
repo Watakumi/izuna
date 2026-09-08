@@ -14,6 +14,7 @@ import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
 import type { Transcript } from './transcript'
 import type { Attachment } from './image'
+import type { FileDiff } from './diff'
 import type { TeamBoard } from '../main/team'
 import type { TaskStatus } from './team'
 
@@ -62,6 +63,8 @@ export interface IzunaApi {
   /** 作業場（Forgejo） */
   forgeRepos(): Promise<ForgejoRepo[]>
   forgePulls(owner: string, repo: string): Promise<ForgejoPull[]>
+  /** PR の差分。読むのは main（`shared/patch.ts`）で、renderer には形にしてから渡す */
+  forgePullDiff(owner: string, repo: string, index: number): Promise<FileDiff[]>
   forgeCreatePull(owner: string, repo: string, input: { title: string; head: string; base: string; body?: string }): Promise<ForgejoPull>
   forgeEnsureRepo(name: string): Promise<ForgejoRepo>
   /**
@@ -191,6 +194,7 @@ export const CH = {
   forgeFix: 'izuna:forge:fix',
   forgeRepos: 'izuna:forge:repos',
   forgePulls: 'izuna:forge:pulls',
+  forgePullDiff: 'izuna:forge:pull-diff',
   forgeCreatePull: 'izuna:forge:create-pull',
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
   forgeTokens: 'izuna:forge:tokens',

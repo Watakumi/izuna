@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -46,7 +46,7 @@ describe('保管', () => {
   it('**暗号化されていない形では置かない**', async () => {
     const { saveToken } = await import('../src/main/forge/store')
     await saveToken('tok_1234')
-    const raw = require('node:fs').readFileSync(join(dir, 'forge-token.bin'), 'utf8')
+    const raw = readFileSync(join(dir, 'forge-token.bin'), 'utf8')
     expect(raw.startsWith(MARK)).toBe(true)
   })
 
@@ -83,5 +83,34 @@ describe('権限の記録', () => {
     const { loadToken, loadScopes } = await import('../src/main/forge/store')
     expect(await loadToken()).toBe('tok_old')
     expect(await loadScopes()).toBeNull()
+  })
+})
+
+describe('無いのと、読めないのを分ける（2026-09-09）', () => {
+  it('ファイルが無ければ none', async () => {
+    const { tokenStatus } = await import('../src/main/forge/store')
+    expect(await tokenStatus()).toBe('none')
+  })
+
+  it('往復できれば ok', async () => {
+    const { saveToken, tokenStatus } = await import('../src/main/forge/store')
+    await saveToken('tok')
+    expect(await tokenStatus()).toBe('ok')
+  })
+
+  it('**鍵が違って復号できなければ unreadable**（loadToken は null のまま）', async () => {
+    const { writeFileSync } = await import('node:fs')
+    const { join: j } = await import('node:path')
+    writeFileSync(j(dir, 'forge-token.bin'), Buffer.from('v10\x00\x01壊れた暗号文'))
+    const { tokenStatus, loadToken } = await import('../src/main/forge/store')
+    expect(await tokenStatus()).toBe('unreadable')
+    expect(await loadToken()).toBeNull()
+  })
+
+  it('暗号化が使えない環境で保管があれば unreadable', async () => {
+    const { saveToken, tokenStatus } = await import('../src/main/forge/store')
+    await saveToken('tok')
+    available = false
+    expect(await tokenStatus()).toBe('unreadable')
   })
 })

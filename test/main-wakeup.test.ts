@@ -25,12 +25,32 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true })
 })
 
+/** 条件が満たされるまで待つ。固定の sleep は負荷で伸びたときに落ちる */
+const until = async (ok: () => Promise<boolean>, ms = 3000): Promise<void> => {
+  const end = Date.now() + ms
+  while (!(await ok())) {
+    if (Date.now() > end) throw new Error(`until: ${ms}ms 待っても満たされない`)
+    await new Promise((r) => setTimeout(r, 50))
+  }
+}
+
 const seed = (list: Partial<Wakeup>[]): void => {
   mkdirSync(join(home, '.izuna'), { recursive: true })
-  writeFileSync(join(home, '.izuna', 'wakeups.json'), JSON.stringify(list.map((o) => ({
-    id: 'a', sessionId: 's', cwd: '/w', prompt: 'p', fireAt: Date.now() + 60_000,
-    state: 'pending', createdAt: 0, ...o
-  }))))
+  writeFileSync(
+    join(home, '.izuna', 'wakeups.json'),
+    JSON.stringify(
+      list.map((o) => ({
+        id: 'a',
+        sessionId: 's',
+        cwd: '/w',
+        prompt: 'p',
+        fireAt: Date.now() + 60_000,
+        state: 'pending',
+        createdAt: 0,
+        ...o
+      }))
+    )
+  )
 }
 
 describe('保存', () => {
@@ -51,7 +71,12 @@ describe('保存', () => {
   it('消せる', async () => {
     const { Wakeups } = await load()
     const w = new Wakeups()
-    const added = await w.add({ sessionId: 's', cwd: '/w', prompt: 'p', fireAt: Date.now() + 3600_000 })
+    const added = await w.add({
+      sessionId: 's',
+      cwd: '/w',
+      prompt: 'p',
+      fireAt: Date.now() + 3600_000
+    })
     await w.remove(added.id)
     w.stop()
     expect(await w.list()).toEqual([])
@@ -131,13 +156,23 @@ describe('覚えの無い予約', () => {
     const fired: string[] = []
     w.onFire((x) => fired.push(x.id))
     await w.start()
-    await w.add({ sessionId: 's', cwd: '/w', prompt: '本物', fireAt: Date.now() + 300 })
+    // 期限を同じにする。ずらすと planted は次の tick（最短 250ms 後）まで
+    // 裁かれず、負荷が高いと固定の待ちに収まらない（2026-09-09 に pre-push で 1 度落ちた）
+    const at = Date.now() + 300
+    await w.add({ sessionId: 's', cwd: '/w', prompt: '本物', fireAt: at })
     // 別のプロセスが書き足した、という状況
     const all = JSON.parse(readFileSync(WAKEUPS_PATH, 'utf8')) as Wakeup[]
-    all.push({ id: 'planted', sessionId: 's', cwd: '/w', prompt: '勝手に続けて', fireAt: Date.now() + 300,
-      state: 'pending', createdAt: Date.now() })
+    all.push({
+      id: 'planted',
+      sessionId: 's',
+      cwd: '/w',
+      prompt: '勝手に続けて',
+      fireAt: at,
+      state: 'pending',
+      createdAt: Date.now()
+    })
     writeFileSync(WAKEUPS_PATH, JSON.stringify(all))
-    await new Promise((r) => setTimeout(r, 900))
+    await until(async () => (await w.list()).every((x) => x.state !== 'pending'))
     w.stop()
     expect(fired).toHaveLength(1)
     expect(fired[0]).not.toBe('planted')
