@@ -101,3 +101,27 @@ find packages/electron \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.sp
 読んだ場所: `CLAUDE.md`（283 行）、`.claude/rules/`（16 本）、`.claude/agent-mistakes.md`、
 `.githooks/pre-push`、`scripts/*.mjs`、`packages/electron/src/main/{window,security,services/ai}`、
 `packages/electron/resources/claudeCliPermissionHook.cjs`、`docs/{AGENT_PERMISSIONS,INTERACTIVE_PROMPTS,FEATURE_INVENTORY}.md`、README。
+
+---
+
+## 7. features ページの判断（2026-09-09）
+
+https://nimbalyst.com/features/ の全項目（10 節）を三本の柱に当てて決めた。
+「済み」は既にあるもの、「入れない」は柱に刺さらないもの。**入れると決めた 3 つ**は同日に入れた。
+
+| # | 入れたもの | どこ | 備考 |
+| --- | --- | --- | --- |
+| 1 | 承認待ちと、止まったときの OS 通知 | `shared/notice.ts`、`main/notify.ts`、`register.ts` の `emit` | **窓が前に無いときだけ**鳴る。押すと窓を前に出す。進捗では鳴らさない |
+| 2 | コミット文の釦と、起床の予約の画面 | `Forge.tsx`、`Loop.tsx` の `Wakeups` | 口は前からあり、renderer から呼ばれていなかった 9 つのうちの 5 つを繋いだ |
+| 3 | sandbox の PR の差分を見る | `shared/patch.ts`、`client.pullDiff`、`PullDiff.tsx` | 承認の `DiffView` で描く。読むだけで accept / reject はしない。`.diff` の口は**実機で未検証** |
+
+| 入れないもの | 理由 |
+| --- | --- |
+| 赤/緑の hunk 単位の承認、WYSIWYG、ファイル履歴、Excalidraw、Monaco、文書内 todo | エディタは作らない。承認はツール呼び出し単位で人が持つ |
+| PR を worktree で開く | worktree はエージェントが作る（§12） |
+| git の staging UI | ターミナルとエージェントで足りる |
+| tracker、コラボ 5 件、Context Graph 6 件、拡張 4 件、モバイル 3 件 | やらないこと（§4） |
+| 自分の API キー | OAuth だけ（§14）。env の鍵も落とす |
+| 自動許可の型（agent-verified） | 承認は人（完成の定義 5） |
+
+保留: ファイル→セッションの逆引き（索引を持つと §18 と衝突）、open source（§20 の 3 点が先）。
