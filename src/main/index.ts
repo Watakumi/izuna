@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerSessionIpc, stopAllSessions } from './ipc/register'
+import { isOwnPage, openableOutside } from '../shared/links'
 
 /** 通知の宛先。段3 で複数ウィンドウにするまでは 1 枚 */
 let mainWindow: BrowserWindow | null = null
@@ -17,8 +18,9 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      preload: join(__dirname, '../preload/index.js')
+      // sandbox / contextIsolation / nodeIntegration は Electron の既定のまま。
+      // preload は contextBridge と ipcRenderer しか使わないので、砂場の中で足りる
     }
   })
 
@@ -28,8 +30,19 @@ function createWindow(): void {
     if (mainWindow === win) mainWindow = null
   })
 
+  /**
+   * **外に出すのは http / https / mailto だけ。**
+   *
+   * `shell.openExternal` は `open` と同じで、`file:` や独自スキームは
+   * アプリを起動する。本文のリンクは LLM が書くので、クリックで
+   * 何が起動するかを本文に委ねない（`shared/links.ts`）。
+   */
+  const escape = (url: string): void => {
+    if (openableOutside(url)) void shell.openExternal(url)
+  }
+
   win.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    escape(details.url)
     return { action: 'deny' }
   })
 
@@ -42,10 +55,9 @@ function createWindow(): void {
    * 自前の画面（dev サーバと file://）以外への遷移は止めて、外に出す。
    */
   win.webContents.on('will-navigate', (event, url) => {
-    const here = win.webContents.getURL()
-    if (new URL(url).origin === new URL(here).origin) return
+    if (isOwnPage(url, win.webContents.getURL())) return
     event.preventDefault()
-    void shell.openExternal(url)
+    escape(url)
   })
 
   // HMR for renderer base on electron-vite cli.
