@@ -23,12 +23,11 @@ export default defineConfig({
       /**
        * **下回ったら落とす。** 数えるだけでは戻る。
        *
-       * 分岐が低いのは、まだ手が届いていない層があるため
-       * （`claude/session.ts` は SDK と CLI、`forge/setup.ts` は
-       * `forgejo` の実行、`terminal.ts` は PTY）。**上げるときは
-       * 検査を足してから上げること** —— 先に数字を下げると門にならない。
+       * まだ手が届いていないのは `forge/setup.ts`（`forgejo` と `brew` の実行）と
+       * `terminal.ts`（PTY）。**上げるときは検査を足してから上げること** ——
+       * 先に数字を下げると門にならない。
        */
-      thresholds: { statements: 80, functions: 80, lines: 80, branches: 72 }
+      thresholds: { statements: 85, functions: 88, lines: 86, branches: 76 }
     }
   }
 })

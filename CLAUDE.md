@@ -532,16 +532,31 @@ Electron の起動（`index.ts`）と `ipcMain` への登録（`ipc/register.ts`
 混ぜて数えると「何割書けているか」ではなく「Electron が何割か」を見ることになる。
 画面は `pnpm shots` が別に見る。
 
-**まだ 0% の 3 つ**は、動かすのに外のものが要る。
+**まだ 0% の 2 つ**は、動かすのに外のものが要る。
 
 | | 要るもの |
 | --- | --- |
-| `claude/session.ts` | Agent SDK と `claude` 本体 |
 | `forge/setup.ts` | `forgejo` の実行と `brew` |
 | `terminal.ts` | PTY |
 
 模造を置けば数字は上がるが、**引数が間違っていても通る検査**になる。
 実物で測る道（`scripts/` の疎通確認）を用意してあるので、そちらで見る。
+
+### `session.ts` は SDK を差し替えて測る（97.4%）
+
+ここだけは模造を置いた。ただし**渡している引数を必ず見る**ようにしてある ——
+一番大事なのは「何を渡しているか」であって、SDK の動作ではない。
+
+固定したもの:
+
+- **`systemPrompt` に `claude_code` の preset を渡している**こと
+  （§7 の最大の罠。省くと**居場所を知らないまま作り話をする**）
+- `settingSources`（§13）、`forwardSubagentText`、`includePartialMessages`
+- `pathToClaudeCodeExecutable` とログインシェルの環境（§7）
+- `send()` が `origin: { kind: 'human' }` を付けること
+- **承認の fail-closed**（中断されたら deny、終了時に未応答を deny で畳む）
+- **返らない片付けで止まらない**こと（§7「終われないアプリよりまし」）
+- 入力の待ち行列 —— 読み手が待っているところへ届くか、終了で起こされるか
 
 ### 検査を書いて分かったこと
 
