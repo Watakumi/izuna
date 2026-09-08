@@ -86,3 +86,18 @@ advisory は `>=2.0.2` で直ると言うが、**2.0.2 は npmjs に無い**（�
 - `auto-continuation` / `scheduled-trigger` の origin を CLI がどう扱うか
 - 「引数に置くと `ps` で見える」という `remote.ts` の註 —— この macOS で `ps -E` を試した限り、
   他プロセスの環境変数は見えなかった。環境変数で渡す方針自体は問題ない
+
+### 門は全部の webContents にかける（2026-09-08、docs/NIMBALYST.md §3 の 6）
+
+`main/index.ts` は `app.on('web-contents-created')` で全部の webContents に同じ門をかける。
+窓ごとに付けると、付け忘れた窓が素の Electron の挙動になる。加えて
+**自分の origin と同じ http は外に出さない**（`shared/links.ts` の `shouldOpenOutside`）。
+本文の相対リンクは dev では dev サーバの URL に解決され、ブラウザに渡すと真っ白なページが開く。
+Nimbalyst の `windowOpenGuard.ts` と同じ判断。
+
+### Izuna 自身が hook を持つ（2026-09-08）
+
+`scripts/commit-gate.mjs` を `.claude/settings.json` の `PreToolUse`（matcher: Bash）から呼ぶと、
+エージェントがコミットする直前に `pnpm verify` が回る。**これは §26 の関所が数える hook である。**
+Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこのリポジトリを足す。
+関所が自分にも効いている証拠であって、例外ではない。settings.json は人が置く。

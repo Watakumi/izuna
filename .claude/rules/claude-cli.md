@@ -242,3 +242,19 @@ provider     : firstParty
 `test/auth.test.ts` が `apiKeySource` を検査している。
 `ANTHROPIC_API_KEY` を設定した環境で fixture を録り直すと落ちる。
 落ちたら、従量課金の経路に切り替わっていないかを疑うこと。
+
+### 鍵は渡さない（2026-09-08、docs/NIMBALYST.md §3 の 1）
+
+ログインシェルの環境を claude に渡す前に、`shared/billing.ts` が `ANTHROPIC_API_KEY` と
+`ANTHROPIC_AUTH_TOKEN` を落とす。無関係の作業のために rc に置いてある鍵を拾うと、
+**黙って従量課金に切り替わる**（Nimbalyst は同じ形で利用者の個人口座に 100 ドル超を請求した）。
+`test/auth.test.ts` は録画を見るだけで実行時には守っていなかった。落としたときは main のログに出る。
+
+### `AskUserQuestion` は問いとして描く（2026-09-08、docs/NIMBALYST.md §3 の 2）
+
+SDK ではこれも `canUseTool` に来る。`shared/question.ts` が入力を問いに読み、
+`components/Questions.tsx` が選択肢と「その他」の自由記述を描く。答えは
+`{ behavior: 'allow', updatedInput: { ...input, answers: { [question]: label } } }` で返す。
+**`answers` の鍵の形は CLI の実装から読んだもので未検証。** 違っていれば
+エージェントが「答えが無い」と言うので分かる。全部に答えるまで送れない ——
+途中で送ると、答えの無い問いが拒否に見える。

@@ -267,3 +267,16 @@ Izuna は library ではない。**外部の利用者という逃げ道が無い
 
 - 上の 10 部品と `App.tsx`（387 行）、`useSessions.ts`（163 行）
 - `main/index.ts`（Electron の起動そのもの。実機で起動して見る）
+
+### push の門（2026-09-08、docs/NIMBALYST.md §3 の 5）
+
+`.githooks/pre-push` → `scripts/prepush.mjs`。`pnpm install` の `prepare` が `core.hooksPath` を設定する。
+順に、届けるコミットが無ければ飛ばす／検査用の作者（`t@example.com`、`Test User`、`.invalid`）の
+コミットを拒む／manifest が変わったときだけ lockfile の同期を見る／`pnpm verify`。
+`IZUNA_SKIP_VERIFY=1` で飛ばせるのは最後だけ。**検査は本物の git リポジトリを作る**
+（`test/main-git.test.ts`）ので、逃げ出したコミットが public に乗る穴は Izuna にもあった。
+門の検査は `test/scripts-gates.test.ts`。**実行ビットが無いと git は黙って飛ばす。**
+
+### 失敗の記録（2026-09-08、docs/NIMBALYST.md §3 の 4）
+
+`.claude/agent-mistakes.md`。日付、何が起きたか、根本原因、教訓。作業を始める前に読む。
