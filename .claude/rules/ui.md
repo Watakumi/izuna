@@ -699,5 +699,5 @@ mermaid は色を **SVG の属性に直接書く**ので、`var(--c-...)` を渡
 
 Forgejo の `GET /repos/{o}/{r}/pulls/{n}.diff` を `shared/patch.ts` が `FileDiff` に変え、
 承認と同じ `DiffView` で描く。hunk 単位の accept / reject はしない —— Izuna は読む道具で、
-判断は PR のマージで人がする。**`.diff` の口は実機で未検証**（sandbox のリポジトリは
-private で、シェルから叩けなかった）。違っていれば `client.pullDiff` のパスだけを直す。
+判断は PR のマージで人がする。`.diff` の口は **2026-09-09 に `pnpm e2e` で実機確認した**
+（`izuna/izuna-e2e` !1 が 1 ファイル +2 の差分で返る。§30）。
