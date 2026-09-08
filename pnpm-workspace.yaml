@@ -8,6 +8,10 @@ allowBuilds:
   node-pty: true
   # Windows 向けインストーラ。§8 で Windows は「やらない」ので走らせない。
   electron-winstaller: false
+# **公開から 24 時間経っていない版は入れない。** 乗っ取られたパッケージは
+# 公開直後に見つかって取り下げられることが多い（2026-09-08 に §27 で決めた）。
+# それまで除外リストだけがあって本体の値が無く、効いていなかった。
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.263'
   - '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.263'
