@@ -76,8 +76,11 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     remote.ensureSandboxRemote(cwd, await forgeRoot(), owner, repo))
   ipcMain.handle(CH.currentBranch, (_e, cwd: string) => remote.currentBranch(cwd))
   ipcMain.handle(CH.defaultBranch, (_e, cwd: string, r: string) => remote.defaultBranch(cwd, r))
-  ipcMain.handle(CH.isPushed, (_e, cwd: string, r: string, b: string) => remote.isPushed(cwd, r, b))
-  ipcMain.handle(CH.push, (_e, cwd: string, r: string, b: string) => remote.push(cwd, r, b))
+  // sandbox は private なので資格情報が要る。**その根の URL を渡す**
+  ipcMain.handle(CH.isPushed, async (_e, cwd: string, r: string, b: string) =>
+    remote.isPushed(cwd, r, b, await forgeRoot().catch(() => null)))
+  ipcMain.handle(CH.push, async (_e, cwd: string, r: string, b: string) =>
+    remote.push(cwd, r, b, await forgeRoot().catch(() => null)))
   ipcMain.handle(CH.commitsSince, (_e, cwd: string, base: string) => remote.commitsSince(cwd, base))
 
   ipcMain.handle(CH.openTerminal, (_e, input: { cwd: string; cols: number; rows: number }) =>

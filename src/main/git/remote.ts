@@ -3,13 +3,18 @@ import { promisify } from 'node:util'
 import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
 import { loginShellEnv } from '../claude/locate'
 import { resolved } from '../config'
+import { writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { loadToken } from '../forge/store'
+import { whoami } from '../forge/client'
 
 const exec = promisify(execFile)
 
 /** remote の操作（段5）。解釈は `shared/remote.ts` が持つ */
 
-async function git(cwd: string, args: string[]): Promise<string> {
-  const env = await loginShellEnv()
+async function git(cwd: string, args: string[], extra: NodeJS.ProcessEnv = {}): Promise<string> {
+  const env = { ...(await loginShellEnv()), ...extra }
   try {
     const { stdout } = await exec('git', args, { cwd, env, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 })
     return stdout
@@ -17,6 +22,61 @@ async function git(cwd: string, args: string[]): Promise<string> {
     const e = err as { stderr?: string; message?: string }
     throw new Error((e.stderr || e.message || String(err)).trim())
   }
+}
+
+/**
+ * sandbox（Forgejo）へ渡す資格情報。
+ *
+ * **作るリポジトリは private なので、匿名では push できない。**
+ * それを git は `Repository not found` と言う（401 を 404 に言い換える）ので、
+ * 「リポジトリが無い」と読めてしまい、原因に辿り着けない。
+ *
+ * **トークンを remote の URL や `.git/config` に埋めない。** 埋めると平文で残り、
+ * `git remote -v` にも出て、そのまま他人に見せる画面に載る。
+ * `GIT_ASKPASS` に小さな仲介を置き、**環境変数で渡してその場で捨てる**。
+ * 引数に置かないのは、`ps` で他のプロセスから見えるからである。
+ */
+async function askpassEnv(root: string): Promise<NodeJS.ProcessEnv | null> {
+  const [token, user] = await Promise.all([
+    loadToken(),
+    whoami(root).catch(() => null)
+  ])
+  if (!token || !user) return null
+
+  const path = join(tmpdir(), 'izuna-askpass.sh')
+  await writeFile(path, [
+    '#!/bin/sh',
+    '# Izuna が git に資格情報を渡すための仲介。値は環境変数から取る',
+    'case "$1" in',
+    '  *[Uu]sername*) printf %s "$IZUNA_GIT_USER" ;;',
+    '  *) printf %s "$IZUNA_GIT_TOKEN" ;;',
+    'esac'
+  ].join('\n') + '\n', { mode: 0o700 })
+
+  return {
+    GIT_ASKPASS: path,
+    IZUNA_GIT_USER: user,
+    IZUNA_GIT_TOKEN: token,
+    // 端末が無いので、聞かれたら黙って失敗させる（待たせない）
+    GIT_TERMINAL_PROMPT: '0'
+  }
+}
+
+/**
+ * sandbox 相手のときだけ資格情報を付ける。
+ * **GitHub は ssh なので要らない**（付けると余計な失敗を増やす）。
+ */
+async function credentials(
+  cwd: string, remote: string, forgeRootUrl: string | null
+): Promise<NodeJS.ProcessEnv> {
+  if (!forgeRootUrl) return {}
+  try {
+    const url = (await git(cwd, ['remote', 'get-url', remote])).trim()
+    if (!url.startsWith(new URL(forgeRootUrl).origin)) return {}
+  } catch {
+    return {}
+  }
+  return (await askpassEnv(forgeRootUrl)) ?? {}
 }
 
 export async function listRemotes(cwd: string, forgeRootUrl: string | null): Promise<RemoteRef[]> {
@@ -71,15 +131,20 @@ export async function currentBranch(cwd: string): Promise<string | null> {
 }
 
 /** 指定の remote に push する。上流も張る */
-export async function push(cwd: string, remote: string, branch: string): Promise<string> {
-  await git(cwd, ['push', '--set-upstream', remote, branch])
+export async function push(
+  cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
+): Promise<string> {
+  await git(cwd, ['push', '--set-upstream', remote, branch], await credentials(cwd, remote, forgeRootUrl))
   return `${remote} に ${branch} を push しました`
 }
 
 /** その remote に、そのブランチが既にあるか */
-export async function isPushed(cwd: string, remote: string, branch: string): Promise<boolean> {
+export async function isPushed(
+  cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
+): Promise<boolean> {
   try {
-    const out = await git(cwd, ['ls-remote', '--heads', remote, branch])
+    const out = await git(cwd, ['ls-remote', '--heads', remote, branch],
+      await credentials(cwd, remote, forgeRootUrl))
     return out.trim() !== ''
   } catch {
     return false
