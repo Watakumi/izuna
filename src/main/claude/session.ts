@@ -8,6 +8,7 @@ import {
   type PermissionResult,
   type PermissionMode,
   type PermissionUpdate,
+  type SDKMessageOrigin,
   type SlashCommand,
   type SettingSource,
   type McpServerConfig
@@ -193,8 +194,14 @@ export class ClaudeSession extends EventEmitter<Events> {
     void this.#consume()
   }
 
-  /** 1 ターン進める。スラッシュコマンドも `/foo args` として渡す */
-  send(text: string, images: Attachment[] = []): void {
+  /**
+   * 1 ターン進める。スラッシュコマンドも `/foo args` として渡す。
+   *
+   * **出どころを偽らない。** 既定は人の打鍵だが、起床の予約や自律ループが
+   * 送るものは人が打っていない。そこを `human` にすると、CLI の
+   * 「人が言った」を根拠にする判断が全部その前提で動く（§26）。
+   */
+  send(text: string, images: Attachment[] = [], origin: SDKMessageOrigin = { kind: 'human' }): void {
     if (!this.#running) throw new Error('セッションが起動していません')
     // 画像を先に置く。**後ろに置くと、指示より前に見てもらえない** ——
     // 「この画面のここ」のような指示は、画像を見た後でしか意味を持たない
@@ -210,8 +217,8 @@ export class ClaudeSession extends EventEmitter<Events> {
       message: { role: 'user', content },
       parent_tool_use_id: null,
       session_id: this.#sessionId ?? '',
-      // 人間の打鍵であることを明示する。省略すると出所不明として扱われる
-      origin: { kind: 'human' }
+      // 省略すると出所不明として扱われる。人の打鍵なら明示して human
+      origin
     } as SDKUserMessage)
   }
 

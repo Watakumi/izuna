@@ -234,7 +234,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
         }
         session.on('message', onMessage)
         session.on('error', onError)
-        session.send(prompt)
+        // 人が打ったのではない。ループが続けている
+        session.send(prompt, [], { kind: 'auto-continuation' })
       })
 
     const loop = runLoop({
@@ -260,7 +261,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   wakeups.onFire((w) => {
     const session = sessions.get(w.sessionId)
     if (!session) return
-    session.send(w.prompt)
+    // 予約した時刻に届いたもの。人がいま打ったのではない
+    session.send(w.prompt, [], { kind: 'task-notification', subkind: 'scheduled-trigger' })
     emit({ kind: 'wokeUp', id: w.sessionId, prompt: w.prompt })
   })
   void wakeups.start()

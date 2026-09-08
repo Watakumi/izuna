@@ -155,7 +155,16 @@ describe('送る', () => {
     s.send('やあ')
     const { value } = await it.next()
     expect(value).toMatchObject({ type: 'user', origin: { kind: 'human' } })
-    expect(JSON.stringify(value)).toContain('やあ')
+  })
+
+  it('**出どころを偽らない。** 起床やループが送るものは human にしない', async () => {
+    const { ClaudeSession } = await load()
+    const s = new ClaudeSession({ cwd: '/w' })
+    await s.start()
+    const it = prompt![Symbol.asyncIterator]()
+    s.send('続けて', [], { kind: 'auto-continuation' })
+    const { value } = await it.next()
+    expect(value).toMatchObject({ type: 'user', origin: { kind: 'auto-continuation' } })
   })
 })
 

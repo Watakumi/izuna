@@ -5,7 +5,11 @@
  * 「いつ起こすか」「過ぎたものをどうするか」を決めるだけ。
  */
 
-export type WakeupState = 'pending' | 'overdue' | 'fired'
+/**
+ * `rejected` は **Izuna が作った覚えの無い予約**。ファイルに直接書き足された
+ * ものは起こさない（§26）。人が見て、要るなら改めて起こす。
+ */
+export type WakeupState = 'pending' | 'overdue' | 'fired' | 'rejected'
 
 export interface Wakeup {
   id: string
@@ -46,6 +50,20 @@ export function due(wakeups: Wakeup[], now: number): Wakeup[] {
   return wakeups.filter((w) => w.state === 'pending' && w.fireAt <= now)
 }
 
+/**
+ * 起こしてよいものと、覚えの無いものに分ける。
+ *
+ * `wakeups.json` は同じユーザのどのプロセスからも書ける。エージェント自身が
+ * 自分の起床を書き足せば、人が知らない指示が「人の入力」として届く。
+ * **このプロセスが作ったか読んだものだけ**を起こす。
+ */
+export function split(ready: Wakeup[], known: ReadonlySet<string>): { fire: Wakeup[]; reject: Wakeup[] } {
+  return {
+    fire: ready.filter((w) => known.has(w.id)),
+    reject: ready.filter((w) => !known.has(w.id))
+  }
+}
+
 /** 壊れた記録で起動不能にしない。読めないものは黙って捨てる */
 export function parseWakeups(text: string): Wakeup[] {
   let raw: unknown
@@ -64,7 +82,7 @@ const isWakeup = (v: unknown): v is Wakeup => {
   return typeof w.id === 'string' && typeof w.sessionId === 'string' &&
     typeof w.prompt === 'string' && typeof w.fireAt === 'number' &&
     typeof w.cwd === 'string' && typeof w.createdAt === 'number' &&
-    ['pending', 'overdue', 'fired'].includes(w.state)
+    ['pending', 'overdue', 'fired', 'rejected'].includes(w.state)
 }
 
 /** 人に見せる待ち時間 */

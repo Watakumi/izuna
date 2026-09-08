@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { due, next, parseWakeups, reconcile, type Wakeup } from '../shared/wakeup'
+import { due, next, parseWakeups, reconcile, split, type Wakeup } from '../shared/wakeup'
 
 /**
  * 起床の予約を持つ（判断は `shared/wakeup.ts`）。
@@ -37,6 +37,12 @@ async function save(wakeups: Wakeup[]): Promise<void> {
 export class Wakeups {
   #timer: NodeJS.Timeout | null = null
   #fire: (w: Wakeup) => void = () => {}
+  /**
+   * 起こしてよい id。**起動時に読んだものと、この画面から足したものだけ。**
+   * 走っている最中にファイルへ直接書き足されたものは起こさない（§26）。
+   * 起動時のものを信じるのは、一覧に出て人の目に触れるからである。
+   */
+  #known = new Set<string>()
 
   /** 起こすときに呼ばれる。呼ぶ側がセッションを再開する */
   onFire(handler: (w: Wakeup) => void): void {
@@ -49,6 +55,7 @@ export class Wakeups {
    */
   async start(): Promise<Wakeup[]> {
     const reconciled = reconcile(await load(), Date.now())
+    for (const w of reconciled) this.#known.add(w.id)
     await save(reconciled)
     this.#arm(reconciled)
     return reconciled
@@ -60,6 +67,7 @@ export class Wakeups {
 
   async add(input: { sessionId: string; cwd: string; prompt: string; fireAt: number }): Promise<Wakeup> {
     const w: Wakeup = { ...input, id: randomUUID(), state: 'pending', createdAt: Date.now() }
+    this.#known.add(w.id)
     const all = [...(await load()), w]
     await save(all)
     this.#arm(all)
@@ -100,10 +108,12 @@ export class Wakeups {
   async #tick(): Promise<void> {
     const all = await load()
     const now = Date.now()
-    const ready = due(all, now)
-    if (ready.length > 0) {
-      await save(all.map((w) => (ready.some((r) => r.id === w.id) ? { ...w, state: 'fired' as const } : w)))
-      for (const w of ready) this.#fire(w)
+    const { fire, reject } = split(due(all, now), this.#known)
+    if (fire.length > 0 || reject.length > 0) {
+      const state = (w: Wakeup): Wakeup['state'] =>
+        fire.some((r) => r.id === w.id) ? 'fired' : reject.some((r) => r.id === w.id) ? 'rejected' : w.state
+      await save(all.map((w) => ({ ...w, state: state(w) })))
+      for (const w of fire) this.#fire(w)
     }
     this.#arm(await load())
   }
