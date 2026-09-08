@@ -23,11 +23,11 @@ export default defineConfig({
       /**
        * **下回ったら落とす。** 数えるだけでは戻る。
        *
-       * まだ手が届いていないのは `forge/setup.ts`（`forgejo` と `brew` の実行）と
-       * `terminal.ts`（PTY）。**上げるときは検査を足してから上げること** ——
-       * 先に数字を下げると門にならない。
+       * **上げるときは検査を足してから上げること** —— 先に数字を下げると
+       * 門にならない。分岐が他より低いのは、失敗の枝（外の道具が無い・
+       * 応答が返らない）を全部は起こせないため。
        */
-      thresholds: { statements: 85, functions: 88, lines: 86, branches: 76 }
+      thresholds: { statements: 95, functions: 97, lines: 97, branches: 84 }
     }
   }
 })
