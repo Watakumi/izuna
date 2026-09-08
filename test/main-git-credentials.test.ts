@@ -15,6 +15,8 @@ import { join } from 'node:path'
  */
 
 let runs: Array<{ args: string[]; env: NodeJS.ProcessEnv }> = []
+/** 仲介の姿を、git が走っている瞬間に写す（終わったら消えているので） */
+let askpass: Array<{ exists: boolean; mode: number; script: string }> = []
 let out: Array<string | Error> = []
 let token: string | null = 'tok_secret_value'
 
@@ -27,7 +29,13 @@ vi.mock('../src/main/forge/client', () => ({ whoami: async () => 'watakumi' }))
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
     const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
-    runs.push({ args: (all[1] as string[]) ?? [], env: (all[2] as { env: NodeJS.ProcessEnv })?.env ?? {} })
+    const env = (all[2] as { env: NodeJS.ProcessEnv })?.env ?? {}
+    runs.push({ args: (all[1] as string[]) ?? [], env })
+    if (env.GIT_ASKPASS) {
+      const exists = existsSync(env.GIT_ASKPASS)
+      askpass.push({ exists, mode: exists ? statSync(env.GIT_ASKPASS).mode : 0,
+        script: exists ? readFileSync(env.GIT_ASKPASS, 'utf8') : '' })
+    }
     const next = out.shift()
     if (next instanceof Error) cb(next)
     else cb(null, { stdout: next ?? '', stderr: '' })
@@ -39,6 +47,7 @@ const SANDBOX = 'http://localhost:4649/'
 
 beforeEach(() => {
   runs = []
+  askpass = []
   out = []
   token = 'tok_secret_value'
   vi.resetModules()
@@ -70,13 +79,40 @@ describe('sandbox 相手のとき', () => {
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const path = runs.at(-1)!.env.GIT_ASKPASS!
-    expect(existsSync(path)).toBe(true)
-    expect(statSync(path).mode & 0o077).toBe(0)
-    const script = readFileSync(path, 'utf8')
-    expect(script).toContain('IZUNA_GIT_USER')
+    const seen = askpass.at(-1)!
+    expect(seen.exists).toBe(true)
+    expect(seen.mode & 0o077).toBe(0)
+    expect(seen.script).toContain('IZUNA_GIT_USER')
     // **中身にトークンを書かない。** 環境変数から取る
-    expect(script).not.toContain('tok_secret_value')
+    expect(seen.script).not.toContain('tok_secret_value')
     expect(path.startsWith(tmpdir()) || path.startsWith(join('/private', tmpdir().replace(/^\//, '')))).toBe(true)
+  })
+
+  it('**仲介は呼ぶたびに作り、使い終わったら消す**（固定のパスは差し替えられる。§26）', async () => {
+    out = ['http://localhost:4649/watakumi/izuna.git\n', '',
+           'http://localhost:4649/watakumi/izuna.git\n', '']
+    const { push } = await load()
+    await push('/w', 'forgejo', 'main', SANDBOX)
+    const first = runs.at(-1)!.env.GIT_ASKPASS!
+    expect(existsSync(first)).toBe(false)
+    await push('/w', 'forgejo', 'main', SANDBOX)
+    const second = runs.at(-1)!.env.GIT_ASKPASS!
+    expect(second).not.toBe(first)
+    expect(existsSync(second)).toBe(false)
+  })
+
+  it('git が失敗しても仲介は消す', async () => {
+    out = ['http://localhost:4649/watakumi/izuna.git\n', new Error('rejected')]
+    const { push } = await load()
+    await expect(push('/w', 'forgejo', 'main', SANDBOX)).rejects.toThrow(/rejected/)
+    expect(existsSync(runs.at(-1)!.env.GIT_ASKPASS!)).toBe(false)
+  })
+
+  it('**平文で LAN を通る根には載せない**。push は止まる', async () => {
+    out = ['http://192.168.1.10:4649/watakumi/izuna.git\n', '']
+    const { push } = await load()
+    await expect(push('/w', 'forgejo', 'main', 'http://192.168.1.10:4649/')).rejects.toThrow(/トークンを送りません/)
+    expect(runs.some((r) => r.args.includes('push'))).toBe(false)
   })
 
   it('ls-remote にも同じ資格情報を渡す（渡さないと黙って false になる）', async () => {

@@ -4,11 +4,12 @@ import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/rem
 import type { CommitContext } from '../../shared/commit'
 import { loginShellEnv } from '../claude/locate'
 import { resolved } from '../config'
-import { writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadToken } from '../forge/store'
 import { whoami } from '../forge/client'
+import { tokenMayTravel, transportRefusal } from '../../shared/forge'
 
 const exec = promisify(execFile)
 
@@ -37,14 +38,29 @@ async function git(cwd: string, args: string[], extra: NodeJS.ProcessEnv = {}): 
  * `GIT_ASKPASS` に小さな仲介を置き、**環境変数で渡してその場で捨てる**。
  * 引数に置かないのは、`ps` で他のプロセスから見えるからである。
  */
-async function askpassEnv(root: string): Promise<NodeJS.ProcessEnv | null> {
+interface Askpass {
+  env: NodeJS.ProcessEnv
+  /** 使い終わったら消す。**必ず呼ぶ** */
+  dispose: () => Promise<void>
+}
+
+/**
+ * **仲介は呼ぶたびに作り、使い終わったら消す。**
+ *
+ * 固定のパスに `mode: 0o700` で書いていたが、`mode` は新規作成のときしか
+ * 効かない。同じユーザのプロセス（押している最中のエージェントを含む）が
+ * 先に置き換えていれば、その中身が `$IZUNA_GIT_TOKEN` を受け取る（§26）。
+ * `mkdtemp` で毎回別の場所に、`wx`（既にあれば失敗）で書く。
+ */
+async function askpassEnv(root: string): Promise<Askpass | null> {
   const [token, user] = await Promise.all([
     loadToken(),
     whoami(root).catch(() => null)
   ])
   if (!token || !user) return null
 
-  const path = join(tmpdir(), 'izuna-askpass.sh')
+  const dir = await mkdtemp(join(tmpdir(), 'izuna-askpass-'))
+  const path = join(dir, 'askpass.sh')
   await writeFile(path, [
     '#!/bin/sh',
     '# Izuna が git に資格情報を渡すための仲介。値は環境変数から取る',
@@ -52,14 +68,17 @@ async function askpassEnv(root: string): Promise<NodeJS.ProcessEnv | null> {
     '  *[Uu]sername*) printf %s "$IZUNA_GIT_USER" ;;',
     '  *) printf %s "$IZUNA_GIT_TOKEN" ;;',
     'esac'
-  ].join('\n') + '\n', { mode: 0o700 })
+  ].join('\n') + '\n', { mode: 0o700, flag: 'wx' })
 
   return {
-    GIT_ASKPASS: path,
-    IZUNA_GIT_USER: user,
-    IZUNA_GIT_TOKEN: token,
-    // 端末が無いので、聞かれたら黙って失敗させる（待たせない）
-    GIT_TERMINAL_PROMPT: '0'
+    env: {
+      GIT_ASKPASS: path,
+      IZUNA_GIT_USER: user,
+      IZUNA_GIT_TOKEN: token,
+      // 端末が無いので、聞かれたら黙って失敗させる（待たせない）
+      GIT_TERMINAL_PROMPT: '0'
+    },
+    dispose: () => rm(dir, { recursive: true, force: true })
   }
 }
 
@@ -69,8 +88,8 @@ async function askpassEnv(root: string): Promise<NodeJS.ProcessEnv | null> {
  */
 async function credentials(
   cwd: string, remote: string, forgeRootUrl: string | null
-): Promise<{ env: NodeJS.ProcessEnv; args: string[] }> {
-  const none = { env: {}, args: [] }
+): Promise<{ env: NodeJS.ProcessEnv; args: string[]; dispose: () => Promise<void> }> {
+  const none = { env: {}, args: [], dispose: async (): Promise<void> => {} }
   if (!forgeRootUrl) return none
   try {
     const url = (await git(cwd, ['remote', 'get-url', remote])).trim()
@@ -78,8 +97,10 @@ async function credentials(
   } catch {
     return none
   }
-  const env = await askpassEnv(forgeRootUrl)
-  if (!env) return none
+  // sandbox 相手と分かった。平文で LAN を通る経路には載せない（§26）
+  if (!tokenMayTravel(forgeRootUrl)) throw new Error(transportRefusal(forgeRootUrl))
+  const askpass = await askpassEnv(forgeRootUrl)
+  if (!askpass) return none
 
   /**
    * **credential helper を止める。**
@@ -93,7 +114,7 @@ async function credentials(
    * `Repository not found` と表示するので、**認証の問題だと分からない**。
    * 匿名なら 401 が返るのに、中途半端に認証されるほうが原因を隠す。
    */
-  return { env, args: ['-c', 'credential.helper='] }
+  return { env: askpass.env, args: ['-c', 'credential.helper='], dispose: askpass.dispose }
 }
 
 export async function listRemotes(cwd: string, forgeRootUrl: string | null): Promise<RemoteRef[]> {
@@ -152,7 +173,11 @@ export async function push(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<string> {
   const cred = await credentials(cwd, remote, forgeRootUrl)
-  await git(cwd, [...cred.args, 'push', '--set-upstream', remote, branch], cred.env)
+  try {
+    await git(cwd, [...cred.args, 'push', '--set-upstream', remote, branch], cred.env)
+  } finally {
+    await cred.dispose()
+  }
   return `${remote} に ${branch} を push しました`
 }
 
@@ -160,12 +185,15 @@ export async function push(
 export async function isPushed(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<boolean> {
+  let cred: Awaited<ReturnType<typeof credentials>> | null = null
   try {
-    const cred = await credentials(cwd, remote, forgeRootUrl)
+    cred = await credentials(cwd, remote, forgeRootUrl)
     const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', remote, branch], cred.env)
     return out.trim() !== ''
   } catch {
     return false
+  } finally {
+    await cred?.dispose()
   }
 }
 
