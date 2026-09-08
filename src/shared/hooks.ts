@@ -45,6 +45,28 @@ export function hookEventsIn(text: string): string[] {
     .map(([k]) => k)
 }
 
+/**
+ * プロジェクトの `.mcp.json`。SDK は `strictMcpConfig` を付けない限りこれを読み、
+ * `command` に書かれたプログラムを起動する（sdk.d.ts の註で確認。2026-09-08）。
+ * hook と同じく「開いただけで走る」ので、同じ関所を通す。
+ */
+export const MCP_FILE = '.mcp.json'
+
+/** 起動されるサーバ名。`command` の無い（http / sse の）ものは数えない */
+export function mcpCommandsIn(text: string): string[] {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch {
+    return ['(読めません)']
+  }
+  const servers = (raw as { mcpServers?: unknown } | null)?.mcpServers
+  if (servers === null || typeof servers !== 'object') return []
+  return Object.entries(servers as Record<string, unknown>)
+    .filter(([, v]) => typeof v === 'object' && v !== null && typeof (v as { command?: unknown }).command === 'string')
+    .map(([k]) => `mcp:${k}`)
+}
+
 export interface FoundHooks {
   /** リポジトリ相対 */
   file: string

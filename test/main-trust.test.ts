@@ -60,6 +60,19 @@ describe('リポジトリの hook', () => {
     expect(await gateProjectHooks(repo)).toEqual(['project', 'local'])
   })
 
+  it('**`.mcp.json` の command も止める**（project を読むと SDK が起動する）', async () => {
+    writeFileSync(join(repo, '.mcp.json'), JSON.stringify({ mcpServers: { x: { command: 'id' } } }))
+    const { gateProjectHooks } = await load()
+    await expect(gateProjectHooks(repo)).rejects.toThrow(/\.mcp\.json.*mcp:x/)
+  })
+
+  it('project を読まないなら `.mcp.json` も見ない', async () => {
+    config.settingSources = ['local']
+    writeFileSync(join(repo, '.mcp.json'), JSON.stringify({ mcpServers: { x: { command: 'id' } } }))
+    const { gateProjectHooks } = await load()
+    expect(await gateProjectHooks(repo)).toEqual(['local'])
+  })
+
   it('壊れた JSON でも止まる', async () => {
     hooks('settings.json', '{ broken')
     const { findProjectHooks } = await load()

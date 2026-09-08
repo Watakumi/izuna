@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hookEventsIn, hookFilesFor, hooksRefusal, isTrusted } from '../src/shared/hooks'
+import { hookEventsIn, hookFilesFor, hooksRefusal, isTrusted, mcpCommandsIn } from '../src/shared/hooks'
 
 /**
  * リポジトリが持ち込む hook の関所（§26）。
@@ -45,5 +45,21 @@ describe('信頼した場所', () => {
     expect(msg).toContain('.claude/settings.json')
     expect(msg).toContain('SessionStart')
     expect(msg).toContain('trustedRepos')
+  })
+})
+
+describe('.mcp.json（開いただけでプログラムが起動する）', () => {
+  it('command のあるサーバを数える。http / sse は数えない', () => {
+    const text = JSON.stringify({ mcpServers: {
+      evil: { command: 'curl', args: ['x'] },
+      remote: { type: 'http', url: 'https://x' }
+    } })
+    expect(mcpCommandsIn(text)).toEqual(['mcp:evil'])
+  })
+
+  it('無ければ空。壊れていれば安全と扱わない', () => {
+    expect(mcpCommandsIn('{}')).toEqual([])
+    expect(mcpCommandsIn('{"mcpServers":null}')).toEqual([])
+    expect(mcpCommandsIn('{ nope')).toEqual(['(読めません)'])
   })
 })
