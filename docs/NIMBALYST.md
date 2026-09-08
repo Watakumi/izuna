@@ -45,7 +45,7 @@ Nimbalyst の機能の大半はそのどれにも刺さらない。
 | --- | --- | --- | --- |
 | 1 | **`ANTHROPIC_API_KEY` を環境から拾わない** | CLAUDE.md「Never Use Environment Variables as Implicit API Key Sources」。`.env` の鍵を黙って拾い、利用者の個人口座に 100 ドル超を請求した事故 | `refreshLoginShellEnv()` の結果を claude に渡す前に鍵を落とす。1 行。`test/auth.test.ts` は録画を見るだけで実行時には守っていない |
 | 2 | **`AskUserQuestion` の受け皿** | `docs/INTERACTIVE_PROMPTS.md`。問いを部品として描き、答えを返す | SDK ではこれも `canUseTool` に来る。いまは `PermissionBar` に「ツールの許可」として出て、人は選択肢に答えられない。`allow` に `updatedInput` で答えを載せる |
-| 3 | **CLAUDE.md を分ける** | 「先に読む重要規則」だけ CLAUDE.md に残し、残りは `.claude/rules/*.md` に `globs` 付き。触るパスのときだけ読まれる。理由は `rules/token-discipline.md` | Izuna の CLAUDE.md は 2,191 行で毎セッション全部読まれる。§7 や §21 の罠は、そのファイルを触るときにだけ要る |
+| 3 | **CLAUDE.md を分ける**（2026-09-08 に実施。179 行 + `.claude/rules/` 10 本） | 「先に読む重要規則」だけ CLAUDE.md に残し、残りは `.claude/rules/*.md` に `globs` 付き。触るパスのときだけ読まれる。理由は `rules/token-discipline.md` | Izuna の CLAUDE.md は 2,191 行で毎セッション全部読まれる。§7 や §21 の罠は、そのファイルを触るときにだけ要る |
 | 4 | **`.claude/agent-mistakes.md`** | 日付・何が起きたか・利用者の言葉・根本原因・教訓の形で溜める（例: `git stash` を聞かずにやり、別セッションの stash を pop した） | Izuna は CLAUDE.md の各節に散らしている。独立した 1 ファイルなら次のセッションが先に読める |
 | 5 | **push の門** | `.githooks/pre-push`: 届けるコミットが無ければ飛ばす／manifest が変わったときだけ lockfile の同期を見る／検査用の作者（`Test User`、`@example.com`）のコミットを拒む（2026-07-22 に検査の実リポジトリから public main へ漏れた） | Izuna は `core.hooksPath` が未設定で push を止めるものが無い。検査で実リポジトリを作るので、同じ穴がある |
 | 6 | **全 `webContents` にかける窓の門** | `window/windowOpenGuard.ts`: `app.on('web-contents-created')` で全部にかけ、**dev の origin と同じ http は拒む**（markdown の相対リンクが dev サーバへ漏れる） | Izuna は main の窓 1 枚。`shared/links.ts` に 1 条件足す |

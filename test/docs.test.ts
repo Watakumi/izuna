@@ -17,7 +17,20 @@ import { join, relative } from 'node:path'
  */
 
 const ROOT = join(__dirname, '..')
-const DOC = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8')
+
+/**
+ * 文書は 1 枚ではない（2026-09-08 に分けた）。CLAUDE.md は入口で、
+ * 触るファイルに応じて `.claude/rules/*.md` が読まれ、背景は `docs/DECISIONS.md` にある。
+ * 節番号は分ける前のままなので、**どのファイルにあっても `§N` は引ける**。
+ * 門はその全部を 1 つの文書として見る。
+ */
+const DOC_FILES = [
+  join(ROOT, 'CLAUDE.md'),
+  ...readdirSync(join(ROOT, '.claude', 'rules')).filter((f) => f.endsWith('.md')).sort()
+    .map((f) => join(ROOT, '.claude', 'rules', f)),
+  join(ROOT, 'docs', 'DECISIONS.md')
+]
+const DOC = DOC_FILES.map((f) => readFileSync(f, 'utf8')).join('\n')
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -52,7 +65,7 @@ const outside = outsideFiles.map((f) => stripComments(readFileSync(f, 'utf8'))).
 /** ` で囲まれた語をすべて取り出す */
 const quoted = [...DOC.matchAll(/`([^`\n]+)`/g)].map((m) => m[1])
 
-describe('CLAUDE.md が名指しするファイル', () => {
+describe('文書が名指しするファイル', () => {
   const paths = [
     ...new Set(
       quoted.filter((q) =>
@@ -63,6 +76,13 @@ describe('CLAUDE.md が名指しするファイル', () => {
 
   it('1 つ以上を検査対象にできている', () => {
     expect(paths.length).toBeGreaterThan(10)
+  })
+
+  it('規則のファイルには paths の frontmatter がある（無いと常に読まれる）', () => {
+    for (const f of DOC_FILES.filter((p) => p.includes('/.claude/rules/'))) {
+      const head = readFileSync(f, 'utf8').slice(0, 2000)
+      expect(head, `${relative(ROOT, f)} に paths が無い`).toMatch(/^---\npaths:\n(  - ".+"\n)+---\n/)
+    }
   })
 
   it.each(paths)('%s が実在する', (p) => {

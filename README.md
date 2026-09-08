@@ -5,7 +5,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 想定利用者は作者ひとり。
 
 - **何を作るか**: [docs/GOAL.md](docs/GOAL.md)（三本の柱と、やらないこと）
-- **どう作るか**: [CLAUDE.md](CLAUDE.md)（判断と実測の記録。エージェントが単独で読める）
+- **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`（触るファイルに応じて読まれる）、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）
 - **Nimbalyst との違い**: [docs/NIMBALYST.md](docs/NIMBALYST.md)
 - **CI（自宅 Forgejo Actions）**: [docs/ACTIONS.md](docs/ACTIONS.md)
 
@@ -30,4 +30,4 @@ pnpm build:mac        # .app を作る。署名も配布もしない
 - Forgejo の鍵はボットのもの。平文で LAN を通る経路には送らない
 - 本文は木で描き、HTML を作らない（例外は mermaid の 1 か所だけ）
 
-詳しくは CLAUDE.md §26–28。
+詳しくは `.claude/rules/security.md`（§26）と `supply-chain.md`（§27）。
