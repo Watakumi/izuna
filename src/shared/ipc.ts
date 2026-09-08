@@ -3,7 +3,7 @@ import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
 import type { FixId } from '../main/forge/setup'
-import type { ForgejoPull, ForgejoRepo, ForgejoToken } from '../main/forge/client'
+import type { ForgejoPull, ForgejoRepo, ForgejoRun, ForgejoToken } from '../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../main/forge/github'
 import type { RemoteRef } from './remote'
 import type { FoundRepo } from '../main/repos'
@@ -17,6 +17,7 @@ import type { Attachment } from './image'
 import type { FileDiff } from './diff'
 import type { TeamBoard } from '../main/team'
 import type { TaskStatus } from './team'
+import type { TeammateEvent } from './teammate'
 
 /**
  * renderer と main のあいだの唯一の口。
@@ -66,6 +67,11 @@ export interface IzunaApi {
   /** PR の差分。読むのは main（`shared/patch.ts`）で、renderer には形にしてから渡す */
   forgePullDiff(owner: string, repo: string, index: number): Promise<FileDiff[]>
   forgeCreatePull(owner: string, repo: string, input: { title: string; head: string; base: string; body?: string }): Promise<ForgejoPull>
+  /**
+   * Actions の実行（GOAL.md 測り方「Izuna がその状態を読める」）。`ref` を渡せばそのブランチだけ。
+   * Actions が無効なら空。畳むのは `shared/ci.ts`
+   */
+  forgeRuns(owner: string, repo: string, ref?: string): Promise<ForgejoRun[]>
   forgeEnsureRepo(name: string): Promise<ForgejoRepo>
   /**
    * トークンの一覧。**消すのはここからできない**（Forgejo が
@@ -84,6 +90,8 @@ export interface IzunaApi {
   /** その remote の既定ブランチ。main と決め打たない */
   defaultBranch(cwd: string, remote: string): Promise<string | null>
   isPushed(cwd: string, remote: string, branch: string): Promise<boolean>
+  /** その remote のブランチ一覧。作業ブランチが GitHub に漏れていないかを見る（`shared/remote.ts`） */
+  remoteHeads(cwd: string, remote: string): Promise<string[]>
   push(cwd: string, remote: string, branch: string): Promise<string>
   commitsSince(cwd: string, base: string): Promise<string[]>
 
@@ -179,6 +187,8 @@ export type SessionEvent =
   | { kind: 'loopStopped'; id: SessionId; stop: Stop }
   /** 予約の時刻が来た */
   | { kind: 'wokeUp'; id: SessionId; prompt: string }
+  /** 実行役の節目（開いた・手を止めた・worktree を作った…）。hook で拾う（§12） */
+  | { kind: 'teammate'; id: SessionId; event: TeammateEvent }
   | { kind: 'permission'; id: SessionId; request: PermissionRequest }
   | { kind: 'error'; id: SessionId; message: string }
   | { kind: 'exit'; id: SessionId }
@@ -196,6 +206,7 @@ export const CH = {
   forgePulls: 'izuna:forge:pulls',
   forgePullDiff: 'izuna:forge:pull-diff',
   forgeCreatePull: 'izuna:forge:create-pull',
+  forgeRuns: 'izuna:forge:runs',
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
   forgeTokens: 'izuna:forge:tokens',
   ghStatus: 'izuna:gh:status',
@@ -207,6 +218,7 @@ export const CH = {
   currentBranch: 'izuna:git:branch',
   defaultBranch: 'izuna:git:default-branch',
   isPushed: 'izuna:git:is-pushed',
+  remoteHeads: 'izuna:git:remote-heads',
   push: 'izuna:git:push',
   commitsSince: 'izuna:git:commits',
   openTerminal: 'izuna:term:open',

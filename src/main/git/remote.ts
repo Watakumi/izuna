@@ -185,6 +185,27 @@ export async function isPushed(
   }
 }
 
+/**
+ * その remote にあるブランチの一覧。漏れの検出（`shared/remote.ts` の `upstreamLeaks`）に使う。
+ * 届かなければ空 —— 「見えない」は「漏れていない」ではないので、呼ぶ側は空を断定に使わない。
+ */
+export async function remoteHeads(
+  cwd: string, remote: string, forgeRootUrl: string | null = null
+): Promise<string[]> {
+  let cred: Awaited<ReturnType<typeof credentials>> | null = null
+  try {
+    cred = await credentials(cwd, remote, forgeRootUrl)
+    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', remote], cred.env)
+    return out.split('\n')
+      .map((l) => /refs\/heads\/(\S+)$/.exec(l.trim())?.[1] ?? '')
+      .filter(Boolean)
+  } catch {
+    return []
+  } finally {
+    await cred?.dispose()
+  }
+}
+
 /** PR の本文の材料。base から先のコミットを並べる */
 export async function commitsSince(cwd: string, base: string, limit = 30): Promise<string[]> {
   try {

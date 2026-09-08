@@ -2,7 +2,7 @@ import { ipcMain, type BrowserWindow } from 'electron'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { applyFix, gatherFacts } from '../forge/setup'
-import { createPull, ensureRepo, listPulls, listRepos, listTokens, pullDiff, whoami } from '../forge/client'
+import { createPull, ensureRepo, listPulls, listRepos, listRuns, listTokens, pullDiff, whoami } from '../forge/client'
 import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
@@ -72,6 +72,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     forgePulls: async (owner, repo) => listPulls(await forgeRoot(), owner, repo),
     forgePullDiff: async (owner, repo, index) => parseUnifiedDiff(await pullDiff(await forgeRoot(), owner, repo, index)),
     forgeCreatePull: async (owner, repo, input) => createPull(await forgeRoot(), owner, repo, input),
+    forgeRuns: async (owner, repo, ref) => listRuns(await forgeRoot(), owner, repo, ref),
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
     forgeTokens: async () => {
       const root = await forgeRoot()
@@ -96,6 +97,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     // sandbox は private なので資格情報が要る。**その根の URL を渡す**
     isPushed: async (cwd, r, b) => remote.isPushed(cwd, r, b, await forgeRoot().catch(() => null)),
     push: async (cwd, r, b) => remote.push(cwd, r, b, await forgeRoot().catch(() => null)),
+    remoteHeads: async (cwd, r) => remote.remoteHeads(cwd, r, await forgeRoot().catch(() => null)),
     commitsSince: (cwd, base) => remote.commitsSince(cwd, base),
 
     openTerminal: (input) => term.openTerminal(getWindow, CH.terminalEvent, input),

@@ -155,6 +155,14 @@ async function main(): Promise<void> {
           Array.isArray(files) && files.length > 0 && typeof files[0].path === 'string',
           `forgePullDiff(${r.owner}/${r.name} !${p.number}) が差分を返す（${files.length} ファイル、+${files.reduce((n, f) => n + f.added, 0)}）`
         )
+        // Actions の口。無効なら空。**空でも通る** —— 回していないのは異常ではない
+        const runs = await call<Array<{ id: number; status: string; ref: string }>>(
+          page, 'forgeRuns', r.owner, r.name
+        )
+        check(
+          Array.isArray(runs) && runs.every((x) => typeof x.id === 'number' && typeof x.status === 'string'),
+          `forgeRuns(${r.owner}/${r.name}) が返る（${runs.length} 件${runs[0] ? `、最新 ${runs[0].status} @ ${runs[0].ref}` : ''}）`
+        )
         seen = true
         break
       }

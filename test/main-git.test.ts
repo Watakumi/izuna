@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   commitContext, commitsSince, currentBranch, defaultBranch, ensureSandboxRemote,
-  isPushed, listRemotes, push
+  isPushed, listRemotes, push, remoteHeads
 } from '../src/main/git/remote'
 import {
   listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
@@ -95,6 +95,11 @@ describe('remote', () => {
     expect(await push(work, 'origin', 'feat')).toContain('push しました')
     expect(await isPushed(work, 'origin', 'feat')).toBe(true)
     git(work, 'checkout', '-q', 'main')
+  })
+
+  it('remote のブランチ一覧。届かなければ空（漏れていないとは言わない）', async () => {
+    expect((await remoteHeads(work, 'origin')).sort()).toEqual(['feat', 'main'])
+    expect(await remoteHeads(work, 'いない remote')).toEqual([])
   })
 
   it('base からのコミットを新しい順に返す', async () => {

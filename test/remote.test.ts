@@ -6,7 +6,8 @@ import {
   roleOf,
   rolesIn,
   stageOf,
-  sandboxRemoteUrl
+  sandboxRemoteUrl,
+  upstreamLeaks
 } from '../src/shared/remote'
 
 /**
@@ -121,5 +122,23 @@ describe('作業場の URL を組む', () => {
     expect(hostOf('http://localhost:4649/')).toBe('localhost:4649')
     expect(hostOf(null)).toBeNull()
     expect(hostOf('bad')).toBeNull()
+  })
+})
+
+describe('GitHub に漏れた作業ブランチ（GOAL.md 測り方「GitHub に出るのは 6 の二段目だけ」）', () => {
+  it('sandbox にも upstream にもあるものが漏れ。既定ブランチといま出すブランチは除く', () => {
+    expect(upstreamLeaks({
+      upstreamHeads: ['main', 'feat/deliver', 'worktree-scoring', 'worktree-virtualize', 'hotfix'],
+      sandboxHeads: ['main', 'feat/deliver', 'worktree-scoring', 'worktree-virtualize'],
+      allowed: ['main', 'feat/deliver']
+    })).toEqual(['worktree-scoring', 'worktree-virtualize'])
+  })
+
+  it('upstream にしか無いものは漏れではない（人が別に押したもの）。null の許可は無視する', () => {
+    expect(upstreamLeaks({ upstreamHeads: ['main', 'hotfix'], sandboxHeads: ['main', 'feat'], allowed: ['main', null] })).toEqual([])
+  })
+
+  it('何も無ければ空', () => {
+    expect(upstreamLeaks({ upstreamHeads: [], sandboxHeads: ['feat'], allowed: [] })).toEqual([])
   })
 })

@@ -128,3 +128,23 @@ export function stageOf(input: {
   if (!input.pushedToSandbox) return 'needsPush'
   return 'readyForUpstream'
 }
+
+/**
+ * GitHub に漏れた作業ブランチ（GOAL.md 測り方「GitHub に出るのは 6 の二段目だけ」）。
+ *
+ * sandbox にあるブランチが upstream にもあれば、それは作業ブランチが外に出ている。
+ * 例外は upstream の既定ブランチと、**いま出そうとしているブランチ**（二段目の PR は
+ * そのブランチを upstream に push しなければ作れない）。
+ *
+ * 純粋関数。ブランチの一覧は `main/git/remote.ts` の `remoteHeads` が取る。
+ */
+export function upstreamLeaks(input: {
+  upstreamHeads: string[]
+  sandboxHeads: string[]
+  /** 出てよいもの。既定ブランチと、いま出すブランチ */
+  allowed: Array<string | null>
+}): string[] {
+  const ok = new Set(input.allowed.filter((b): b is string => !!b))
+  const sandbox = new Set(input.sandboxHeads)
+  return input.upstreamHeads.filter((b) => sandbox.has(b) && !ok.has(b)).sort()
+}
