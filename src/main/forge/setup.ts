@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { GRANTED_SCOPES, parseAppIni, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
+import { BOT_USER, GRANTED_SCOPES, parseAppIni, tokenMayTravel, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
 import { loadScopes, loadToken, saveToken } from './store'
 import { listTokens } from './client'
@@ -80,6 +80,8 @@ async function inspectToken(
 ): Promise<{ scopes: string[] | null; works: boolean | null }> {
   if (!token) return { scopes: null, works: null }
   if (!rootUrl) return { scopes: null, works: null }
+  // 経路が危なければ聞きに行かない。分からないまま返す（診断が経路の行を出す）
+  if (!tokenMayTravel(rootUrl)) return { scopes: null, works: null }
   try {
     const res = await fetch(new URL('api/v1/user', rootUrl), {
       headers: { Authorization: `token ${token}` },
@@ -125,14 +127,29 @@ export async function gatherFacts(): Promise<ForgeFacts> {
   return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works, runners: null }
 }
 
-/** 管理者ユーザーを探す。トークンは「誰の」ものかを決めないと発行できない */
-async function adminUser(binary: string, workPath: string): Promise<string> {
-  const out = await run(binary, ['admin', 'user', 'list', '--admin', '--work-path', workPath])
+/**
+ * ボットの利用者を用意する。**人（管理者）のトークンは作らない。**
+ *
+ * 最初は最初に見つかった管理者でトークンを発行していた。それは Izuna が
+ * 人の鍵を持つということで、CLI から失効できない（§7）以上、消す手段が
+ * 人のクリックしか無い鍵がアプリの中に残る。gh-radar と同じく、
+ * 作業場を触るのはボット、承認するのは人、に分ける（§26）。
+ *
+ * パスワードは使わないので乱数にして捨てる。
+ */
+async function ensureBotUser(binary: string, workPath: string): Promise<string> {
+  const out = await run(binary, ['admin', 'user', 'list', '--work-path', workPath])
   // 1 行目は見出し。ID<TAB>Username<TAB>... の形
-  const row = out.split('\n').slice(1).find((l) => l.trim())
-  const name = row?.split(/\s+/)[1]
-  if (!name) throw new Error('管理者ユーザーが見つかりません')
-  return name
+  const names = out.split('\n').slice(1).map((l) => l.trim().split(/\s+/)[1]).filter(Boolean)
+  if (names.includes(BOT_USER)) return BOT_USER
+  await run(binary, [
+    'admin', 'user', 'create',
+    '--username', BOT_USER,
+    '--email', `${BOT_USER}@localhost.invalid`,
+    '--random-password', '--must-change-password=false',
+    '--work-path', workPath
+  ])
+  return BOT_USER
 }
 
 function workPathOf(config: ForgeConfig): string {
@@ -157,7 +174,7 @@ export async function applyFix(id: FixId): Promise<string> {
     case 'token': {
       if (!facts.binary || !facts.config) throw new Error('Forgejo が見つかりません')
       const workPath = workPathOf(facts.config)
-      const user = await adminUser(facts.binary, workPath)
+      const user = await ensureBotUser(facts.binary, workPath)
       // 同名トークンがあると失敗するので、名前に時刻を混ぜる
       const name = `izuna-${Date.now().toString(36)}`
       const token = await run(facts.binary, [

@@ -1,4 +1,5 @@
 import { loadToken } from './store'
+import { tokenMayTravel, transportRefusal } from '../../shared/forge'
 
 /**
  * Forgejo の API クライアント（段5）。
@@ -42,6 +43,8 @@ export class ForgeError extends Error {
 async function call<T>(rootUrl: string, path: string, init?: RequestInit): Promise<T> {
   const token = await loadToken()
   if (!token) throw new ForgeError('Forgejo のトークンが未設定です。「Forgejo」画面から発行してください', 0)
+  // 平文で LAN を通る経路には載せない（§26）
+  if (!tokenMayTravel(rootUrl)) throw new ForgeError(transportRefusal(rootUrl), 0)
 
   const res = await fetch(new URL(`api/v1/${path}`, rootUrl), {
     ...init,

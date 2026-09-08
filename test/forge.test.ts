@@ -5,6 +5,8 @@ import {
   parseAppIni,
   readyForForge,
   reachableFromContainer,
+  tokenMayTravel,
+  transportRefusal,
   type ForgeFacts
 } from '../src/shared/forge'
 
@@ -179,5 +181,35 @@ describe('診断', () => {
     const c = find(facts({ config: { ...facts({}).config!, installLocked: false } }), 'configured')
     expect(c.level).toBe('warn')
     expect(c.fix).toBeNull()
+  })
+})
+
+describe('トークンを載せてよい経路（§26）', () => {
+  it('ループバックか https だけ', () => {
+    expect(tokenMayTravel('http://localhost:4649/')).toBe(true)
+    expect(tokenMayTravel('http://127.0.0.1:4649/')).toBe(true)
+    expect(tokenMayTravel('http://[::1]:4649/')).toBe(true)
+    expect(tokenMayTravel('https://forge.example/')).toBe(true)
+  })
+
+  it('**平文で LAN を通るものには載せない**', () => {
+    expect(tokenMayTravel('http://192.168.1.10:4649/')).toBe(false)
+    expect(tokenMayTravel('http://mac.local:4649/')).toBe(false)
+    expect(tokenMayTravel('ftp://localhost/')).toBe(false)
+    expect(tokenMayTravel(null)).toBe(false)
+    expect(tokenMayTravel('::')).toBe(false)
+  })
+
+  it('診断に経路の行が出て、段5 に進めない', () => {
+    const checks = diagnose(facts({ config: { path: '/p/custom/conf/app.ini', rootUrl: 'http://192.168.1.10:4649/',
+      httpPort: 4649, httpAddr: '0.0.0.0', installLocked: true, actionsEnabled: false } }))
+    const c = checks.find((x) => x.id === 'transport')
+    expect(c?.level).toBe('ng')
+    expect(c?.detail).toBe(transportRefusal('http://192.168.1.10:4649/'))
+    expect(readyForForge(checks)).toBe(false)
+  })
+
+  it('ループバックなら経路の行は出ない', () => {
+    expect(diagnose(facts({})).find((x) => x.id === 'transport')).toBeUndefined()
   })
 })

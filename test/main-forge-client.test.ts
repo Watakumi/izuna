@@ -45,8 +45,8 @@ describe('呼び方', () => {
   it('トークンが無ければ、発行する場所を言って落ちる', async () => {
     stored = null
     const { listRepos, ForgeError } = await import('../src/main/forge/client')
-    await expect(listRepos('http://x/')).rejects.toBeInstanceOf(ForgeError)
-    await expect(listRepos('http://x/')).rejects.toThrow(/発行/)
+    await expect(listRepos('http://localhost:4649/')).rejects.toBeInstanceOf(ForgeError)
+    await expect(listRepos('http://localhost:4649/')).rejects.toThrow(/発行/)
   })
 
   it('api/v1 の下に付け、トークンを添える', async () => {
@@ -62,13 +62,13 @@ describe('呼び方', () => {
     reply({ login: 'me' })
     reply([])
     reply('{"message":"token does not have at least one of required scope(s): [write:user]"}', 403)
-    await expect(ensureRepo('http://x/', 'r')).rejects.toThrow(/write:user/)
+    await expect(ensureRepo('http://localhost:4649/', 'r')).rejects.toThrow(/write:user/)
   })
 
   it('それ以外の失敗は本文をそのまま見せる', async () => {
     const { listRepos } = await import('../src/main/forge/client')
     reply('落ちています', 500)
-    await expect(listRepos('http://x/')).rejects.toThrow(/落ちています/)
+    await expect(listRepos('http://localhost:4649/')).rejects.toThrow(/落ちています/)
   })
 
 })
@@ -78,27 +78,27 @@ describe('読み取り', () => {
     const { listRepos } = await import('../src/main/forge/client')
     reply([{ full_name: 'me/r', owner: { login: 'me' }, name: 'r', private: true,
       default_branch: 'main', html_url: 'http://x/me/r', empty: false }])
-    const [r] = await listRepos('http://x/')
+    const [r] = await listRepos('http://localhost:4649/')
     expect(r).toMatchObject({ owner: 'me', name: 'r', private: true, defaultBranch: 'main', empty: false })
   })
 
   it('**中身の無いリポジトリの 404 は「まだ無い」**（PR は存在しえない）', async () => {
     const { listPulls } = await import('../src/main/forge/client')
     reply({ message: 'The target could not be found.' }, 404)
-    await expect(listPulls('http://x/', 'o', 'r')).resolves.toEqual([])
+    await expect(listPulls('http://localhost:4649/', 'o', 'r')).resolves.toEqual([])
   })
 
   it('404 以外は握りつぶさない', async () => {
     const { listPulls } = await import('../src/main/forge/client')
     reply('壊れています', 500)
-    await expect(listPulls('http://x/', 'o', 'r')).rejects.toThrow()
+    await expect(listPulls('http://localhost:4649/', 'o', 'r')).rejects.toThrow()
   })
 
   it('PR の形を読む', async () => {
     const { listPulls } = await import('../src/main/forge/client')
     reply([{ number: 3, title: 'なおす', html_url: 'http://x/3',
       head: { ref: 'feat' }, base: { ref: 'main' }, state: 'open' }])
-    const [p] = await listPulls('http://x/', 'o', 'r')
+    const [p] = await listPulls('http://localhost:4649/', 'o', 'r')
     expect(p).toMatchObject({ number: 3, title: 'なおす', head: 'feat', base: 'main' })
   })
 
@@ -106,7 +106,7 @@ describe('読み取り', () => {
     const { listTokens } = await import('../src/main/forge/client')
     reply([{ id: 1, name: 'izuna-x', scopes: ['write:user'], token_last_eight: 'abcd1234',
       created_at: '2026-09-08T00:00:00+09:00' }])
-    const [t] = await listTokens('http://x/', 'me')
+    const [t] = await listTokens('http://localhost:4649/', 'me')
     expect(t).toMatchObject({ id: 1, name: 'izuna-x', last8: 'abcd1234' })
     expect(t.scopes).toEqual(['write:user'])
   })
@@ -114,7 +114,7 @@ describe('読み取り', () => {
   it('scopes が null でも空で返す', async () => {
     const { listTokens } = await import('../src/main/forge/client')
     reply([{ id: 1, name: 'x', scopes: null, token_last_eight: 'z', created_at: '' }])
-    expect((await listTokens('http://x/', 'me'))[0].scopes).toEqual([])
+    expect((await listTokens('http://localhost:4649/', 'me'))[0].scopes).toEqual([])
   })
 })
 
@@ -122,7 +122,7 @@ describe('作る', () => {
   it('自分の名前を引く', async () => {
     const { whoami } = await import('../src/main/forge/client')
     reply({ login: 'me' })
-    expect(await whoami('http://x/')).toBe('me')
+    expect(await whoami('http://localhost:4649/')).toBe('me')
   })
 
   it('**既にあれば作らない**（作業場は作り直す前提なので冪等にする）', async () => {
@@ -130,7 +130,7 @@ describe('作る', () => {
     reply({ login: 'me' })
     reply([{ full_name: 'me/r', owner: { login: 'me' }, name: 'r', private: true,
       default_branch: 'main', html_url: '', empty: true }])
-    const r = await ensureRepo('http://x/', 'r')
+    const r = await ensureRepo('http://localhost:4649/', 'r')
     expect(r.name).toBe('r')
     expect(calls).toHaveLength(2) // POST していない
   })
@@ -141,7 +141,7 @@ describe('作る', () => {
     reply([])
     reply({ full_name: 'me/new', owner: { login: 'me' }, name: 'new', private: true,
       default_branch: 'main', html_url: '', empty: true })
-    await ensureRepo('http://x/', 'new')
+    await ensureRepo('http://localhost:4649/', 'new')
     const post = calls[2]
     expect(post.init.method).toBe('POST')
     expect(JSON.parse(String(post.init.body))).toMatchObject({ name: 'new', private: true })
@@ -151,8 +151,16 @@ describe('作る', () => {
     const { createPull } = await import('../src/main/forge/client')
     reply({ number: 7, title: 't', html_url: 'http://x/7',
       head: { ref: 'feat' }, base: { ref: 'main' }, state: 'open' })
-    const p = await createPull('http://x/', 'o', 'r', { title: 't', head: 'feat', base: 'main' })
+    const p = await createPull('http://localhost:4649/', 'o', 'r', { title: 't', head: 'feat', base: 'main' })
     expect(p.number).toBe(7)
     expect(calls[0].init.method).toBe('POST')
+  })
+})
+
+describe('経路（§26）', () => {
+  it('**平文で LAN を通る根にはトークンを送らない**', async () => {
+    const { listRepos } = await import('../src/main/forge/client')
+    await expect(listRepos('http://192.168.1.10:4649/')).rejects.toThrow(/トークンを送りません/)
+    expect(calls).toHaveLength(0)
   })
 })

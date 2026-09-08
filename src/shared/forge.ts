@@ -10,7 +10,7 @@
  */
 
 export type CheckId =
-  | 'installed' | 'configured' | 'running' | 'token'
+  | 'installed' | 'configured' | 'transport' | 'running' | 'token'
   | 'actions' | 'reachableFromRunner' | 'runner'
 export type Level = 'ok' | 'warn' | 'ng' | 'unknown'
 
@@ -101,6 +101,35 @@ export function parseAppIni(text: string): Omit<ForgeConfig, 'path'> {
   }
 }
 
+/**
+ * トークンを載せてよい経路か。**ループバックか、https のときだけ。**
+ *
+ * `openAddr` で 0.0.0.0 に開いたあと ROOT_URL を LAN のアドレスにすると、
+ * `fetch` も `git push` もトークンを平文で LAN に流す（§26）。
+ * Izuna はその経路にトークンを送らない。
+ */
+export function tokenMayTravel(rootUrl: string | null): boolean {
+  if (!rootUrl) return false
+  let u: URL
+  try {
+    u = new URL(rootUrl)
+  } catch {
+    return false
+  }
+  if (u.protocol === 'https:') return true
+  if (u.protocol !== 'http:') return false
+  const host = u.hostname.replace(/^\[|\]$/g, '')
+  return host === 'localhost' || host === '::1' || /^127\.\d+\.\d+\.\d+$/.test(host)
+}
+
+/** 送らない理由。止めるときは経路を名指しする */
+export function transportRefusal(rootUrl: string): string {
+  return `${rootUrl} にはトークンを送りません（平文で LAN を通ります）。ROOT_URL をループバックか https にしてください`
+}
+
+/** ボットの名前。人（管理者）の鍵は持たない */
+export const BOT_USER = 'izuna'
+
 export function missingScopes(have: string[] | null): string[] {
   if (!have) return [...REQUIRED_SCOPES]
   return REQUIRED_SCOPES.filter((s) => !have.includes(s))
@@ -129,6 +158,12 @@ export function diagnose(facts: ForgeFacts): Check[] {
       : { id: 'configured', label: '初期設定', level: 'warn',
           detail: 'INSTALL_LOCK が false。ブラウザで初期設定を終えてください', fix: null })
 
+  // 経路が危なければ、その先（起動・トークン）を試す前に止める
+  if (cfg?.rootUrl && !tokenMayTravel(cfg.rootUrl)) {
+    checks.push({ id: 'transport', label: '経路', level: 'ng',
+      detail: transportRefusal(cfg.rootUrl), fix: null })
+  }
+
   checks.push(facts.reachable
     ? { id: 'running', label: '起動', level: 'ok',
         detail: `${cfg?.rootUrl ?? ''} が応答しました`, fix: null }
@@ -141,7 +176,8 @@ export function diagnose(facts: ForgeFacts): Check[] {
     facts.tokenScopes === null
       ? { id: 'token', label: 'トークン', level: 'ng',
           detail: '未設定です',
-          fix: { label: 'トークンを発行する', warning: 'Forgejo に izuna という名前のトークンを作ります' } }
+          fix: { label: 'トークンを発行する',
+            warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します` } }
       : facts.tokenScopes.length === 0
         ? { id: 'token', label: 'トークン', level: 'warn',
             // **分からないことを「足りない」と言わない。** 古い版で発行した
@@ -193,6 +229,7 @@ export function diagnose(facts: ForgeFacts): Check[] {
 /** 段5 に進めるか。任意の項目は数えない */
 export function readyForForge(checks: Check[]): boolean {
   return checks
-    .filter((c) => c.id === 'installed' || c.id === 'configured' || c.id === 'running' || c.id === 'token')
+    .filter((c) => c.id === 'installed' || c.id === 'configured' || c.id === 'transport' ||
+      c.id === 'running' || c.id === 'token')
     .every((c) => c.level === 'ok')
 }

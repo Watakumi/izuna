@@ -132,7 +132,7 @@ describe('押したときだけ動く', () => {
 
   it('**トークンは write:user を含めて発行する**（無いと POST /user/repos が 403）', async () => {
     setUp()
-    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx', 'tok_new_abcdefgh']
+    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
     const { applyFix } = await load()
     const msg = await applyFix('token')
     const args = runs.at(-1)!
@@ -142,14 +142,42 @@ describe('押したときだけ動く', () => {
     expect(scopes).toContain('write:repository')
     expect(saved?.token).toBe('tok_new_abcdefgh')
     expect(saved?.scopes).toContain('write:user')
-    expect(msg).toContain('watakumi')
+    expect(msg).toContain('izuna')
   })
 
-  it('管理者が見つからなければ、そう言って止まる', async () => {
+  it('**人（管理者）のトークンは作らない。** ボットのものを発行する（§26）', async () => {
     setUp()
-    out = ['/f', 'version 1', 'ID\tUsername\n']
+    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
     const { applyFix } = await load()
-    await expect(applyFix('token')).rejects.toThrow(/管理者/)
+    await applyFix('token')
+    const args = runs.at(-1)!
+    expect(args[args.indexOf('--username') + 1]).toBe('izuna')
+    expect(args.join(' ')).not.toContain('watakumi')
+  })
+
+  it('ボットが無ければ作ってから発行する。パスワードは乱数で捨てる', async () => {
+    setUp()
+    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx', '', 'tok_new_abcdefgh']
+    const { applyFix } = await load()
+    await applyFix('token')
+    const create = runs.find((r) => r.includes('create'))!
+    expect(create.slice(0, 4)).toEqual(['/f', 'admin', 'user', 'create'])
+    expect(create[create.indexOf('--username') + 1]).toBe('izuna')
+    expect(create).toContain('--random-password')
+    expect(create).toContain('--must-change-password=false')
+    expect(create.join(' ')).not.toMatch(/--password/)
+    expect(runs.at(-1)).toContain('generate-access-token')
+  })
+
+  it('経路が危なければトークンを試さない（分からないまま返す）', async () => {
+    setUp()
+    writeFileSync(join(work, 'custom', 'conf', 'app.ini'),
+      appIni().replace('http://localhost:4649/', 'http://192.168.1.10:4649/'))
+    out = ['/opt/homebrew/bin/forgejo', 'version 16.0.3']
+    const { gatherFacts } = await load()
+    const f = await gatherFacts()
+    expect(f.tokenWorks).toBeNull()
+    expect(f.tokenScopes).toBeNull()
   })
 
   it('Forgejo が無ければトークンは作らない', async () => {
