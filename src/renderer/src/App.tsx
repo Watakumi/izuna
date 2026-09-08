@@ -191,7 +191,7 @@ function App(): React.JSX.Element {
         {!active ? (
           <div style={S.empty}>
             <span style={{ color: C.dim, fontSize: F.base }}>セッションがありません</span>
-            <button style={S.btn} onClick={() => setShowNew(true)}>新しいセッションを起こす</button>
+            <button style={S.btn} onClick={() => setShowNew(true)}>新しいセッションを開く</button>
           </div>
         ) : (
           <div style={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>

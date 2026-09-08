@@ -7,14 +7,14 @@ import { C, F, MONO, R, S, ellipsis } from '../theme'
 import { Button, Faint, Input, TextArea } from './ui'
 
 /**
- * セッションを起こす（段3・段4 の入口）。
+ * セッションを開く（段3・段4 の入口）。
  *
  * **worktree はここに出てこない。** 隔離するのはエージェントの仕事で、
  * `EnterWorktree` を呼んで `<project>/.claude/worktrees/` に作る（§12 実測）。
  * 以前はここに「worktree を作る」チェックとブランチ名の欄があったが、
  * **Izuna が別の場所（`~/.izuna/worktrees/`）に作る二重の経路**になっていた。
  *
- * 順番も直した。以前は「場所 → 方式 → ブランチ名」で、**やることを最後まで
+ * 順番も直した。以前は「場所 → 方式 → ブランチ名」で、**依頼を最後まで
  * 聞かなかった**。docs/GOAL.md の 7 手は Issue から始まるのに、その入口が
  * 画面に無かった。
  */
@@ -25,7 +25,7 @@ export interface StartInput {
   team: string
   /** 起こしたあとに最初に送る依頼。空なら送らない */
   initialPrompt: string
-  /** 続きから起こすときの claude 側のセッション id */
+  /** 続きから開くときの claude 側のセッション id */
   resume?: string
 }
 
@@ -60,7 +60,7 @@ export function NewSession({
   // 過去のセッション（§18）。**保存層は無い** —— claude が書いた記録を走査している
   useEffect(() => { void window.izuna.listSessions().then(setPast).catch(() => setPast([])) }, [])
 
-  // リポジトリが決まったら、やることの候補（Issue）を引く
+  // リポジトリが決まったら、依頼の候補（Issue）を引く
   useEffect(() => {
     const path = cwd.trim()
     if (!path) { setRepo(null); setIssues(null); return }
@@ -94,13 +94,13 @@ export function NewSession({
     .sort(byNewest)
 
   /**
-   * **やることは必須にしない。** 「とりあえず開いて、会話で伝える」を潰さない。
+   * **依頼は必須にしない。** 「とりあえず開いて、会話で伝える」を潰さない。
    * 空なら何も送らず、会話の入力欄から始める。
    */
   const ready = !busy && cwd.trim() !== ''
 
   /**
-   * 続きからのときは、記録に残っていた `cwd` でそのまま起こす
+   * 続きからのときは、記録に残っていた `cwd` でそのまま開く
    * （その worktree にいたなら、そこに戻る）。
    */
   const start = async (resume?: SessionSummary): Promise<void> => {
@@ -149,7 +149,7 @@ export function NewSession({
           display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* 1. どこで */}
-          <Section label="どのリポジトリ" action={
+          <Section label="リポジトリ" action={
             <Button size="sm" onClick={() => void window.izuna.pickDirectory()
               .then((p) => { if (p) { setCwd(p); setQuery(''); setIssue(null) } })}>
               フォルダを選ぶ…
@@ -206,9 +206,9 @@ export function NewSession({
             </Section>
           )}
 
-          {/* 3. 何をするか —— ここが本題 */}
+          {/* 3. 最初の依頼 —— ここが本題 */}
           {cwd.trim() !== '' && (
-            <Section label="何をするか（任意）">
+            <Section label="最初の依頼（任意）">
               {issues && issues.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
@@ -229,8 +229,8 @@ export function NewSession({
               <TextArea
                 value={text} rows={2}
                 placeholder={issues && issues.length > 0
-                  ? 'または、やることを直接書く（後で会話でもいい）'
-                  : 'やることを書く（後で会話でもいい）'}
+                  ? 'または、依頼を直接書く（後で会話でもいい）'
+                  : '依頼を書く（後で会話でもいい）'}
                 onChange={(e) => { setText(e.target.value); setIssue(null) }}
               />
             </Section>
@@ -247,13 +247,13 @@ export function NewSession({
           borderTop: `1px solid ${C.line}` }}>
           <span style={{ fontSize: F.small, color: C.faint }}>
             {!ready ? '' : prompt !== ''
-              ? '起こすと、選んだ内容がそのまま最初の依頼になります'
-              : 'そのまま開きます。やることは会話で伝えられます'}
+              ? '開くと、選んだ内容がそのまま最初の依頼になります'
+              : 'そのまま開きます。依頼は会話で伝えられます'}
           </span>
           <div style={{ flexGrow: 1 }} />
           <Button onClick={onCancel} >やめる</Button>
           <Button kind="primary" onClick={() => void start()} disabled={!ready}>
-            {busy ? '用意しています…' : '起こす'}
+            {busy ? '用意しています…' : '開く'}
           </Button>
         </div>
       </div>

@@ -68,15 +68,31 @@ async function askpassEnv(root: string): Promise<NodeJS.ProcessEnv | null> {
  */
 async function credentials(
   cwd: string, remote: string, forgeRootUrl: string | null
-): Promise<NodeJS.ProcessEnv> {
-  if (!forgeRootUrl) return {}
+): Promise<{ env: NodeJS.ProcessEnv; args: string[] }> {
+  const none = { env: {}, args: [] }
+  if (!forgeRootUrl) return none
   try {
     const url = (await git(cwd, ['remote', 'get-url', remote])).trim()
-    if (!url.startsWith(new URL(forgeRootUrl).origin)) return {}
+    if (!url.startsWith(new URL(forgeRootUrl).origin)) return none
   } catch {
-    return {}
+    return none
   }
-  return (await askpassEnv(forgeRootUrl)) ?? {}
+  const env = await askpassEnv(forgeRootUrl)
+  if (!env) return none
+
+  /**
+   * **credential helper を止める。**
+   *
+   * これを止めないと `GIT_ASKPASS` は呼ばれない。git は helper を先に試し、
+   * 返ってきた値をそのまま使う。この環境では `/opt/homebrew/etc/gitconfig` に
+   * `osxkeychain` が入っていて、**別の（古い）資格情報を返していた**。
+   *
+   * その結果 Forgejo は「認証は通ったが、その private リポジトリを見る権限が
+   * 無い利用者」と判断し、**401 ではなく 404** を返す。git はそれを
+   * `Repository not found` と表示するので、**認証の問題だと分からない**。
+   * 匿名なら 401 が返るのに、中途半端に認証されるほうが原因を隠す。
+   */
+  return { env, args: ['-c', 'credential.helper='] }
 }
 
 export async function listRemotes(cwd: string, forgeRootUrl: string | null): Promise<RemoteRef[]> {
@@ -134,7 +150,8 @@ export async function currentBranch(cwd: string): Promise<string | null> {
 export async function push(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<string> {
-  await git(cwd, ['push', '--set-upstream', remote, branch], await credentials(cwd, remote, forgeRootUrl))
+  const cred = await credentials(cwd, remote, forgeRootUrl)
+  await git(cwd, [...cred.args, 'push', '--set-upstream', remote, branch], cred.env)
   return `${remote} に ${branch} を push しました`
 }
 
@@ -143,8 +160,8 @@ export async function isPushed(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<boolean> {
   try {
-    const out = await git(cwd, ['ls-remote', '--heads', remote, branch],
-      await credentials(cwd, remote, forgeRootUrl))
+    const cred = await credentials(cwd, remote, forgeRootUrl)
+    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', remote, branch], cred.env)
     return out.trim() !== ''
   } catch {
     return false

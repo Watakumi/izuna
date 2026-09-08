@@ -114,7 +114,7 @@ export function Worktrees({
               ) : (
                 <div style={{ display: 'flex', gap: 6 }}>
                   {!row.session && !row.main && (
-                    <Button kind="primary" onClick={() => onOpen(row)}>ここで起こす</Button>
+                    <Button kind="primary" onClick={() => onOpen(row)}>ここで開く</Button>
                   )}
                   {!blocked && <Button  onClick={() => setConfirming(row.path)}>畳む</Button>}
                   {blocked && <span style={{ fontSize: F.micro, color: C.faint, alignSelf: 'center' }}>{blocked}</span>}
