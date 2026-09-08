@@ -57,14 +57,20 @@ export function Sidebar({
     }}>
       <div style={{ padding: '12px 16px 8px', fontSize: F.small, letterSpacing: '0.08em',
         color: C.dim2, fontWeight: 600 }}>
-        セッション {panels.length > 0 && <span style={{ color: C.faint }}>{panels.length}</span>}
+        {/*
+          **数を出さない。** 「セッション 1」は「1 番目のセッション」とも読める。
+          そもそも下に並んでいるので数えれば分かる。数が要るのは、
+          一覧が画面に収まらないときだけ。
+        */}
+        セッション
       </div>
 
       <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px',
         display: 'flex', flexDirection: 'column', gap: 2 }}>
         {panels.length === 0 && (
           <div style={{ padding: '12px 8px', fontSize: F.small, color: C.faint, lineHeight: 1.7 }}>
-            まだありません。<br />下の「新しいセッション」から。
+            {/* **釦の文字を引用しない。** 変えたときにずれる（実際ずれていた）*/}
+            まだありません
           </div>
         )}
         {group(panels).map(([repo, group]) => (
@@ -74,7 +80,6 @@ export function Sidebar({
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.faint}
                 strokeWidth="1.9"><path d="M4 4h11l5 5v11H4z" /></svg>
               <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>{repo}</span>
-              <span style={{ fontSize: F.micro, color: C.faint }}>{group.length}</span>
             </div>
             {group.map((p) => {
           const d = dot(p)

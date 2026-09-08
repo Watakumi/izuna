@@ -81,7 +81,7 @@ export function Conversation({ items, draft }: { items: Item[]; draft: Draft | n
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 24px' }}>
       {items.length === 0 && !draft && (
-        <div style={{ color: C.faint, fontSize: F.body }}>作業ディレクトリを選んで、依頼を送ってください</div>
+        <div style={{ color: C.faint, fontSize: F.body }}>依頼を送ると、ここに会話が出ます</div>
       )}
       {items.map((item) => (
         <ItemView key={item.kind === 'assistant' ? item.id : `${item.kind}-${item.id}`} item={item} />
