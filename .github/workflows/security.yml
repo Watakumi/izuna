@@ -15,6 +15,10 @@ permissions:
 jobs:
   secrets:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # pull_request のとき、action が PR のコミット一覧を API で読む（無いと 403。2026-09-09 に踏んだ）
+      pull-requests: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

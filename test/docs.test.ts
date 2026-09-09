@@ -85,8 +85,27 @@ describe('文書が名指しするファイル', () => {
     }
   })
 
-  it.each(paths)('%s が実在する', (p) => {
+  /**
+   * 版管理に入れないと `.gitignore` に書いてあるもの（`session-full.ndjson` など手元専用の録画）は、
+   * clone した先には無い。文書がそう書いている以上、実在の検査から外す。
+   * それ以外は CI でも実在しなければならない（GitHub の CI で 2026-09-09 に踏んだ）
+   */
+  const ignored = readFileSync(join(ROOT, '.gitignore'), 'utf8').split('\n')
+    .map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+  const isIgnored = (p: string): boolean => ignored.some((g) => {
+    const re = new RegExp('^' + g.replace(/^\//, '').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*') + '(/|$)')
+    return re.test(p)
+  })
+
+  it.each(paths.filter((p) => !isIgnored(p)))('%s が実在する', (p) => {
     expect(() => statSync(join(ROOT, p))).not.toThrow()
+  })
+
+  it('gitignore のものは実在を求めない（手元専用の録画）', () => {
+    expect(isIgnored('test/fixtures/session-full.ndjson')).toBe(true)
+    expect(isIgnored('test/fixtures/session-safe.ndjson')).toBe(false)
+    expect(isIgnored('docs/v1-walk/01-x.png')).toBe(true)
+    expect(isIgnored('docs/v1-walk/README.md')).toBe(false)
   })
 })
 
