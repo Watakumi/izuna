@@ -14,6 +14,18 @@
 | `gh` CLI にログイン済み                       | upstream（GitHub）の Issue と PR は `gh` に任せる                                 | `brew install gh` → `gh auth login`                                     |
 | `git`                                         | ——                                                                                | Xcode Command Line Tools                                                |
 
+## DMG を開く（署名していないあいだ）
+
+配布物は Apple の証明書で署名していない（証明書は人が用意する。`.github/workflows/release.yml` は secrets を
+置けば署名と公証まで動く）。署名の無いアプリは macOS が「開発元を確認できません」と言う。
+
+| macOS | 開き方 |
+| --- | --- |
+| 14 まで | Finder で右クリック → 開く |
+| 15 以降 | 一度開こうとして断られたあと、システム設定 → プライバシーとセキュリティ の一番下の「このまま開く」。ターミナルなら `xattr -dr com.apple.quarantine /Applications/Izuna.app` |
+
+electron-builder が ad-hoc の署名を付けているので「壊れている」とは言われない。
+
 ## Forgejo の置き方は 3 つ
 
 ### 1. この Mac に Homebrew で（作者と同じ）
