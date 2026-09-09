@@ -97,11 +97,18 @@ export class Wakeups {
 
   #arm(wakeups: Wakeup[]): void {
     this.stop()
-    const soonest = next(wakeups, Date.now())
-    if (!soonest) return
+    const now = Date.now()
+    const soonest = next(wakeups, now)
+    /**
+     * **既に期限が来ているものがあれば、次が無くても tick する。**
+     * `add()` は保存してから張る。保存に時間がかかると（遅い CI で踏んだ。2026-09-09）、
+     * 張る時点で期限が過ぎていて `next()` が null になり、タイマーを張らないまま
+     * 誰も起こさなくなっていた。
+     */
+    if (!soonest && due(wakeups, now).length === 0) return
     // **上限を切る。** 何日も先の予約に長いタイマーを張ると、
     // その間に足された近いものを取り逃がす
-    const wait = Math.min(soonest.fireAt - Date.now(), 60_000)
+    const wait = soonest ? Math.min(soonest.fireAt - now, 60_000) : 0
     this.#timer = setTimeout(() => { void this.#tick() }, Math.max(wait, 250))
   }
 

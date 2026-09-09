@@ -132,6 +132,19 @@ describe('時が来たら', () => {
     expect((await w.list())[0].state).toBe('fired')
   })
 
+  it('**張る前に期限が来ていても起こす**（保存が遅くて取り逃がした。2026-09-09 に CI で踏んだ）', async () => {
+    const { Wakeups } = await load()
+    const w = new Wakeups()
+    const fired: string[] = []
+    w.onFire((x) => fired.push(x.id))
+    await w.start()
+    // 1ms 先。保存して張るころには過ぎている
+    await w.add({ sessionId: 's', cwd: '/w', prompt: 'p', fireAt: Date.now() + 1 })
+    await until(async () => fired.length > 0)
+    w.stop()
+    expect(fired).toHaveLength(1)
+  })
+
   it('**二重に起こさない**（タイマーは 1 本だけ）', async () => {
     const { Wakeups } = await load()
     const w = new Wakeups()
