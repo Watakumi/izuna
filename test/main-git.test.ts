@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest'
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -10,6 +10,15 @@ import {
 import {
   listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
 } from '../src/main/git/worktree'
+
+// トークンの置き場は Electron の safeStorage を使う。ここで見るのは本物の git だけなので差し替える。
+// 差し替えないと `electron` を読み込み、本体の無い CI（ELECTRON_SKIP_BINARY_DOWNLOAD）で落ちる
+vi.mock('../src/main/forge/store', () => ({
+  loadToken: async () => null,
+  loadScopes: async () => null,
+  saveToken: async () => undefined,
+  tokenStatus: async () => 'none'
+}))
 
 /**
  * git を実際に動かす層。**本物の git で測る。**
