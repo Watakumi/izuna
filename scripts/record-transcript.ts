@@ -12,7 +12,7 @@
  * 加工しない。整形も間引きもしない。
  */
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ClaudeSession } from '../src/main/claude/session'
@@ -75,7 +75,8 @@ async function record(kind: Kind): Promise<void> {
       setTimeout(() => reject(new Error('240 秒で終わらなかった')), 240_000)
     })
     mkdirSync(dirname(out), { recursive: true })
-    writeFileSync(out, lines.join('\n') + '\n', 'utf8')
+    // 家のディレクトリだけは機械的に伏せる（配る。§20）。中身の加工はしない（§11）
+    writeFileSync(out, lines.join('\n').split(homedir()).join('/Users/someone') + '\n', 'utf8')
     console.log(`\n[${kind}] ${lines.length} 件 / 承認 ${asked} 回 → ${out}`)
   } finally {
     await session.stop()

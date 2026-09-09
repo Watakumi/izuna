@@ -22,8 +22,9 @@
  * safe 版では plugins / skills / custom commands が落ちるので slash_commands は
  * ほぼ空になる。/ パレットの材料を見たいときは full 版を使うこと。
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { homedir, tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { spawn } from 'node:child_process'
 import { createInterface } from 'node:readline'
@@ -69,7 +70,12 @@ async function record(mode: Mode, bin: string, env: NodeJS.ProcessEnv): Promise<
   const out = OUT[mode]
   console.log(`\n[${mode}] ${argsFor(mode).join(' ')}`)
 
-  const child = spawn(bin, argsFor(mode), { cwd: ROOT, env, stdio: ['pipe', 'pipe', 'pipe'] })
+  // **家のパスを録画に残さない**（配る。§20）。cwd は一時ディレクトリ、更新は止めて録る
+  // （native の claude は走るたびに自分を更新し、版の門が落ちる。§7）
+  const cwd = mkdtempSync(join(tmpdir(), 'izuna-fixture-'))
+  const child = spawn(bin, argsFor(mode), {
+    cwd, env: { ...env, DISABLE_AUTOUPDATER: '1' }, stdio: ['pipe', 'pipe', 'pipe']
+  })
   child.stdout.setEncoding('utf8')
   child.stderr.setEncoding('utf8')
   child.stderr.on('data', (s: string) => process.stderr.write('[stderr] ' + s))
@@ -100,8 +106,14 @@ async function record(mode: Mode, bin: string, env: NodeJS.ProcessEnv): Promise<
   child.kill('SIGTERM')
 
   mkdirSync(OUT_DIR, { recursive: true })
-  writeFileSync(out, lines.join('\n') + '\n', 'utf8')
+  // 家のディレクトリだけは機械的に伏せる（プラグインの置き場などに出る）。中身の加工はしない（§11）
+  writeFileSync(out, scrubHome(lines.join('\n')) + '\n', 'utf8')
   console.log(`\n[${mode}] ${lines.length} 行を ${out} に録った`)
+}
+
+/** `/Users/<名前>` を `/Users/someone` に。識別子だけで、行の形は変えない */
+function scrubHome(text: string): string {
+  return text.split(homedir()).join('/Users/someone')
 }
 
 async function main(): Promise<void> {

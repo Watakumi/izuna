@@ -20,7 +20,7 @@ import {
 // 手元の app.ini の実物（/opt/homebrew/var/forgejo/custom/conf/app.ini）
 const REAL_INI = `
 APP_NAME = Forgejo
-RUN_USER = watakumi
+RUN_USER = someone
 RUN_MODE = prod
 
 [server]
