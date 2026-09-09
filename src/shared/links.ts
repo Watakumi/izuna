@@ -63,3 +63,29 @@ export function shouldOpenOutside(url: string, here: string | null): boolean {
   }
   return true
 }
+
+const GITHUB = new Set(['github.com', 'www.github.com'])
+
+/**
+ * 窓の中に埋めて見てよい頁か（PR の頁を Izuna から出ずに見る。§32）。
+ *
+ * **Forgejo と GitHub だけ。** 埋める頁は別の webContents で、リンクを踏めばどこへでも行ける。
+ * 行き先を forge に限れば、本文に仕込まれたリンクで見知らぬ頁を開くことは無い。
+ * http は Forgejo の根がそうであるときだけ（ループバックの Forgejo は http。§26 の tokenMayTravel と同じ線）。
+ */
+export function canPreview(url: string, forgeRootUrl: string | null): boolean {
+  let to: URL
+  try {
+    to = new URL(url)
+  } catch {
+    return false
+  }
+  if (to.protocol === 'https:' && GITHUB.has(to.host.toLowerCase())) return true
+  if (!forgeRootUrl) return false
+  try {
+    const forge = new URL(forgeRootUrl)
+    return to.protocol === forge.protocol && to.host.toLowerCase() === forge.host.toLowerCase()
+  } catch {
+    return false
+  }
+}

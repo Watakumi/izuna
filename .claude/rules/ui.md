@@ -710,3 +710,37 @@ Forgejo の `GET /repos/{o}/{r}/pulls/{n}.diff` を `shared/patch.ts` が `FileD
   `remoteHeads` で両方の remote のブランチを取り、`shared/remote.ts` の `upstreamLeaks` が決める
 - **作業ブランチを消す**。Sandbox の下に既定ブランチといまのブランチ以外を並べ、「消す」で
   `deleteRemoteBranch`。main / master は口の側でも拒む。worktree を消すのは「ブランチ」タブのまま
+
+---
+
+## 32. 頁を窓の中で見る（2026-09-09）
+
+PR の頁（Forgejo / GitHub）を Izuna から出ずに読む。Cursor の web view と同じ仕組みで、
+Electron の `WebContentsView` を 1 枚、renderer の上に重ねる（`main/preview.ts`）。
+
+| どこ | 何 |
+| --- | --- |
+| `shared/links.ts` の `canPreview` | 行き先の判定。**Forgejo の根と同じ host と、https の GitHub だけ**。それ以外は口で拒む |
+| `main/preview.ts` | view を 1 枚だけ持つ。node を切り sandbox、`persist:preview` にログインが残る |
+| `components/Preview.tsx` | 枠。**場所を測って送るだけ**で中身は描かない。大きさは ResizeObserver、位置は 250ms ごとに見る |
+| `Forge.tsx` の「頁」 | sandbox の PR と Upstream の PR の札から開く |
+
+### 決めたこと
+
+- **`<webview>` タグは使わない。** Electron が勧めておらず、renderer に別の webContents を生む口を渡すことになる
+- **埋めた頁にも §26 の門がそのまま効く。** `app.on('web-contents-created')` で全部にかけているので、
+  頁の中で別 origin へ飛ぶリンクは既定のブラウザへ逃げ、同じ origin の中だけ動ける
+- **会話の上に重ねない。** 枠は会話の柱の中に縦に積む（会話 42% / 頁 58%）。承認の札は会話の側に残るので埋もれない
+- 位置を知らせる口がブラウザに無いので、右のパネルの幅が変わる（タブで 288 ↔ 360）ときは間隔で追う
+
+### private の sandbox はまず頁でログインする
+
+ボットのトークンは API のもので、頁には効かない。未ログインの Forgejo は private の頁に 404 を返す
+（2026-09-09 に実機で見た）。枠に一言出し、その中で一度ログインすれば `persist:preview` に残る。
+トークンを Cookie に流し込むことはしない —— 人の鍵をアプリが持たない（§26）。
+
+### やっていない
+
+- 開発中のアプリ（dev サーバ）を映す。行き先を `localhost` の任意の port に広げる判断が要る
+- 頁の中の遷移を枠の URL 欄に反映する（main → renderer の口が要る）
+

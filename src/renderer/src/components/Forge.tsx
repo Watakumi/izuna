@@ -39,11 +39,13 @@ interface Snapshot {
 }
 const remembered = makeCache<Snapshot>()
 
-export function Forge({ cwd, sessionId, onDone }: {
+export function Forge({ cwd, sessionId, onDone, onPreview }: {
   cwd: string
   /** レビューを流し込む先。会話が無ければ頼めない */
   sessionId: string | null
   onDone: () => void
+  /** PR の頁を窓の中で見る（§32）。省略なら釦を出さない */
+  onPreview?: (url: string) => void
 }): React.JSX.Element {
   /**
    * **「まだ読んでいない」と「読んだ結果、無い」を区別する。**
@@ -237,6 +239,9 @@ export function Forge({ cwd, sessionId, onDone }: {
                 <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
                   <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
                   <CiBadge runs={runs} ref={p.head} />
+                  <div style={{ flexGrow: 1 }} />
+                  {/* 頁を中で見る。承認の判断を Izuna から出ずに済ませる（§32） */}
+                  {onPreview && <Button size="sm" onClick={() => onPreview(p.htmlUrl)}>頁</Button>}
                 </div>
                 {openPull === p.number && sandbox.owner && sandbox.repo && (
                   <div style={{ marginTop: S.md }}>
@@ -351,6 +356,22 @@ export function Forge({ cwd, sessionId, onDone }: {
               </span>
             )}
           </Card>
+        )}
+
+        {gh?.ok && ghPulls && ghPulls.length > 0 && (
+          <>
+            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>PR</span>
+            {ghPulls.slice(0, 4).map((p) => (
+              <Card key={p.number}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>#{p.number}</span>
+                  <span style={{ fontSize: F.body, ...ellipsis }}>{p.title}</span>
+                  <div style={{ flexGrow: 1 }} />
+                  {onPreview && <Button size="sm" onClick={() => onPreview(p.url)}>頁</Button>}
+                </div>
+              </Card>
+            ))}
+          </>
         )}
 
         {gh?.ok && issues && issues.length > 0 && (

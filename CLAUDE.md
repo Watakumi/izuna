@@ -80,12 +80,13 @@ src/main/team.ts            共有フォルダと盤面（作る・読む・log.
 src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
 src/main/loop.ts            自律ループの駆動と、進捗を申告する MCP ツール（§23）
 src/main/wakeup.ts          起床の予約。覚えのある id だけ起こす（§26）
+src/main/preview.ts         頁を窓の中に埋める WebContentsView を 1 枚持つ（§32）
 src/main/sessions.ts        ~/.claude/projects の走査と復元（§18）
 src/main/forge/, git/       Forgejo の API と準備、git の remote / worktree
 src/preload/index.ts        renderer に出す面。CH の鍵から組む。手で並べない（§27）
 src/shared/ipc.ts           口の型と名前（CH）。IPC_VERSION は鍵から導く
 src/shared/hooks.ts         リポジトリが持ち込む hook / MCP の検出（純粋関数）
-src/shared/links.ts         外に出してよいリンクの判定（純粋関数）
+src/shared/links.ts         外に出してよいリンクと、中で見てよい頁の判定（純粋関数）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
@@ -156,7 +157,7 @@ Windows / Linux、複数エージェント対応。
 | `.claude/rules/testing.md` | 検査 | §10, §11, §24, §28, §30, §31 |
 | `.claude/rules/team.md` | ブレインと実行役 | §12 |
 | `.claude/rules/config.md` | 設定 | §15 |
-| `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29 |
+| `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29, §32 |
 | `.claude/rules/sessions.md` | セッションの保存と復元 | §18 |
 | `.claude/rules/loop.md` | 自律ループと起床 | §23 |
 | `.claude/rules/security.md` | セキュリティ | §26 |
@@ -186,7 +187,7 @@ pnpm walk       # v1 の 7 手を本物で通して撮る（§31）。実 API �
 1. **変えたい挙動を検査で先に書く。** 不変条件に触る変更では、守るものを明示してから直す（§11）。
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
-   新しい節を足すなら番号は続きから（いまの最後は §31）。既存の番号は変えない。
+   新しい節を足すなら番号は続きから（いまの最後は §32）。既存の番号は変えない。
 4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
    `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
 5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。
