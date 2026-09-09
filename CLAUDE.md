@@ -7,7 +7,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 それまで 2,191 行を毎セッション全部読んでいた）。事実と、その根拠になった実測を残す。
 推測は「未検証」と明記する。**節番号（§N）は分けても変えていない**。コードの註から引ける。
 
-- リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （2026-09-09 に履歴を書き換えて作り直した。**private。配る準備中**・§20）
+- リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （2026-09-09 に履歴を書き換えて作り直し、**public** にした・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
