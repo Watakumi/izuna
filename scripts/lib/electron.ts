@@ -29,7 +29,8 @@ export const call = <T>(page: Page, name: string, ...args: unknown[]): Promise<T
     args
   ] as const)
 
-export async function launch(port: number): Promise<Running> {
+/** `binary` を渡せば組んだ配布物（`dist/mac-arm64/Izuna.app/...`）を起こせる。既定は `electron .` */
+export async function launch(port: number, binary?: string): Promise<Running> {
   if (!existsSync(join(ROOT, 'out', 'main', 'index.js'))) {
     throw new Error('out/ が無い。先に pnpm build')
   }
@@ -37,14 +38,17 @@ export async function launch(port: number): Promise<Running> {
   // 新しく起こしたつもりで古いほうに繋がり、動いているセッションを相手に走る（2026-09-09 に踏んだ）
   try {
     const res = await fetch(`http://127.0.0.1:${port}/json/version`)
-    if (res.ok) throw new Error(`port ${port} は既に開いている。前の Electron が残っていないか（lsof -i :${port}）`)
+    if (res.ok)
+      throw new Error(
+        `port ${port} は既に開いている。前の Electron が残っていないか（lsof -i :${port}）`
+      )
   } catch (e) {
     if (e instanceof Error && e.message.startsWith('port ')) throw e
     // 開いていない。それでよい
   }
   const require = createRequire(__filename)
-  const electronPath = require('electron') as string
-  const ps = spawn(electronPath, ['.', `--remote-debugging-port=${port}`], {
+  const electronPath = binary ?? (require('electron') as string)
+  const ps = spawn(electronPath, [...(binary ? [] : ['.']), `--remote-debugging-port=${port}`], {
     cwd: ROOT,
     stdio: 'ignore'
   })

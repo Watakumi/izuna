@@ -148,3 +148,18 @@ export function upstreamLeaks(input: {
   const sandbox = new Set(input.sandboxHeads)
   return input.upstreamHeads.filter((b) => sandbox.has(b) && !ok.has(b)).sort()
 }
+
+/**
+ * git に渡してよい名前か（remote 名・ブランチ名）。**引数の注入を止める**（§26）。
+ *
+ * `-` で始まる名前は git がオプションとして読む（`--upload-pack=…` のようなブランチを
+ * 誰かが sandbox に push できれば、`git push remote --delete <それ>` で刺さる）。
+ * `git check-ref-format` の規則のうち、名前に出てきうる範囲で見る。
+ */
+export function isSafeRef(name: string): boolean {
+  if (!name || name.length > 255) return false
+  if (name.startsWith('-') || name.startsWith('/') || name.endsWith('/') || name.endsWith('.')) return false
+  if (name.endsWith('.lock') || name.includes('..') || name.includes('//') || name.includes('@{')) return false
+  if (/[\s~^:?*[\\\x00-\x1f\x7f]/.test(name)) return false
+  return true
+}

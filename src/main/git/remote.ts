@@ -1,4 +1,4 @@
-import { parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
+import { isSafeRef, parseRemotes, sandboxRemoteUrl, type RemoteRef } from '../../shared/remote'
 import type { CommitContext } from '../../shared/commit'
 import { run } from '../exec'
 import { resolved } from '../config'
@@ -13,6 +13,12 @@ import { tokenMayTravel, transportRefusal } from '../../shared/forge'
 
 const git = (cwd: string, args: string[], extra: NodeJS.ProcessEnv = {}): Promise<string> =>
   run('git', args, { cwd, env: extra })
+
+/** remote 名とブランチ名は git に渡す前に形を見る。`-` 始まりはオプションになる（§26） */
+function refOrThrow(name: string, what: string): string {
+  if (!isSafeRef(name)) throw new Error(`${what}に使えない名前です: ${JSON.stringify(name)}`)
+  return name
+}
 
 /**
  * sandbox（Forgejo）へ渡す資格情報。
@@ -118,6 +124,7 @@ export async function ensureSandboxRemote(
   name?: string
 ): Promise<string> {
   name ??= (await resolved()).sandboxRemote
+  refOrThrow(name, 'remote')
   const url = sandboxRemoteUrl(forgeRootUrl, owner, repo)
   const existing = await listRemotes(cwd, forgeRootUrl)
   if (existing.some((r) => r.name === name)) {
@@ -135,6 +142,7 @@ export async function ensureSandboxRemote(
  * PR が作れなくなる。remote の HEAD を見て、無ければ聞きに行く。
  */
 export async function defaultBranch(cwd: string, remoteName: string): Promise<string | null> {
+  if (!isSafeRef(remoteName)) return null
   // 手元に記録があればそれ。ネットワークに出ない
   try {
     const ref = (await git(cwd, ['symbolic-ref', '--short', `refs/remotes/${remoteName}/HEAD`])).trim()
@@ -160,9 +168,11 @@ export async function currentBranch(cwd: string): Promise<string | null> {
 export async function push(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<string> {
+  refOrThrow(remote, 'remote')
+  refOrThrow(branch, 'ブランチ')
   const cred = await credentials(cwd, remote, forgeRootUrl)
   try {
-    await git(cwd, [...cred.args, 'push', '--set-upstream', remote, branch], cred.env)
+    await git(cwd, [...cred.args, 'push', '--set-upstream', '--', remote, branch], cred.env)
   } finally {
     await cred.dispose()
   }
@@ -173,10 +183,11 @@ export async function push(
 export async function isPushed(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<boolean> {
+  if (!isSafeRef(remote) || !isSafeRef(branch)) return false
   let cred: Awaited<ReturnType<typeof credentials>> | null = null
   try {
     cred = await credentials(cwd, remote, forgeRootUrl)
-    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', remote, branch], cred.env)
+    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', '--', remote, branch], cred.env)
     return out.trim() !== ''
   } catch {
     return false
@@ -192,10 +203,11 @@ export async function isPushed(
 export async function remoteHeads(
   cwd: string, remote: string, forgeRootUrl: string | null = null
 ): Promise<string[]> {
+  if (!isSafeRef(remote)) return []
   let cred: Awaited<ReturnType<typeof credentials>> | null = null
   try {
     cred = await credentials(cwd, remote, forgeRootUrl)
-    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', remote], cred.env)
+    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', '--', remote], cred.env)
     return out.split('\n')
       .map((l) => /refs\/heads\/(\S+)$/.exec(l.trim())?.[1] ?? '')
       .filter(Boolean)
@@ -215,9 +227,11 @@ export async function deleteRemoteBranch(
   cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
 ): Promise<string> {
   if (/^(main|master)$/.test(branch)) throw new Error(`${branch} は消しません`)
+  refOrThrow(remote, 'remote')
+  refOrThrow(branch, 'ブランチ')
   const cred = await credentials(cwd, remote, forgeRootUrl)
   try {
-    await git(cwd, [...cred.args, 'push', remote, '--delete', branch], cred.env)
+    await git(cwd, [...cred.args, 'push', '--delete', '--', remote, branch], cred.env)
   } finally {
     await cred.dispose()
   }

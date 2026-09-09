@@ -8,6 +8,7 @@ import { join } from 'node:path'
  * - NodeOptions / NodeCliInspectArguments を切る: `NODE_OPTIONS` や `--inspect` で中に入られない
  * - EnableEmbeddedAsarIntegrityValidation / OnlyLoadAppFromAsar: asar を差し替えられない
  * - EnableCookieEncryption: 埋めた頁（§32）のログインの Cookie を暗号化する
+ * - GrantFileProtocolExtraPrivileges を切る: renderer は file:// ではなく app:// で配る
  *
  * どれも「開発では要るが、配布物では要らない口」である。
  */
@@ -28,7 +29,9 @@ export default async function afterPack(context) {
     [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
     [FuseV1Options.EnableNodeCliInspectArguments]: false,
     [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-    [FuseV1Options.OnlyLoadAppFromAsar]: true
+    [FuseV1Options.OnlyLoadAppFromAsar]: true,
+    // renderer は app:// で配る（main/protocol.ts）ので、file スキームの余計な権限は要らない
+    [FuseV1Options.GrantFileProtocolExtraPrivileges]: false
   })
   console.log(`[fuses] ${exe}: RunAsNode / NodeOptions / Inspect を切り、asar の検証を入れた`)
 }

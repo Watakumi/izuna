@@ -76,3 +76,14 @@ describe('窓の中に埋めて見てよいか（§32）', () => {
     expect(canPreview('http://localhost:4649/x', 'not a url')).toBe(false)
   })
 })
+
+describe('app:// の中の遷移（§26）', () => {
+  it('同じ host なら中。別の host や別のスキームは外', () => {
+    expect(isOwnPage('app://renderer/assets/x.js', 'app://renderer/index.html')).toBe(true)
+    expect(isOwnPage('app://evil/index.html', 'app://renderer/index.html')).toBe(false)
+    expect(isOwnPage('https://github.com/x', 'app://renderer/index.html')).toBe(false)
+    // 外へ出す判定は http(s) だけなので、app:// のリンクは外に出さない
+    expect(shouldOpenOutside('app://renderer/x', 'app://renderer/index.html')).toBe(false)
+    expect(shouldOpenOutside('https://github.com/x', 'app://renderer/index.html')).toBe(true)
+  })
+})

@@ -83,6 +83,7 @@ src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工
 src/main/loop.ts            自律ループの駆動と、進捗を申告する MCP ツール（§23）
 src/main/wakeup.ts          起床の予約。覚えのある id だけ起こす（§26）
 src/main/preview.ts         頁を窓の中に埋める WebContentsView を 1 枚持つ（§32）
+src/main/protocol.ts        renderer を app:// で配る。出力ディレクトリの外は 404（§26）
 src/main/sessions.ts        ~/.claude/projects の走査と復元（§18）
 src/main/forge/, git/       Forgejo の API と準備、git の remote / worktree
 src/preload/index.ts        renderer に出す面。CH の鍵から組む。手で並べない（§27）
@@ -90,6 +91,7 @@ src/shared/ipc.ts           口の型と名前（CH）。IPC_VERSION は鍵か�
 src/shared/hooks.ts         リポジトリが持ち込む hook / MCP の検出（純粋関数）
 src/shared/links.ts         外に出してよいリンクと、中で見てよい頁の判定（純粋関数）
 src/shared/prereq.ts        Claude Code の関所の判定（純粋関数）
+src/shared/app-protocol.ts  app:// の URL → 出力ディレクトリの中のパス（純粋関数）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む

@@ -32,6 +32,8 @@ async function main(): Promise<void> {
   try {
     // ── 窓と口の面 ─────────────────────────────────────
     check((await page.title()) === 'Izuna', '窓の題が Izuna')
+    // renderer は file:// ではなく app:// で配る（§26）。file スキームの余計な権限を切るため
+    check(page.url().startsWith('app://renderer/'), `renderer が app:// で読まれている（${page.url()}）`)
     const keys = await page.evaluate(() =>
       Object.keys((window as unknown as { izuna: object }).izuna).sort()
     )

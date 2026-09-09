@@ -102,6 +102,14 @@ describe('remote', () => {
     expect(await remoteHeads(work, 'いない remote')).toEqual([])
   })
 
+  it('**`-` で始まる名前は git に渡さない**（オプションとして読まれる）', async () => {
+    await expect(push(work, 'origin', '--upload-pack=/bin/sh')).rejects.toThrow(/使えない名前/)
+    await expect(push(work, '-c', 'main')).rejects.toThrow(/使えない名前/)
+    await expect(deleteRemoteBranch(work, 'origin', '--force')).rejects.toThrow(/使えない名前/)
+    expect(await isPushed(work, 'origin', '--all')).toBe(false)
+    expect(await remoteHeads(work, '--all')).toEqual([])
+  })
+
   it('remote のブランチを消す。**main / master は拒む**', async () => {
     await expect(deleteRemoteBranch(work, 'origin', 'main')).rejects.toThrow(/消しません/)
     expect(await deleteRemoteBranch(work, 'origin', 'feat')).toContain('消しました')

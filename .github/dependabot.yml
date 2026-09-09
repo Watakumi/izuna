@@ -1,0 +1,27 @@
+# 依存の更新の提案。**入れるのは人**（PR を読んでから）。
+# cooldown は §27 の熟成の線（24 時間）より長く取る。出たばかりの版は取り込まない
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      # 小さな更新はまとめて 1 本の PR に
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # CLI と版が連動する。上げるときは fixture を録り直してから（testing.md §10）
+      - dependency-name: '@anthropic-ai/claude-agent-sdk'
+      # HTML の唯一の注入口。exact で固定し、changelog を読んでから手で上げる（§27）
+      - dependency-name: mermaid
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
