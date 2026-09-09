@@ -177,8 +177,12 @@ sandbox（Forgejo）は `watakumi/izuna`（remote 名 `forgejo`、2026-09-08 に
 ### 配る方針（2026-09-09）
 
 作者ひとりの道具から、**自分の Forgejo を持つ人に配るもの**に改めた（docs/GOAL.md）。
-public にする前に、下の 3 つを履歴ごと片付ける。順は、fixture を録り直し、PNG を差し替え、
-`git filter-repo` で作者メールと古い fixture と PNG を消し、force push、それから public。
+同日に履歴を書き換えた（`git filter-repo`）: 作者メールを GitHub の noreply に、コミット文と本文の
+家のパスと会社名を伏せ、走行の PNG を全リビジョンから消した。fixture は中身を伏せた（testing.md §11）。
+書き換えた履歴は**新しいリポジトリ**に置いた —— 元の `Watakumi/izuna` は `izuna-old` に改名して
+private のまま残す（GitHub は古いコミットを PR の参照から保持するので、同じリポジトリで force push
+しても消えたことにならない）。控えは `/tmp/izuna-backup.git`（書き換え前の鏡）。
+public への切り替えは、この文書と SETUP.md を読み直してから `gh repo edit --visibility public`。
 
 ### **これは「あとで public にできる」状態ではない**（2026-09-08 時点）
 
