@@ -20,6 +20,7 @@ import { answerInput } from '../../shared/question'
 import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
+import { Preview } from './components/Preview'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
 import { useSessions } from './useSessions'
@@ -37,6 +38,8 @@ function App(): React.JSX.Element {
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
+  // 中で見ている頁（§32）。無ければ null
+  const [preview, setPreview] = useState<string | null>(null)
   const [tab, setTab] = useState<'info' | 'files' | 'board' | 'loop' | 'pr' | 'branch'>('info')
   const [stale, setStale] = useState(false)
 
@@ -246,6 +249,12 @@ function App(): React.JSX.Element {
               )}
             </div>
 
+            {preview && (
+              <div style={{ flexBasis: '58%', flexShrink: 0, minHeight: 240, borderTop: `1px solid ${C.line}` }}>
+                <Preview url={preview} onClose={() => setPreview(null)} />
+              </div>
+            )}
+
             {showTerm && (
               <div style={{ height: 300, flexShrink: 0, borderTop: `1px solid ${C.line}` }}>
                 <TerminalPane cwd={active.cwd} onClose={() => setShowTerm(false)} />
@@ -326,7 +335,7 @@ function App(): React.JSX.Element {
                 {tab === 'files' && <Files panel={active} />}
                 {tab === 'board' && <Board panel={active} />}
                 {tab === 'loop' && <Loop panel={active} />}
-                {tab === 'pr' && <Forge cwd={active.cwd} sessionId={active.id} onDone={() => setTab('info')} />}
+                {tab === 'pr' && <Forge cwd={active.cwd} sessionId={active.id} onDone={() => setTab('info')} onPreview={setPreview} />}
                 {tab === 'branch' && (
                   <Worktrees cwd={active.cwd} panels={sessions.panels}
                     onOpen={(w) => void sessions.open({

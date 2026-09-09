@@ -16,6 +16,8 @@ import { SessionHub } from '../hub'
 import { notify } from '../notify'
 import { noticeFor } from '../../shared/notice'
 import { parseUnifiedDiff } from '../../shared/patch'
+import { canPreview } from '../../shared/links'
+import { closePreview, movePreview, openPreview } from '../preview'
 import { CH, IPC_VERSION, type IzunaApi, type SessionEvent } from '../../shared/ipc'
 
 /**
@@ -33,6 +35,10 @@ type Handlers = {
 }
 
 let hub: SessionHub | null = null
+
+/** WebContentsView は整数の px しか受けない。renderer の実測は小数で来る */
+const roundRect = (r: { x: number; y: number; width: number; height: number }): { x: number; y: number; width: number; height: number } =>
+  ({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) })
 
 export function registerSessionIpc(getWindow: () => BrowserWindow | null): void {
   const emit = (event: SessionEvent): void => {
@@ -65,6 +71,17 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     ghosttySkin: () => loadGhosttySkin().catch(() => null),
     listSessions: () => scanSessions(),
     replaySession: (sessionId) => replaySession(sessionId),
+
+    // 頁の埋め込み（§32）。行き先は Forgejo と GitHub だけ
+    previewOpen: async (url, bounds) => {
+      const root = (await gatherFacts()).config?.rootUrl ?? null
+      if (!canPreview(url, root)) throw new Error(`中で見られるのは Forgejo と GitHub の頁だけです: ${url}`)
+      const win = getWindow()
+      if (!win) throw new Error('窓がありません')
+      openPreview(win, url, roundRect(bounds))
+    },
+    previewBounds: (bounds) => movePreview(roundRect(bounds)),
+    previewClose: () => closePreview(),
 
     forgeFacts: () => gatherFacts(),
     forgeFix: (id) => applyFix(id),

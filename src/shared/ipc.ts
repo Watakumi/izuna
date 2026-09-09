@@ -174,6 +174,14 @@ export interface IzunaApi {
    */
   replaySession(sessionId: string): Promise<Transcript>
 
+  /**
+   * 頁を窓の中に埋めて見る（§32）。Forgejo と GitHub の頁だけ。
+   * 置く場所は renderer が測って送る。閉じるまで renderer の上に重なる
+   */
+  previewOpen(url: string, bounds: { x: number; y: number; width: number; height: number }): Promise<void>
+  previewBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<void>
+  previewClose(): Promise<void>
+
   /** main からの通知を受ける。返り値を呼ぶと購読をやめる */
   onEvent(handler: (event: SessionEvent) => void): () => void
 }
@@ -242,6 +250,9 @@ export const CH = {
   requestReview: 'izuna:review:request',
   listSessions: 'izuna:sessions:list',
   replaySession: 'izuna:sessions:replay',
+  previewOpen: 'izuna:preview:open',
+  previewBounds: 'izuna:preview:bounds',
+  previewClose: 'izuna:preview:close',
   findRepos: 'izuna:repos:find',
   pickDirectory: 'izuna:repos:pick',
   ipcVersion: 'izuna:ipc-version',

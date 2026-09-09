@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isOwnPage, openableOutside, shouldOpenOutside } from '../src/shared/links'
+import { canPreview, isOwnPage, openableOutside, shouldOpenOutside } from '../src/shared/links'
 
 /**
  * 本文のリンクは LLM が書く。クリックで何が起動するかを本文に委ねない（§26）。
@@ -53,5 +53,26 @@ describe('外に出すか（自分の origin を見る）', () => {
   it('スキームの判定はそのまま', () => {
     expect(shouldOpenOutside('file:///etc/passwd', 'file:///app/index.html')).toBe(false)
     expect(shouldOpenOutside('mailto:a@b', 'http://localhost:5173/')).toBe(true)
+  })
+})
+
+describe('窓の中に埋めて見てよいか（§32）', () => {
+  const forge = 'http://localhost:4649/'
+  it('GitHub（https）と Forgejo の根と同じ host だけ', () => {
+    expect(canPreview('https://github.com/Watakumi/izuna/pull/3', forge)).toBe(true)
+    expect(canPreview('https://www.github.com/x/y', forge)).toBe(true)
+    expect(canPreview('http://localhost:4649/izuna/izuna-e2e/pulls/1', forge)).toBe(true)
+    expect(canPreview('http://localhost:4649/izuna/izuna-e2e/pulls/1', null)).toBe(false)
+  })
+
+  it('それ以外は出さない。http の GitHub も、別 host も、壊れた URL も', () => {
+    expect(canPreview('http://github.com/x/y', forge)).toBe(false)
+    expect(canPreview('https://example.com/', forge)).toBe(false)
+    expect(canPreview('https://localhost:4649/x', forge)).toBe(false)
+    expect(canPreview('file:///etc/passwd', forge)).toBe(false)
+    expect(canPreview('not a url', forge)).toBe(false)
+    // GitHub は Forgejo の設定に関係なく通る。Forgejo の根が壊れていれば Forgejo 側だけ落ちる
+    expect(canPreview('https://github.com/x', 'not a url')).toBe(true)
+    expect(canPreview('http://localhost:4649/x', 'not a url')).toBe(false)
   })
 })
