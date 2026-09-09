@@ -41,6 +41,8 @@ export function isOwnPage(url: string, here: string): boolean {
     const dir = at.pathname.replace(/[^/]*$/, '')
     return to.pathname.startsWith(dir)
   }
+  // 独自スキーム（app:）は Node の URL では origin が "null" になる。host で比べる
+  if (to.protocol === 'app:') return to.host === at.host
   return to.origin === at.origin
 }
 

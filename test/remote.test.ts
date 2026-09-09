@@ -7,7 +7,8 @@ import {
   rolesIn,
   stageOf,
   sandboxRemoteUrl,
-  upstreamLeaks
+  upstreamLeaks,
+  isSafeRef
 } from '../src/shared/remote'
 
 /**
@@ -140,5 +141,19 @@ describe('GitHub に漏れた作業ブランチ（GOAL.md 測り方「GitHub に
 
   it('何も無ければ空', () => {
     expect(upstreamLeaks({ upstreamHeads: [], sandboxHeads: ['feat'], allowed: [] })).toEqual([])
+  })
+})
+
+describe('git に渡してよい名前（引数の注入を止める。§26）', () => {
+  it('普通のブランチ名と remote 名は通る', () => {
+    for (const n of ['main', 'feat/x', 'worktree-agent-a1b2', 'issue-1-09081859', 'forgejo', 'upstream', 'v1.2.3', 'a.b']) {
+      expect(isSafeRef(n), n).toBe(true)
+    }
+  })
+
+  it('**`-` 始まりはオプションになるので断る。** 空白・制御文字・git が拒む形も', () => {
+    for (const n of ['-x', '--upload-pack=/bin/sh', '--delete', '', ' a', 'a b', 'a..b', '/a', 'a/', 'a.lock', 'a.', 'a//b', 'a@{1}', 'a~1', 'a^', 'a:b', 'a?', 'a*', 'a[b', 'a\\b', 'a\x00b', 'x'.repeat(256)]) {
+      expect(isSafeRef(n), JSON.stringify(n)).toBe(false)
+    }
   })
 })

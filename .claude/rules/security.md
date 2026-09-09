@@ -117,6 +117,10 @@ Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこ
 | Electron の設定の診断 | `security.yml` | Doyensec の electronegativity。指摘は artifact。門にはしない（誤検出が多い） |
 | Claude Code の関所 | `shared/prereq.ts`、`main/claude/status.ts` | 入っているか・ログイン済みかを準備画面の先頭に出す。`claude auth status --json` の email / orgId は画面に持ち出さない |
 | 貼られたトークン | `main/forge/setup.ts` の `adoptToken` | 通るか・ボット `izuna` のものかを聞いてから保管する。人の鍵は断る |
+| renderer を `app://` で配る | `shared/app-protocol.ts`、`main/protocol.ts` | `file://` で読むと file スキームに余計な権限が付く。独自スキーム（standard・secure）で出力ディレクトリの中だけを配り、fuse の `GrantFileProtocolExtraPrivileges` を切った。`isOwnPage` は `app:` を host で比べる |
+| git の引数の注入 | `shared/remote.ts` の `isSafeRef` | `-` で始まるブランチ名は git がオプションとして読む。remote 名とブランチ名は形を見てから `--` で区切って渡す |
+| CSP の締め | `src/renderer/index.html`、`harness.html` | `object-src` / `base-uri` / `frame-src` / `form-action` を `'none'`。`test/design-system.test.ts` が門 |
+| 公開リポジトリの備え | `SECURITY.md`、`.github/dependabot.yml`、`LICENSE` | 報告先は Security Advisories。Dependabot は 7 日の cooldown（熟成の線より長く）。SDK と mermaid は人が上げる。MIT |
 
 2026-09-09 の走査結果: gitleaks は 135 コミットで 0 件、osv-scanner は extract-zip の 2 件（既知・直せない）だけ。
 

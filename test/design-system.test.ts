@@ -272,3 +272,23 @@ describe('部品を 1 箇所にまとめる', () => {
     expect(offenders).toEqual([])
   })
 })
+
+describe('CSP（§26）', () => {
+  const csp = (file: string): string =>
+    /Content-Security-Policy"\s*content="([^"]+)"/.exec(readFileSync(join(ROOT, 'src', 'renderer', file), 'utf8'))?.[1] ?? ''
+
+  it.each(['index.html', 'harness.html'])('%s は object / base / frame / form を閉じ、eval を許さない', (file) => {
+    const c = csp(file)
+    expect(c).toContain("object-src 'none'")
+    expect(c).toContain("base-uri 'none'")
+    expect(c).toContain("frame-src 'none'")
+    expect(c).toContain("form-action 'none'")
+    expect(c).not.toContain("'unsafe-eval'")
+    // WASM のコンパイルだけを許す（§7）。JS の eval は許さない
+    expect(c).toContain("'wasm-unsafe-eval'")
+  })
+
+  it('製品とハーネスの CSP は ws:（dev の HMR）以外同じ。緩めると CSP 由来の不具合を見逃す（§22）', () => {
+    expect(csp('harness.html').replace(' ws:', '')).toBe(csp('index.html'))
+  })
+})

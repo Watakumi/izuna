@@ -4,9 +4,14 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerSessionIpc, stopAllSessions } from './ipc/register'
 import { isOwnPage, shouldOpenOutside } from '../shared/links'
+import { registerAppScheme, serveApp } from './protocol'
+import { APP_ORIGIN } from '../shared/app-protocol'
 
 /** 通知の宛先。段3 で複数ウィンドウにするまでは 1 枚 */
 let mainWindow: BrowserWindow | null = null
+
+// renderer は app:// で配る。**ready より前に**登録する（§26）
+registerAppScheme()
 
 function createWindow(): void {
   // Create the browser window.
@@ -38,7 +43,8 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    win.loadFile(join(__dirname, '../renderer/index.html'))
+    // file:// では読まない。file スキームの余計な権限（fuse）を切るため
+    win.loadURL(`${APP_ORIGIN}/index.html`)
   }
 }
 
@@ -98,6 +104,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  serveApp(join(__dirname, '../renderer'))
   registerSessionIpc(() => mainWindow)
 
   createWindow()

@@ -6,7 +6,7 @@
     <!-- 製品と同じ CSP。ここを緩めると、CSP 由来の不具合を見逃す -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' data: ws:"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' data: ws:; object-src 'none'; base-uri 'none'; frame-src 'none'; form-action 'none'"
     />
   </head>
   <body>
