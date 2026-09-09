@@ -174,7 +174,13 @@ sandbox（Forgejo）は `watakumi/izuna`（remote 名 `forgejo`、2026-09-08 に
 
 トークンは `~/.izuna` の `safeStorage` にあり、リポジトリの外。
 
-### **これは「あとで public にできる」状態ではない**
+### 配る方針（2026-09-09）
+
+作者ひとりの道具から、**自分の Forgejo を持つ人に配るもの**に改めた（docs/GOAL.md）。
+public にする前に、下の 3 つを履歴ごと片付ける。順は、fixture を録り直し、PNG を差し替え、
+`git filter-repo` で作者メールと古い fixture と PNG を消し、force push、それから public。
+
+### **これは「あとで public にできる」状態ではない**（2026-09-08 時点）
 
 private の範囲には収まっているが、**履歴に入っている**ものが 3 つある。
 公開したくなった時点では `git filter-repo` で書き換えるか、作り直すことになる。

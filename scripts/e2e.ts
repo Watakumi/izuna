@@ -64,7 +64,8 @@ async function main(): Promise<void> {
       ['worktreeStatus', [ROOT]],
       ['commitsSince', [ROOT, 'HEAD~1']],
       ['teamPath', ['e2e']],
-      ['forgeFacts', []]
+      ['forgeFacts', []],
+      ['claudeStatus', []]
     ]
     for (const [name, args] of ro) {
       try {

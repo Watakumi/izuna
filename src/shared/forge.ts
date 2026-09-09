@@ -12,6 +12,8 @@
 export type CheckId =
   | 'installed' | 'configured' | 'transport' | 'running' | 'token'
   | 'actions' | 'reachableFromRunner' | 'runner'
+  /** Claude Code の関所（`shared/prereq.ts`） */
+  | 'claude' | 'claudeLogin'
 export type Level = 'ok' | 'warn' | 'ng' | 'unknown'
 
 export interface Check {
@@ -49,6 +51,12 @@ export interface ForgeFacts {
   tokenUnreadable: boolean
   /** 登録済み runner の数。Actions が無効なら null */
   runners: number | null
+  /**
+   * 手元に `forgejo` が無く、設定の `forgejoUrl` だけで見ている（Docker や別マシンの Forgejo）。
+   * この形では CLI を使う修正（ボットの作成・トークンの発行・app.ini の書き換え）ができない。
+   * トークンは人が Forgejo で作って貼る（`adoptToken`）
+   */
+  remote: boolean
 }
 
 export interface ForgeConfig {
@@ -167,7 +175,7 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
     return { id, label, level: 'ng',
       // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
       detail: '保管したトークンを復号できません。暗号化に使った鍵と違う鍵で動いています（別の keychain、または --use-mock-keychain）',
-      fix: { label: '発行し直す', warning: REISSUE } }
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
   }
 
   // **通らなかったことを最初に見る。** 権限の話はその後でしか意味を持たない
@@ -177,12 +185,18 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
     const reissuable = r?.status === 401 || r?.status === 403
     return { id, label, level: 'ng',
       detail: r ? `通りませんでした: ${r.detail}` : '通りませんでした',
-      fix: reissuable
+      fix: reissuable && !facts.remote
         ? { label: '発行し直す', warning: REISSUE }
         : null }
   }
 
   if (facts.tokenScopes === null) {
+    // 手元に CLI が無ければ発行できない。人が Forgejo で作って貼る（画面に貼る欄が出る）
+    if (facts.remote) {
+      return { id, label, level: 'ng',
+        detail: `未設定です。Forgejo で ${BOT_USER} という利用者を作り、そのトークン（${REQUIRED_SCOPES.join(', ')}）を下に貼ってください`,
+        fix: null }
+    }
     return { id, label, level: 'ng', detail: '未設定です',
       fix: { label: 'トークンを発行する',
         warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します` } }
@@ -192,13 +206,13 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
     // **分からないことを「足りない」と言わない**
     return { id, label, level: 'warn',
       detail: '権限が分かりません（古い版で発行されたか、サーバが返しませんでした）',
-      fix: { label: '発行し直す', warning: REISSUE } }
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
   }
 
   if (lacking.length > 0) {
     return { id, label, level: 'ng',
       detail: `スコープが足りません: ${lacking.join(', ')}`,
-      fix: { label: '発行し直す', warning: REISSUE } }
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
   }
 
   return { id, label, level: 'ok', detail: facts.tokenScopes.join(', '), fix: null }
@@ -218,11 +232,14 @@ export function diagnose(facts: ForgeFacts): Check[] {
   checks.push(facts.binary
     ? { id: 'installed', label: 'インストール', level: 'ok',
         detail: `${facts.version ?? '版不明'} · ${facts.binary}`, fix: null }
-    : { id: 'installed', label: 'インストール', level: 'ng',
-        detail: '見つかりません',
-        fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' } })
+    : facts.remote
+      ? { id: 'installed', label: 'インストール', level: 'ok',
+          detail: `手元には無い。設定の forgejoUrl（${facts.config?.rootUrl ?? ''}）を使う`, fix: null }
+      : { id: 'installed', label: 'インストール', level: 'ng',
+          detail: '見つかりません。Homebrew で入れるか、Docker や別マシンの Forgejo を ~/.izuna/config.json の forgejoUrl に書く（docs/SETUP.md）',
+          fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' } })
 
-  if (!facts.binary) return checks
+  if (!facts.binary && !facts.remote) return checks
 
   const cfg = facts.config
   checks.push(!cfg

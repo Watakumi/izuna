@@ -1,7 +1,8 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
-import { applyFix, gatherFacts } from '../forge/setup'
+import { adoptToken, applyFix, gatherFacts } from '../forge/setup'
+import { claudeStatus } from '../claude/status'
 import { createPull, ensureRepo, listPulls, listRepos, listRuns, listTokens, pullDiff, whoami } from '../forge/client'
 import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
@@ -83,6 +84,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     previewBounds: (bounds) => movePreview(roundRect(bounds)),
     previewClose: () => closePreview(),
 
+    claudeStatus: () => claudeStatus(),
     forgeFacts: () => gatherFacts(),
     forgeFix: (id) => applyFix(id),
     forgeRepos: async () => listRepos(await forgeRoot()),
@@ -91,6 +93,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     forgeCreatePull: async (owner, repo, input) => createPull(await forgeRoot(), owner, repo, input),
     forgeRuns: async (owner, repo, ref) => listRuns(await forgeRoot(), owner, repo, ref),
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
+    forgeSetToken: async (token) => adoptToken(await forgeRoot(), token),
     forgeTokens: async () => {
       const root = await forgeRoot()
       const [user, token] = await Promise.all([whoami(root), loadToken()])

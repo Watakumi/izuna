@@ -244,4 +244,9 @@ paths:
   PR タブを押しても一覧は古いまま。別のタブを経由する（`Forge` は mount で読む）。
 - **前の走行の Electron が残っていると、次の走行がそちらに繋がる**（同日）。`scripts/lib/electron.ts` は
   port が既に開いていれば起動しない。`lsof -i :9334` で確かめて殺す。
+- **native の claude は走るたびに自分を更新する**（2026-09-09 に 3 回踏んだ。2.1.263 → 265 → 266）。
+  Izuna や録画の道具が claude を起こすたびに `~/.local/bin/claude` のリンクが新しい版に付け替わり、
+  verify の版の門（`MEASURED_CLI_VERSION`、SDK のパッチ番号）が落ちる。SDK は 24 時間の熟成の線（§27）で
+  すぐには追えない。当面は `ln -sfn ~/.local/share/claude/versions/<版> ~/.local/bin/claude` で戻す。
+  止めるなら `DISABLE_AUTOUPDATER=1` を rc に置く（人が決める）。
 

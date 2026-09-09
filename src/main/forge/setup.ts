@@ -133,20 +133,46 @@ async function inspectToken(rootUrl: string | null, token: string | null): Promi
 
 export async function gatherFacts(): Promise<ForgeFacts> {
   const binary = await which('forgejo')
-  if (!binary) {
-    return { binary: null, version: null, config: null, reachable: false,
-      tokenScopes: null, tokenWorks: null, tokenRejection: null, tokenUnreadable: false, runners: null }
-  }
   const [version, config, token] = await Promise.all([
-    run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null),
+    binary ? run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null) : null,
     findConfig(),
     loadToken()
   ])
+  // 手元に無く、設定にも無ければ、そこで止める（先を出しても混乱するだけ）
+  if (!binary && !config) {
+    return { binary: null, version: null, config: null, reachable: false,
+      tokenScopes: null, tokenWorks: null, tokenRejection: null, tokenUnreadable: false, runners: null, remote: false }
+  }
   const reachable = await probe(config?.rootUrl ?? null)
   const { scopes, works, rejection } = await inspectToken(config?.rootUrl ?? null, token)
   const tokenUnreadable = (await tokenStatus()) === 'unreadable'
   return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works,
-    tokenRejection: rejection, tokenUnreadable, runners: null }
+    tokenRejection: rejection, tokenUnreadable, runners: null, remote: !binary }
+}
+
+/**
+ * 人が Forgejo で作ったトークンを受け取って保管する（Docker や別マシンの Forgejo 向け。docs/SETUP.md）。
+ *
+ * **通るか・誰のものか・何ができるかを本人に聞いてから保管する。** 通らないものを保管すると、
+ * 診断が「通りません」と言い続けるだけで、貼った人は直せない。
+ * 人（管理者）のトークンは受け取らない —— ボット `izuna` のものだけ（§26）。
+ */
+export async function adoptToken(rootUrl: string, token: string): Promise<string> {
+  const t = token.trim()
+  if (!t) throw new Error('トークンが空です')
+  if (!tokenMayTravel(rootUrl)) throw new Error(`${rootUrl} にはトークンを送りません（平文で LAN を通ります）`)
+  const res = await fetch(new URL('api/v1/user', rootUrl), {
+    headers: { Authorization: `token ${t}` }, signal: AbortSignal.timeout(5000)
+  })
+  if (!res.ok) throw new Error(`Forgejo が ${res.status} を返しました。トークンが違うか、失効しています`)
+  const me = (await res.json()) as { login?: string }
+  if (me.login !== BOT_USER) {
+    throw new Error(`これは ${me.login ?? '不明'} のトークンです。Izuna が持つのはボット ${BOT_USER} のものだけです（人の鍵はアプリに置かない）`)
+  }
+  const tokens = await listTokens(rootUrl, BOT_USER).catch(() => [] as Awaited<ReturnType<typeof listTokens>>)
+  const mine = tokens.find((x) => t.endsWith(x.last8))
+  await saveToken(t, mine?.scopes ?? undefined)
+  return `${BOT_USER} のトークンを保管しました${mine ? `（${mine.scopes.join(', ')}）` : ''}`
 }
 
 /**

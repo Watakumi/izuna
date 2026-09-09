@@ -7,8 +7,9 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 それまで 2,191 行を毎セッション全部読んでいた）。事実と、その根拠になった実測を残す。
 推測は「未検証」と明記する。**節番号（§N）は分けても変えていない**。コードの註から引ける。
 
-- リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （**private**・§20）
+- リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （**private。配る準備中**・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
+- 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
@@ -72,6 +73,7 @@ GUI で描くデスクトップアプリ。ターミナルの中で TUI を動�
 ```
 src/main/claude/session.ts  SDK の query() で claude を飼うセッション層。UI を知らない
 src/main/claude/locate.ts   claude 本体とログインシェル環境の解決（環境は一度取ったら覚える。§27）
+src/main/claude/status.ts   claude が入っているか・ログイン済みか（docs/SETUP.md）。email は出さない
 src/main/claude/trust.ts    開く前の関所。hook と .mcp.json を数え、信頼していなければ止める（§26）
 src/main/hub.ts             セッションの駆動部。1 件 1 record（session・共有フォルダ・cwd・ループ）。§28
 src/main/ipc/register.ts    口を関数に繋ぐ表だけ。Handlers の型が口の数だけ手があることを見る
@@ -87,6 +89,7 @@ src/preload/index.ts        renderer に出す面。CH の鍵から組む。手�
 src/shared/ipc.ts           口の型と名前（CH）。IPC_VERSION は鍵から導く
 src/shared/hooks.ts         リポジトリが持ち込む hook / MCP の検出（純粋関数）
 src/shared/links.ts         外に出してよいリンクと、中で見てよい頁の判定（純粋関数）
+src/shared/prereq.ts        Claude Code の関所の判定（純粋関数）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む

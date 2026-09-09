@@ -257,3 +257,48 @@ describe('runner の登録トークン', () => {
     expect(runs.at(-1)).toEqual(expect.arrayContaining(['forgejo-cli', 'actions', 'generate-runner-token']))
   })
 })
+
+describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
+  const loadRemote = async (): Promise<typeof import('../src/main/forge/setup')> => {
+    vi.doMock('../src/main/config', () => ({
+      resolved: async () => ({ forgejoWorkPaths: [], forgejoUrl: 'http://localhost:4649/', ignored: [] })
+    }))
+    return import('../src/main/forge/setup')
+  }
+
+  it('forgejoUrl があれば、binary が無くても応答とトークンを調べ、remote を立てる', async () => {
+    out = [new Error('見つからない'), new Error('見つからない')]
+    const { gatherFacts } = await loadRemote()
+    const f = await gatherFacts()
+    expect(f.binary).toBeNull()
+    expect(f.remote).toBe(true)
+    expect(f.config?.rootUrl).toBe('http://localhost:4649/')
+    expect(f.reachable).toBe(true)
+    expect(f.tokenWorks).toBe(true)
+  })
+
+  it('貼られたトークンは、**通るか・ボットのものか**を聞いてから保管する', async () => {
+    const { adoptToken } = await loadRemote()
+    vi.stubGlobal('fetch', async (url: URL) => ({
+      ok: true, status: 200, statusText: 'OK',
+      json: async () => String(url).includes('/tokens')
+        ? [{ id: 1, name: 'izuna', scopes: ['write:user', 'write:repository'], token_last_eight: 'aaaaaaaa', created_at: '' }]
+        : { login: 'izuna' },
+      text: async () => ''
+    }))
+    const msg = await adoptToken('http://localhost:4649/', ' fake-aaaaaaaa ')
+    expect(msg).toContain('izuna')
+    expect(saved).toEqual({ token: 'fake-aaaaaaaa', scopes: ['write:user', 'write:repository'] })
+  })
+
+  it('人のトークンは受け取らない。通らないものも保管しない。空も LAN も断る', async () => {
+    const { adoptToken } = await loadRemote()
+    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ login: 'watakumi' }), text: async () => '' }))
+    await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/人の鍵/)
+    vi.stubGlobal('fetch', async () => ({ ok: false, status: 401, statusText: 'x', json: async () => ({}), text: async () => '' }))
+    await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/401/)
+    await expect(adoptToken('http://localhost:4649/', '   ')).rejects.toThrow(/空/)
+    await expect(adoptToken('http://192.168.1.5:4649/', 'tok')).rejects.toThrow(/平文/)
+    expect(saved).toBeNull()
+  })
+})

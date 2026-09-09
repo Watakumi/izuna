@@ -101,3 +101,22 @@ Nimbalyst の `windowOpenGuard.ts` と同じ判断。
 エージェントがコミットする直前に `pnpm verify` が回る。**これは §26 の関所が数える hook である。**
 Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこのリポジトリを足す。
 関所が自分にも効いている証拠であって、例外ではない。settings.json は人が置く。
+
+### 配るための固め（2026-09-09）
+
+作者ひとりの道具から配るものに改めた（docs/GOAL.md）ので、他人の Mac で動く前提で見直した。
+
+| 何 | どこ | 中身 |
+| --- | --- | --- |
+| renderer の砂場を明示 | `main/index.ts` | `sandbox: true` / `contextIsolation: true` / `nodeIntegration: false` を書く。既定に頼ると Electron の版で変わったときに気づけない |
+| 頁からの権限要求とダウンロードを断る | `main/index.ts` | `defaultSession` と `persist:preview` の両方で `setPermissionRequestHandler` を false、`will-download` を止める。埋めた頁（§32）がカメラや通知を要求しても人に聞かない |
+| Electron の fuses | `build/fuses.mjs`（`afterPack`） | RunAsNode / NODE_OPTIONS / --inspect を切り、asar の改竄検証と asar からしか読まないを入れ、Cookie を暗号化する |
+| 署名と公証 | `electron-builder.yml`、`.github/workflows/release.yml` | 証明書（`MAC_CERT_P12`）と Apple ID が secrets にあるときだけ。無ければ署名無しの DMG。**証明書は人が用意する** |
+| 秘密の走査 | `scripts/prepush.mjs`、`.github/workflows/security.yml` | gitleaks。pre-push は届けるコミットだけ、CI は履歴ごと。**gitleaks が無ければ push を止める**（無いことを緑で通さない） |
+| 依存の脆弱性 | `osv-scanner.toml`、`security.yml` | osv-scanner。除外は理由付きで toml に（extract-zip の 2 件だけ） |
+| Electron の設定の診断 | `security.yml` | Doyensec の electronegativity。指摘は artifact。門にはしない（誤検出が多い） |
+| Claude Code の関所 | `shared/prereq.ts`、`main/claude/status.ts` | 入っているか・ログイン済みかを準備画面の先頭に出す。`claude auth status --json` の email / orgId は画面に持ち出さない |
+| 貼られたトークン | `main/forge/setup.ts` の `adoptToken` | 通るか・ボット `izuna` のものかを聞いてから保管する。人の鍵は断る |
+
+2026-09-09 の走査結果: gitleaks は 135 コミットで 0 件、osv-scanner は extract-zip の 2 件（既知・直せない）だけ。
+

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { forbiddenAuthors, localShas, manifestChanged } from '../scripts/prepush.mjs'
+import { forbiddenAuthors, localShas, manifestChanged, secretScanArgs } from '../scripts/prepush.mjs'
 import { needsGate } from '../scripts/commit-gate.mjs'
 
 /** push とコミットの門（docs/NIMBALYST.md §3 の 5 と 7）。門そのものを検査する */
@@ -46,6 +46,22 @@ describe('pre-push', () => {
       scripts: Record<string, string>
     }
     expect(pkg.scripts.prepare).toContain('core.hooksPath .githooks')
+  })
+})
+
+describe('秘密の走査（gitleaks）', () => {
+  it('届けるコミットだけを見せ、見つかれば 1 で落ちる引数を組む', () => {
+    const args = secretScanArgs(['abc', 'def'], 'upstream')
+    expect(args).toContain('--exit-code')
+    expect(args[args.indexOf('--exit-code') + 1]).toBe('1')
+    expect(args).toContain('--log-opts=abc def --not --remotes=upstream')
+    expect(secretScanArgs([], 'origin')).toContain('--log-opts=HEAD --not --remotes=origin')
+  })
+
+  it('pre-push の本文が gitleaks を呼び、無ければ止める', () => {
+    const src = readFileSync(join(__dirname, '..', 'scripts', 'prepush.mjs'), 'utf8')
+    expect(src).toMatch(/spawnSync\('gitleaks'/)
+    expect(src).toContain('brew install gitleaks')
   })
 })
 

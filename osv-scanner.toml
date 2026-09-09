@@ -1,0 +1,10 @@
+# osv-scanner の除外。**理由の無い除外は置かない。**
+# 直せないもの（CLAUDE.md §26）だけをここに書く。直る版が出たら消す。
+
+[[IgnoredVulns]]
+id = "GHSA-jmr9-qjv8-65gv"
+reason = "extract-zip <=2.0.1。advisory は >=2.0.2 で直ると言うが npmjs に 2.0.2 は無い（2026-09-08 に確認）。electron のインストーラだけが使い、製品には入らない"
+
+[[IgnoredVulns]]
+id = "GHSA-7pqw-9j4j-h8q3"
+reason = "同上（extract-zip 2.0.1。直る版が無い。製品には入らない）"
