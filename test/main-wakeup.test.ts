@@ -125,7 +125,8 @@ describe('時が来たら', () => {
     w.onFire((x) => fired.push(x.id))
     await w.start()
     await w.add({ sessionId: 's', cwd: '/w', prompt: 'p', fireAt: Date.now() + 300 })
-    await new Promise((r) => setTimeout(r, 900))
+    // 固定の待ちは遅い CI で切れる（2026-09-09 に GitHub の runner で踏んだ）。起きるまで待つ
+    await until(async () => fired.length > 0)
     w.stop()
     expect(fired).toHaveLength(1)
     expect((await w.list())[0].state).toBe('fired')
@@ -138,7 +139,9 @@ describe('時が来たら', () => {
     w.onFire((x) => fired.push(x.id))
     await w.add({ sessionId: 's', cwd: '/w', prompt: 'p', fireAt: Date.now() + 300 })
     await w.add({ sessionId: 's2', cwd: '/w', prompt: 'p2', fireAt: Date.now() + 350 })
-    await new Promise((r) => setTimeout(r, 1200))
+    await until(async () => fired.length >= 2)
+    // 二重に起こすなら、この後にもう 1 つ増える。少しだけ見張る
+    await new Promise((r) => setTimeout(r, 400))
     w.stop()
     expect(fired).toHaveLength(2)
     expect(new Set(fired).size).toBe(2)
@@ -187,7 +190,7 @@ describe('覚えの無い予約', () => {
     const fired: string[] = []
     w.onFire((x) => fired.push(x.id))
     await w.start()
-    await new Promise((r) => setTimeout(r, 900))
+    await until(async () => fired.length > 0)
     w.stop()
     expect(fired).toEqual(['seen'])
   })
