@@ -143,7 +143,7 @@ describe('押したときだけ動く', () => {
 
   it('**トークンは write:user を含めて発行する**（無いと POST /user/repos が 403）', async () => {
     setUp()
-    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
+    out = ['/f', 'version 1', 'ID\tUsername\n1\tsomeone\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
     const { applyFix } = await load()
     const msg = await applyFix('token')
     const args = runs.at(-1)!
@@ -158,17 +158,17 @@ describe('押したときだけ動く', () => {
 
   it('**人（管理者）のトークンは作らない。** ボットのものを発行する（§26）', async () => {
     setUp()
-    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
+    out = ['/f', 'version 1', 'ID\tUsername\n1\tsomeone\tx\n2\tizuna\ty', 'tok_new_abcdefgh']
     const { applyFix } = await load()
     await applyFix('token')
     const args = runs.at(-1)!
     expect(args[args.indexOf('--username') + 1]).toBe('izuna')
-    expect(args.join(' ')).not.toContain('watakumi')
+    expect(args.join(' ')).not.toContain('someone')
   })
 
   it('ボットが無ければ作ってから発行する。パスワードは乱数で捨てる', async () => {
     setUp()
-    out = ['/f', 'version 1', 'ID\tUsername\n1\twatakumi\tx', '', 'tok_new_abcdefgh']
+    out = ['/f', 'version 1', 'ID\tUsername\n1\tsomeone\tx', '', 'tok_new_abcdefgh']
     const { applyFix } = await load()
     await applyFix('token')
     const create = runs.find((r) => r.includes('create'))!
@@ -293,7 +293,7 @@ describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
 
   it('人のトークンは受け取らない。通らないものも保管しない。空も LAN も断る', async () => {
     const { adoptToken } = await loadRemote()
-    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ login: 'watakumi' }), text: async () => '' }))
+    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ login: 'someone' }), text: async () => '' }))
     await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/人の鍵/)
     vi.stubGlobal('fetch', async () => ({ ok: false, status: 401, statusText: 'x', json: async () => ({}), text: async () => '' }))
     await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/401/)

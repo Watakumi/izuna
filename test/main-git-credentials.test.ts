@@ -25,7 +25,7 @@ vi.mock('../src/main/claude/locate', () => ({
 }))
 vi.mock('../src/main/config', () => ({ resolved: async () => ({ sandboxRemote: 'forgejo' }) }))
 vi.mock('../src/main/forge/store', () => ({ loadToken: async () => token }))
-vi.mock('../src/main/forge/client', () => ({ whoami: async () => 'watakumi' }))
+vi.mock('../src/main/forge/client', () => ({ whoami: async () => 'someone' }))
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
     const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
@@ -55,7 +55,7 @@ beforeEach(() => {
 
 describe('sandbox 相手のとき', () => {
   it('**credential helper を止める**（止めないと GIT_ASKPASS が呼ばれない）', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', '']
+    out = ['http://localhost:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const args = runs.at(-1)!.args
@@ -64,18 +64,18 @@ describe('sandbox 相手のとき', () => {
   })
 
   it('**トークンは環境変数で渡す。引数に置かない**（`ps` で他から見える）', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', '']
+    out = ['http://localhost:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const { args, env } = runs.at(-1)!
     expect(args.join(' ')).not.toContain('tok_secret_value')
     expect(env.IZUNA_GIT_TOKEN).toBe('tok_secret_value')
-    expect(env.IZUNA_GIT_USER).toBe('watakumi')
+    expect(env.IZUNA_GIT_USER).toBe('someone')
     expect(env.GIT_TERMINAL_PROMPT).toBe('0')
   })
 
   it('仲介を置き、**他人に読めない権限**にする', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', '']
+    out = ['http://localhost:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const path = runs.at(-1)!.env.GIT_ASKPASS!
@@ -89,8 +89,8 @@ describe('sandbox 相手のとき', () => {
   })
 
   it('**仲介は呼ぶたびに作り、使い終わったら消す**（固定のパスは差し替えられる。§26）', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', '',
-           'http://localhost:4649/watakumi/izuna.git\n', '']
+    out = ['http://localhost:4649/someone/izuna.git\n', '',
+           'http://localhost:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const first = runs.at(-1)!.env.GIT_ASKPASS!
@@ -102,21 +102,21 @@ describe('sandbox 相手のとき', () => {
   })
 
   it('git が失敗しても仲介は消す', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', new Error('rejected')]
+    out = ['http://localhost:4649/someone/izuna.git\n', new Error('rejected')]
     const { push } = await load()
     await expect(push('/w', 'forgejo', 'main', SANDBOX)).rejects.toThrow(/rejected/)
     expect(existsSync(runs.at(-1)!.env.GIT_ASKPASS!)).toBe(false)
   })
 
   it('**平文で LAN を通る根には載せない**。push は止まる', async () => {
-    out = ['http://192.168.1.10:4649/watakumi/izuna.git\n', '']
+    out = ['http://192.168.1.10:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await expect(push('/w', 'forgejo', 'main', 'http://192.168.1.10:4649/')).rejects.toThrow(/トークンを送りません/)
     expect(runs.some((r) => r.args.includes('push'))).toBe(false)
   })
 
   it('ls-remote にも同じ資格情報を渡す（渡さないと黙って false になる）', async () => {
-    out = ['http://localhost:4649/watakumi/izuna.git\n', 'abc refs/heads/main\n']
+    out = ['http://localhost:4649/someone/izuna.git\n', 'abc refs/heads/main\n']
     const { isPushed } = await load()
     expect(await isPushed('/w', 'forgejo', 'main', SANDBOX)).toBe(true)
     expect(runs.at(-1)!.env.IZUNA_GIT_TOKEN).toBe('tok_secret_value')
@@ -149,7 +149,7 @@ describe('sandbox 以外', () => {
 
   it('トークンが無ければ付けない（発行前でも push は試せる）', async () => {
     token = null
-    out = ['http://localhost:4649/watakumi/izuna.git\n', '']
+    out = ['http://localhost:4649/someone/izuna.git\n', '']
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     expect(runs.at(-1)!.env.IZUNA_GIT_TOKEN).toBeUndefined()
