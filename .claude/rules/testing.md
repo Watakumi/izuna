@@ -313,8 +313,11 @@ main と feat に 1 コミットずつ、PR !1 は閉じない）。ボットの
 README.md を残す。釦を押す・Issue を選ぶ・依頼を打つ・承認するは画面を操作し、`window.izuna` を
 直接呼ぶのは画面に無い確認（remote のブランチ一覧、PR の存在）だけ。
 
-**実 API を呼び、GitHub と Forgejo に書く。** 使い捨ての `Watakumi/izuna-v1-walk`
-（`~/work/personal/izuna-v1-walk`。Issue #1 は「greet と math に検査を足す」）で回す。
+**実 API を呼び、GitHub と Forgejo に書く。** 使い捨てのリポジトリで回す。2026-09-09 に通した
+`Watakumi/izuna-v1-walk` は同日に消した。回し直すときは作り直す —— private で作り、`~/work/personal/` に
+clone して remote 名を `upstream` にし、src の下に greet.ts と math.ts（1 関数ずつ）を置いた最初のコミットを push し、
+Issue #1「greet と math に検査を足す」（2 つは別の worktree で並行してよい、触るのは `test/` の下だけ）を立てる。
+sandbox は walk が `forgeEnsureRepo` でボットの下に作る。
 `--reset` で前回の worktree・作業ブランチ・sandbox のブランチ・共有フォルダ・GitHub の PR を片付ける。
 
 | 手 | 画面でやること | 通ったと言える条件 |
