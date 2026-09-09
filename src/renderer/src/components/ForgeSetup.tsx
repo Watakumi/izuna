@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { diagnose, readyForForge, type Check } from '../../../shared/forge'
+import { diagnoseClaude, readyForClaude } from '../../../shared/prereq'
 import type { FixId } from '../../../main/forge/setup'
 import type { ForgejoToken } from '../../../main/forge/client'
 import { F, C, MONO, R, S, ellipsis } from '../theme'
-import { Button, Reload, Tag } from './ui'
+import { Button, Input, Reload, Tag } from './ui'
 
 /**
  * Forgejo のセットアップ（段5 の入口）。
@@ -29,6 +30,11 @@ const MARK: Record<Check['level'], { icon: string; color: string }> = {
 
 export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Element {
   const [checks, setChecks] = useState<Check[] | null>(null)
+  /** Claude Code の関所（docs/SETUP.md）。Forgejo より先に見る */
+  const [claude, setClaude] = useState<Check[] | null>(null)
+  /** 手元に forgejo が無い構成。トークンは人が作って貼る */
+  const [remote, setRemote] = useState(false)
+  const [pasted, setPasted] = useState('')
   const [busy, setBusy] = useState<Check['id'] | null>(null)
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null)
   const [cfg, setCfg] = useState<{ path: string; ignored: string[]; exists: boolean } | null>(null)
@@ -36,7 +42,13 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   useEffect(() => { void window.izuna.configInfo().then(setCfg).catch(() => undefined) }, [])
 
   const refresh = useCallback(async () => {
-    setChecks(diagnose(await window.izuna.forgeFacts()))
+    const [facts, cl] = await Promise.all([
+      window.izuna.forgeFacts(),
+      window.izuna.claudeStatus().catch(() => null)
+    ])
+    setChecks(diagnose(facts))
+    setRemote(facts.remote)
+    setClaude(cl ? diagnoseClaude(cl) : null)
   }, [])
 
   useEffect(() => { void refresh() }, [refresh])
@@ -56,7 +68,44 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
     }
   }
 
-  const ready = checks ? readyForForge(checks) : false
+  const ready = (checks ? readyForForge(checks) : false) && (claude ? readyForClaude(claude) : false)
+
+  const paste = async (): Promise<void> => {
+    setBusy('token')
+    setMessage(null)
+    try {
+      setMessage({ text: await window.izuna.forgeSetToken(pasted), bad: false })
+      setPasted('')
+      await refresh()
+    } catch (e) {
+      setMessage({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  // 部品ではなく関数。描画のたびに部品を作り直すと、行の状態が毎回消える
+  const row = (c: Check): React.JSX.Element => {
+    const m = MARK[c.level]
+    return (
+      <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
+        padding: '12px 12px', borderRadius: 7, border: `1px solid ${C.line}` }}>
+        <span style={{ color: m.color, font: `${F.base}px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
+          <span style={{ fontSize: F.body }}>{c.label}</span>
+          <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
+          {c.fix?.warning && (
+            <span style={{ fontSize: F.small, color: C.faint }}>{c.fix.warning}</span>
+          )}
+        </div>
+        {c.fix && (
+          <Button kind="primary" size="sm" disabled={busy !== null} onClick={() => void fix(c)}>
+            {busy === c.id ? '実行しています…' : c.fix.label}
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div onClick={onClose} style={{
@@ -69,7 +118,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
       }}>
         <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
           display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontWeight: 600 }}>Forgejo の準備</span>
+          <span style={{ fontWeight: 600 }}>準備</span>
           <span style={{ fontSize: F.small, color: C.dim2 }}>調べるだけ。変えるのは押したときだけ</span>
           <div style={{ flexGrow: 1 }} />
           <Reload onClick={() => void refresh()} />
@@ -77,27 +126,25 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!checks && <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>}
-          {checks?.map((c) => {
-            const m = MARK[c.level]
-            return (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '12px 12px', borderRadius: 7, border: `1px solid ${C.line}` }}>
-                <span style={{ color: m.color, font: `${F.base}px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: F.body }}>{c.label}</span>
-                  <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
-                  {c.fix?.warning && (
-                    <span style={{ fontSize: F.small, color: C.faint }}>{c.fix.warning}</span>
-                  )}
-                </div>
-                {c.fix && (
-                  <Button kind="primary" size="sm" disabled={busy !== null} onClick={() => void fix(c)}>
-                    {busy === c.id ? '実行しています…' : c.fix.label}
-                  </Button>
-                )}
-              </div>
-            )
-          })}
+          {claude && (
+            <>
+              <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>Claude Code</span>
+              {claude.map(row)}
+            </>
+          )}
+          {checks && <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>Forgejo</span>}
+          {checks?.map(row)}
+
+          {/* 手元に forgejo が無ければ発行できない。人が Forgejo で作ったボットのトークンを貼る（docs/SETUP.md） */}
+          {remote && checks?.some((c) => c.id === 'token' && c.level !== 'ok') && (
+            <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
+              <Input value={pasted} placeholder="izuna のトークンを貼る" type="password"
+                onChange={(e) => setPasted(e.target.value)} style={{ flexGrow: 1 }} />
+              <Button kind="primary" size="sm" disabled={busy !== null || !pasted.trim()} onClick={() => void paste()}>
+                {busy === 'token' ? '確かめています…' : '保管する'}
+              </Button>
+            </div>
+          )}
 
           <Tokens />
 

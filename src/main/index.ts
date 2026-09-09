@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, session, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -18,9 +18,12 @@ function createWindow(): void {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js')
-      // sandbox / contextIsolation / nodeIntegration は Electron の既定のまま。
+      preload: join(__dirname, '../preload/index.js'),
+      // **明示する。** 既定に頼ると、Electron の版が上がって既定が変わったときに気づけない（§26）。
       // preload は contextBridge と ipcRenderer しか使わないので、砂場の中で足りる
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false
     }
   })
 
@@ -75,6 +78,18 @@ app.whenReady().then(() => {
 
   // 窓が作られる前に登録する。あとから付けると最初の窓が素のまま
   app.on('web-contents-created', (_e, contents) => guardWebContents(contents))
+
+  /**
+   * **頁からの権限の要求は全部断る。** カメラ・マイク・位置・通知・クリップボード読み取り。
+   * Izuna の renderer は要らないし、埋めた頁（§32）が要求してきても人に聞かない。
+   * 通知は main が `Notification` で出す（renderer からの要求ではない）。
+   * ダウンロードも断る —— 本文のリンクや埋めた頁がファイルを落とす口にならないように
+   */
+  for (const s of [session.defaultSession, session.fromPartition('persist:preview')]) {
+    s.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
+    s.setPermissionCheckHandler(() => false)
+    s.on('will-download', (event) => event.preventDefault())
+  }
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

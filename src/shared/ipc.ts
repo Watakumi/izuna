@@ -2,6 +2,7 @@ import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from 
 import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
+import type { ClaudeFacts } from './prereq'
 import type { FixId } from '../main/forge/setup'
 import type { ForgejoPull, ForgejoRepo, ForgejoRun, ForgejoToken } from '../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../main/forge/github'
@@ -55,6 +56,8 @@ export interface RepoInfo {
 
 /** renderer が呼ぶもの。すべて invoke（応答を待つ） */
 export interface IzunaApi {
+  /** Claude Code が入っていてログイン済みか（docs/SETUP.md）。人の識別子は返さない */
+  claudeStatus(): Promise<ClaudeFacts>
   /** Forgejo の環境を調べる。**検出だけ。何も変えない** */
   forgeFacts(): Promise<ForgeFacts>
   /** 明示的に押されたときだけ走る修正 */
@@ -78,6 +81,8 @@ export interface IzunaApi {
    * パスワード認証を要求する）ので、画面は見せるところまでをやる。
    */
   forgeTokens(): Promise<{ tokens: ForgejoToken[]; mineLast8: string | null; settingsUrl: string }>
+  /** 人が Forgejo で作ったボットのトークンを貼る（手元に forgejo が無い構成。docs/SETUP.md） */
+  forgeSetToken(token: string): Promise<string>
   /** 出口（GitHub · gh に任せる） */
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
@@ -210,6 +215,7 @@ export type TerminalEvent =
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {
+  claudeStatus: 'izuna:claude:status',
   forgeFacts: 'izuna:forge:facts',
   forgeFix: 'izuna:forge:fix',
   forgeRepos: 'izuna:forge:repos',
@@ -219,6 +225,7 @@ export const CH = {
   forgeRuns: 'izuna:forge:runs',
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
   forgeTokens: 'izuna:forge:tokens',
+  forgeSetToken: 'izuna:forge:set-token',
   ghStatus: 'izuna:gh:status',
   ghIssues: 'izuna:gh:issues',
   ghPulls: 'izuna:gh:pulls',

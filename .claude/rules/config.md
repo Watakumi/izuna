@@ -78,8 +78,15 @@ macOS の既定のファイルシステムは大小を区別しないので同�
 `origin/HEAD` の決め打ちも同じ理由でやめ、検出した upstream の remote 名と
 既定ブランチを組んで使う。
 
+### 手元に `forgejo` が無い構成（2026-09-09）
+
+`forgejoWorkPaths` を空にして `forgejoUrl` を書けば、`gatherFacts` は binary 無しでも応答と
+トークンを調べ、`remote: true` を立てる。CLI を使う修正（ボットの作成・トークンの発行・
+app.ini の書き換え）は出さず、トークンは人が Forgejo で作って準備画面に貼る（`adoptToken`。
+通るか・ボット `izuna` のものかを聞いてから保管する）。手順は docs/SETUP.md。
+
 ### まだ残っている決め打ち
 
-- `brew install` / `brew services`（Homebrew 以外の導入方法）
+- `brew install` / `brew services`（Homebrew 以外の導入方法は docs/SETUP.md で人がやる）
 - `/opt/homebrew/bin/claude` などのフォールバック（`claudePath` で回避可能）
 - GitHub のホスト名一覧（GitHub Enterprise は未対応）

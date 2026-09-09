@@ -51,6 +51,7 @@ const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   tokenScopes: ['write:user', 'write:repository'],
   tokenWorks: true,
   tokenUnreadable: false,
+  remote: false,
   tokenRejection: null,
   runners: null,
   ...over
@@ -293,5 +294,38 @@ describe('発行し直して直るときだけ、発行し直すと言う', () =
     const c = find(facts({ tokenScopes: [] }), 'token')
     expect(c.level).toBe('warn')
     expect(c.detail).toContain('分かりません')
+  })
+})
+
+describe('手元に forgejo が無い構成（Docker や別マシン。docs/SETUP.md）', () => {
+  const remote = (over: Partial<ForgeFacts> = {}): ForgeFacts => facts({ binary: null, version: null, remote: true, ...over })
+
+  it('設定の forgejoUrl で見ているなら、インストールの行は ok で先へ進む', () => {
+    const checks = diagnose(remote())
+    expect(checks[0]).toMatchObject({ id: 'installed', level: 'ok' })
+    expect(checks[0].detail).toContain('forgejoUrl')
+    expect(checks.map((c) => c.id)).toContain('token')
+    expect(readyForForge(checks)).toBe(true)
+  })
+
+  it('トークンが無ければ「貼ってください」と言い、発行の釦は出さない（CLI が無いので発行できない）', () => {
+    const t = find(remote({ tokenScopes: null, tokenWorks: null }), 'token')
+    expect(t.level).toBe('ng')
+    expect(t.detail).toContain('貼って')
+    expect(t.fix).toBeNull()
+  })
+
+  it('拒否されても「発行し直す」を出さない。増やせないものを増やすと言わない', () => {
+    const t = find(remote({ tokenWorks: false, tokenScopes: null, tokenRejection: { status: 401, detail: 'x' } }), 'token')
+    expect(t.fix).toBeNull()
+    const s = find(remote({ tokenScopes: ['read:user'] }), 'token')
+    expect(s.level).toBe('ng')
+    expect(s.fix).toBeNull()
+  })
+
+  it('手元にも設定にも無ければ、そこで止めて Docker と forgejoUrl の道を言う', () => {
+    const checks = diagnose(facts({ binary: null, config: null, remote: false }))
+    expect(checks).toHaveLength(1)
+    expect(checks[0].detail).toContain('forgejoUrl')
   })
 })

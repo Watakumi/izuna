@@ -17,12 +17,17 @@ export interface RunOptions {
   cwd?: string
   /** ログインシェルの環境に重ねるもの（資格情報など） */
   env?: NodeJS.ProcessEnv
+  /**
+   * `env` を重ねずに**そのまま**使う。ログインシェルの環境から鍵を落として呼ぶとき
+   * （`claude auth status` を API キーで「ログイン済み」に見せない。§14）
+   */
+  replaceEnv?: boolean
   timeoutMs?: number
   maxBuffer?: number
 }
 
 export async function run(cmd: string, args: string[], options: RunOptions = {}): Promise<string> {
-  const env = { ...(await loginShellEnv()), ...(options.env ?? {}) }
+  const env = options.replaceEnv ? (options.env ?? {}) : { ...(await loginShellEnv()), ...(options.env ?? {}) }
   try {
     const { stdout } = await exec(cmd, args, {
       cwd: options.cwd,

@@ -12,3 +12,6 @@ shots/
 coverage/
 *.tsbuildinfo
 scripts/probe-team*.result.json
+
+# 7 手の走行の絵。個人のパスと私的な PR の URL が写るので版管理に入れない（pnpm walk が撮り直す）
+docs/v1-walk/*.png

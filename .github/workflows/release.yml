@@ -1,0 +1,45 @@
+# 配布物（macOS の DMG）。タグ v* を押したときだけ組み立てて Release に付ける。
+# 署名と公証は secrets があるときだけ（無ければ署名無しの DMG。開くには右クリック → 開く が要る）。
+# 自動更新は持たない（docs/GOAL.md やらないこと）。
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.22.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: 依存を入れる
+        run: pnpm install --frozen-lockfile
+      - name: 型と検査
+        env:
+          IZUNA_CI: '1'
+        run: pnpm verify
+      - name: DMG を組む
+        # 証明書と Apple ID が secrets にあれば署名と公証まで。無ければ署名無し
+        env:
+          CSC_LINK: ${{ secrets.MAC_CERT_P12 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm build:mac
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.zip
+          generate_release_notes: true

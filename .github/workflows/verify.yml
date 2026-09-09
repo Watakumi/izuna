@@ -1,0 +1,33 @@
+# GitHub 側の検査（配布のため。自宅の Forgejo の分は .forgejo/workflows/verify.yml）。
+# action はタグではなくコミットで固定する（タグは付け替えられる。§27）。
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.22.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: 依存を入れる
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: pnpm install --frozen-lockfile
+      - name: 型と検査
+        # IZUNA_CI=1 は「手元の環境を見る検査」を外す（claude はここに無い。docs/ACTIONS.md）
+        env:
+          IZUNA_CI: '1'
+        run: pnpm verify

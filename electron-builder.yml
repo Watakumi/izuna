@@ -2,6 +2,8 @@ appId: dev.watakumi.izuna
 productName: Izuna
 directories:
   buildResources: build
+# 配布物の固め（build/fuses.mjs）。RunAsNode などを切る
+afterPack: build/fuses.mjs
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -23,7 +25,10 @@ mac:
   extendInfo:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
+  # 署名と公証は証明書と Apple ID が環境にあるときだけ（.github/workflows/release.yml）。
+  # 無ければ electron-builder は署名を飛ばす。公証は APPLE_ID が無ければ動かない
+  notarize: true
+  hardenedRuntime: true
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:

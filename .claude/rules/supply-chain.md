@@ -49,12 +49,17 @@ postinstall を electron / esbuild / node-pty に限定、更新機構は無い�
   `pnpm audit` を `continue-on-error` で足した —— 直せないもの（§26 の extract-zip）があるので門にはしない。
   **runner で動くかは未確認**（Forgejo への push が §7 の 401→404 で通らなかった）
 
-### registry が `npm.flatt.tech` を向いている
+### registry（2026-09-09 に見直した）
 
-`.npmrc` の registry は `https://npm.flatt.tech/` である。検査用のプロキシなら防御だが、
-単一の信頼点でもある。**なぜそこを向けたのかは、この文書の書き手（人）が書くこと。**
-落ちたときは `.npmrc` の `registry=` を `https://registry.npmjs.org/` に戻せば動く
-（lockfile は registry の URL を持っていない。`grep flatt pnpm-lock.yaml` は 0 件）。
+以前 `.npmrc` の registry が `https://npm.flatt.tech/` を向いていると書いたが、**いまの `.npmrc` は
+`shamefully-hoist=true` だけ**で、registry は既定（npmjs）である。配るリポジトリなので、
+貢献者の環境で別の registry を向かせない。
+
+### GitHub 側の CI（2026-09-09）
+
+配るので `.github/workflows/` に 3 本置いた。`verify.yml`（型と検査）、`security.yml`（gitleaks・osv-scanner・
+electronegativity。週 1 回も回して新しい advisory を拾う）、`release.yml`（タグ `v*` で macOS の DMG を組んで
+Release に付ける）。action は全部コミットで固定。自宅の Forgejo の分（`.forgejo/workflows/`）はそのまま。
 
 ### 不透明なもの
 
