@@ -175,10 +175,8 @@ export function ForgeSetup({
             gap: 12
           }}
         >
+          {/* 副題は置かない。何をするかは各行の釦と、その下の警告が言う（§17.4） */}
           <span style={{ fontWeight: 600 }}>準備</span>
-          <span style={{ fontSize: F.small, color: C.dim2 }}>
-            調べるだけ。変えるのは押したときだけ
-          </span>
           <div style={{ flexGrow: 1 }} />
           <Reload onClick={() => void refresh()} />
         </div>
@@ -478,7 +476,6 @@ function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.
           {open ? '▾' : '▸'}
         </span>
         <span style={{ fontSize: F.body }}>sandbox {repos.length} 件</span>
-        <span style={{ fontSize: F.small, color: C.dim2 }}>ボットの下にあるもの。使い捨て</span>
       </div>
 
       {open && (
