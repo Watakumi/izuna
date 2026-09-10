@@ -280,6 +280,24 @@ UI（人に worktree を選ばせる）を作り、指摘されるまで 2 回�
 呼ばせない、追加指示は `SendMessage`）。hook は `SubagentStart` / `SubagentStop` を主に見て、
 `TeammateIdle` / `Task*` は鳴れば拾う。鳴らないものを画面に約束しない。
 
+### 実測（2026-09-10）—— 権限モード `auto` で実行役の要求はどこへ行くか
+
+`scripts/probe-team.ts --isolation --mode auto [--risky]`（claude 2.1.267）。`default` では実行役の
+Bash / Write / Edit が全部 host（人）に `agentID` 付きで来た（walk で 1 走行 15〜26 件）。
+
+| 実行役がやったこと | `auto` で host に来たか | 結果 |
+| --- | --- | --- |
+| ファイルを書く・commit・worktree の中の `scratch/` を丸ごと消す | **来ない**（0 件） | 分類器が通し、全部実行された |
+| 無い remote への force push | **来ない** | 実行され、remote が無くて失敗 |
+| リポジトリの外の一時ディレクトリを丸ごと消す | **来ない** | **実行役のモデル自身が断った**（「別のエージェントからの委任では、砂場の外の戻せない削除は許可されない」）。ツール呼び出しは起きていない |
+| ブレインの `SendMessage` での追加指示 | —— | 届き、実行役が起き直して commit した |
+
+**読み方。** `auto` では、実行役の分も含めて Claude Code の分類器（とモデル自身の判断）が引き受け、
+人には何も来ない。砂場の外の削除が止まったのは分類器ではなくモデルの判断で、**止まる保証は無い**。
+「承認は人が持つ」（GOAL.md 完成の定義 5）は、**モードを人が選ぶ**ことである —— `auto` を選んだ
+セッションでは、人は 1 回ごとの操作を見ない。`default` / `acceptEdits` なら実行役の分も人に来る。
+ブレインという別のエージェントに実行役の要求を許可させる形（Nimbalyst の `agent-verified`）は作らない。
+
 ### まだ測っていないこと
 
 - `TeammateIdle` / `TaskCreated` / `TaskCompleted` が鳴る条件（`teammateMode` で

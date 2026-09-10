@@ -65,7 +65,7 @@ electron-vite 5 / Electron 39 / React 19 / TypeScript 5.9 / Vite 7 / pnpm / vite
 自前で読むのはやめた。理由は §6。SDK は依存ゼロ・4.8MB で、CLI は同梱せず
 `pathToClaudeCodeExecutable` で指した既存の `claude` を起動する。
 
-**版はパッチ番号で連動する**（SDK `0.3.263` ↔ CLI `2.1.263`）。ずれたまま使うと
+**版はパッチ番号で連動する**（SDK `0.3.266` ↔ CLI `2.1.266`。2026-09-10 に 263 から上げた）。ずれたまま使うと
 SDK が知らないイベントを CLI が吐く。`test/auth.test.ts` が門になっている。
 
 **テストは vitest。** `node --test`(依存ゼロ)を検討したが、この構成では使えない。

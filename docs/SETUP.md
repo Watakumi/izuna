@@ -63,7 +63,7 @@ Izuna は貼られたトークンが**通るか・`izuna` のものか**を Forg
 上から順に潰す。任意の項目（Actions、runner）は数えない。
 
 ```
-Claude Code   ✓ 2.1.263 · ~/.local/bin/claude
+Claude Code   ✓ 2.1.266 · ~/.local/bin/claude
 ログイン       ✓ claude.ai · max
 Forgejo
 インストール   ✓ 16.0.3 · /opt/homebrew/bin/forgejo      （Docker なら「設定の forgejoUrl を使う」）
