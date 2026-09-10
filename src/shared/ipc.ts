@@ -96,6 +96,11 @@ export interface IzunaApi {
   forgeTokens(): Promise<{ tokens: ForgejoToken[]; mineLast8: string | null; settingsUrl: string }>
   /** 人が Forgejo で作ったボットのトークンを貼る（手元に forgejo が無い構成。docs/SETUP.md） */
   forgeSetToken(token: string): Promise<string>
+  /**
+   * 手元に CLI が無い構成で、管理者の名前とパスワードでボットとトークンを作る。
+   * パスワードは main がその場で使って捨てる（保管しない。§26）
+   */
+  forgeProvisionBot(admin: { user: string; password: string }): Promise<string>
   /** 出口（GitHub · gh に任せる） */
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
@@ -245,6 +250,7 @@ export const CH = {
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
   forgeTokens: 'izuna:forge:tokens',
   forgeSetToken: 'izuna:forge:set-token',
+  forgeProvisionBot: 'izuna:forge:provision-bot',
   ghStatus: 'izuna:gh:status',
   ghIssues: 'izuna:gh:issues',
   ghPulls: 'izuna:gh:pulls',

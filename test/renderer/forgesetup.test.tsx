@@ -71,6 +71,11 @@ beforeEach(() => {
       facts = good()
       return '起動しました'
     },
+    forgeProvisionBot: async (admin: { user: string; password: string }) => {
+      calls.push(`provision:${admin.user}:${admin.password}`)
+      facts = good({ remote: true, binary: null })
+      return 'ボット izuna を作り、izuna のトークンを保管しました'
+    },
     forgeSetToken: async (token: string) => {
       calls.push(`token:${token}`)
       facts = good({ remote: true, binary: null })
@@ -134,18 +139,49 @@ describe('ForgeSetup', () => {
   it('手元に forgejo が無ければ、貼ったトークンを確かめてから保管する', async () => {
     facts = good({ remote: true, binary: null, tokenScopes: null, tokenWorks: null })
     render(<ForgeSetup onClose={() => {}} />)
-    await waitFor(() => expect(screen.getByPlaceholderText('izuna のトークンを貼る')).toBeTruthy())
+    await waitFor(() =>
+      expect(
+        screen.getByPlaceholderText('または、Forgejo で作った izuna のトークンを貼る')
+      ).toBeTruthy()
+    )
     const save = screen.getByText('保管する') as HTMLButtonElement
     expect(save.disabled).toBe(true)
-    fireEvent.change(screen.getByPlaceholderText('izuna のトークンを貼る'), {
-      target: { value: ' tok-1234 ' }
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('または、Forgejo で作った izuna のトークンを貼る'),
+      {
+        target: { value: ' tok-1234 ' }
+      }
+    )
     expect(save.disabled).toBe(false)
     fireEvent.click(save)
     await waitFor(() => expect(screen.getByText('保管しました')).toBeTruthy())
     expect(calls).toEqual(['token: tok-1234 '])
     // 保管できたら欄は消える
-    await waitFor(() => expect(screen.queryByPlaceholderText('izuna のトークンを貼る')).toBeNull())
+    await waitFor(() =>
+      expect(
+        screen.queryByPlaceholderText('または、Forgejo で作った izuna のトークンを貼る')
+      ).toBeNull()
+    )
+  })
+
+  it('管理者の名前とパスワードでボットとトークンを作れる。両方そろうまで押せず、済んだら欄を空にする', async () => {
+    facts = good({ remote: true, binary: null, tokenScopes: null, tokenWorks: null })
+    render(<ForgeSetup onClose={() => {}} />)
+    await waitFor(() => expect(screen.getByPlaceholderText('Forgejo の管理者の名前')).toBeTruthy())
+    const make = screen.getByText('ボットとトークンを作る') as HTMLButtonElement
+    expect(make.disabled).toBe(true)
+    fireEvent.change(screen.getByPlaceholderText('Forgejo の管理者の名前'), {
+      target: { value: 'admin' }
+    })
+    expect(make.disabled).toBe(true)
+    fireEvent.change(screen.getByPlaceholderText('そのパスワード'), { target: { value: 'pw' } })
+    expect(make.disabled).toBe(false)
+    fireEvent.click(make)
+    await waitFor(() =>
+      expect(screen.getByText('ボット izuna を作り、izuna のトークンを保管しました')).toBeTruthy()
+    )
+    expect(calls).toEqual(['provision:admin:pw'])
+    await waitFor(() => expect(screen.queryByPlaceholderText('そのパスワード')).toBeNull())
   })
 
   it('Claude Code が無ければ準備できていない。ログインの行は出ない', async () => {

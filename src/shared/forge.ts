@@ -213,7 +213,7 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
         id,
         label,
         level: 'ng',
-        detail: `未設定です。Forgejo で ${BOT_USER} という利用者を作り、そのトークン（${REQUIRED_SCOPES.join(', ')}）を下に貼ってください`,
+        detail: `未設定です。下で管理者の名前とパスワードから作るか、Forgejo で作った ${BOT_USER} のトークン（${REQUIRED_SCOPES.join(', ')}）を貼ってください`,
         fix: null
       }
     }

@@ -328,10 +328,11 @@ describe('手元に forgejo が無い構成（Docker や別マシン。docs/SETU
     expect(readyForForge(checks)).toBe(true)
   })
 
-  it('トークンが無ければ「貼ってください」と言い、発行の釦は出さない（CLI が無いので発行できない）', () => {
+  it('トークンが無ければ「管理者から作るか貼る」と言い、CLI の発行の釦は出さない', () => {
     const t = find(remote({ tokenScopes: null, tokenWorks: null }), 'token')
     expect(t.level).toBe('ng')
     expect(t.detail).toContain('貼って')
+    expect(t.detail).toContain('管理者')
     expect(t.fix).toBeNull()
   })
 

@@ -41,6 +41,9 @@ export function ForgeSetup({
   /** 手元に forgejo が無い構成。トークンは人が作って貼る */
   const [remote, setRemote] = useState(false)
   const [pasted, setPasted] = useState('')
+  /** 管理者の名前とパスワード。main に渡して捨てる。ここにも残さない（成功したら空にする） */
+  const [adminUser, setAdminUser] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
   const [busy, setBusy] = useState<Check['id'] | null>(null)
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null)
   const [cfg, setCfg] = useState<{ path: string; ignored: string[]; exists: boolean } | null>(null)
@@ -92,6 +95,25 @@ export function ForgeSetup({
     try {
       setMessage({ text: await window.izuna.forgeSetToken(pasted), bad: false })
       setPasted('')
+      await refresh()
+    } catch (e) {
+      setMessage({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const provision = async (): Promise<void> => {
+    setBusy('token')
+    setMessage(null)
+    try {
+      const text = await window.izuna.forgeProvisionBot({
+        user: adminUser,
+        password: adminPassword
+      })
+      setMessage({ text, bad: false })
+      setAdminUser('')
+      setAdminPassword('')
       await refresh()
     } catch (e) {
       setMessage({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
@@ -221,23 +243,51 @@ export function ForgeSetup({
 
           {/* 手元に forgejo が無ければ発行できない。人が Forgejo で作ったボットのトークンを貼る（docs/SETUP.md） */}
           {remote && checks?.some((c) => c.id === 'token' && c.level !== 'ok') && (
-            <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
-              <Input
-                value={pasted}
-                placeholder="izuna のトークンを貼る"
-                type="password"
-                onChange={(e) => setPasted(e.target.value)}
-                style={{ flexGrow: 1 }}
-              />
-              <Button
-                kind="primary"
-                size="sm"
-                disabled={busy !== null || !pasted.trim()}
-                onClick={() => void paste()}
-              >
-                {busy === 'token' ? '確かめています…' : '保管する'}
-              </Button>
-            </div>
+            <>
+              {/* 管理者の名前とパスワードで、ボットとトークンを作る。パスワードは main がその場で使って捨てる */}
+              <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
+                <Input
+                  value={adminUser}
+                  placeholder="Forgejo の管理者の名前"
+                  autoComplete="off"
+                  onChange={(e) => setAdminUser(e.target.value)}
+                  style={{ flexGrow: 1 }}
+                />
+                <Input
+                  value={adminPassword}
+                  placeholder="そのパスワード"
+                  type="password"
+                  autoComplete="off"
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  style={{ flexGrow: 1 }}
+                />
+                <Button
+                  kind="primary"
+                  size="sm"
+                  disabled={busy !== null || !adminUser.trim() || !adminPassword}
+                  onClick={() => void provision()}
+                >
+                  {busy === 'token' ? '作っています…' : 'ボットとトークンを作る'}
+                </Button>
+              </div>
+              <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
+                <Input
+                  value={pasted}
+                  placeholder="または、Forgejo で作った izuna のトークンを貼る"
+                  type="password"
+                  onChange={(e) => setPasted(e.target.value)}
+                  style={{ flexGrow: 1 }}
+                />
+                <Button
+                  kind="primary"
+                  size="sm"
+                  disabled={busy !== null || !pasted.trim()}
+                  onClick={() => void paste()}
+                >
+                  {busy === 'token' ? '確かめています…' : '保管する'}
+                </Button>
+              </div>
+            </>
           )}
 
           <Repos onPreview={onPreview} />

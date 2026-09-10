@@ -1,7 +1,7 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
-import { adoptToken, applyFix, gatherFacts } from '../forge/setup'
+import { adoptToken, applyFix, gatherFacts, provisionBot } from '../forge/setup'
 import { claudeStatus } from '../claude/status'
 import {
   createPull,
@@ -129,6 +129,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     },
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
     forgeSetToken: async (token) => adoptToken(await forgeRoot(), token),
+    forgeProvisionBot: async (admin) => provisionBot(await forgeRoot(), admin),
     forgeTokens: async () => {
       const root = await forgeRoot()
       const [user, token] = await Promise.all([whoami(root), loadToken()])
