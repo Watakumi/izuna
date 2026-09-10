@@ -18,6 +18,10 @@ updates:
       - dependency-name: '@anthropic-ai/claude-agent-sdk'
       # HTML の唯一の注入口。exact で固定し、changelog を読んでから手で上げる（§27）
       - dependency-name: mermaid
+      # メジャーは提案させない。Electron の 39 → 44 のような更新は fuses や砂場の挙動が変わりうるので、
+      # changelog を読んでから人が上げる（設定を入れた瞬間に 9 本出た。2026-09-09）
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -25,3 +29,7 @@ updates:
       day: monday
     cooldown:
       default-days: 7
+    ignore:
+      # action はコミットで固定している（§27）。メジャーは人が SHA を確かめてから上げる
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']

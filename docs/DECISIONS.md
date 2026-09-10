@@ -156,7 +156,7 @@ packages/runtime/src/ai/server/providers/TeammateManager.ts       §12 で既出
 
 ## 20. リポジトリと公開範囲（2026-09-08）
 
-upstream は **private** の `Watakumi/izuna`（remote 名も `upstream`）。
+upstream は `Watakumi/izuna`（remote 名も `upstream`。2026-09-09 に public にした）。
 `shared/remote.ts` はホストで役を決めるので、`github.com` は自動で upstream になる。
 sandbox（Forgejo）は `watakumi/izuna`（remote 名 `forgejo`、2026-09-08 に Izuna から push）。
 **Izuna 自身の開発は GitHub に対して行う**（2026-09-09）。シェルの git が Forgejo に使う
@@ -182,7 +182,8 @@ sandbox（Forgejo）は `watakumi/izuna`（remote 名 `forgejo`、2026-09-08 に
 書き換えた履歴は**新しいリポジトリ**に置いた —— 元の `Watakumi/izuna` は `izuna-old` に改名して
 private のまま残す（GitHub は古いコミットを PR の参照から保持するので、同じリポジトリで force push
 しても消えたことにならない）。控えは `/tmp/izuna-backup.git`（書き換え前の鏡）。
-public への切り替えは、この文書と SETUP.md を読み直してから `gh repo edit --visibility public`。
+2026-09-09 に public にした。同時に Security Advisories の非公開報告・Dependabot の警告・秘密の走査と push 保護を
+GitHub 側で有効にした。Dependabot はメジャーを提案しない（人が読んでから上げる）。
 
 ### **これは「あとで public にできる」状態ではない**（2026-09-08 時点）
 
