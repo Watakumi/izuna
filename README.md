@@ -5,6 +5,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 **自分の Forgejo を持っている人**のための道具 —— 実行役の荒れる作業は自宅の Forgejo（sandbox）で
 PR にしてまとめて見て、GitHub（upstream）には仕上がったものだけを出す。
 
+- **入れる**: [Releases](https://github.com/Watakumi/izuna/releases) の DMG（Apple Silicon）。署名していないので開き方は [docs/SETUP.md](docs/SETUP.md)
 - **使うには**: [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo、gh。準備画面が判定する）
 - **何を作るか**: [docs/GOAL.md](docs/GOAL.md)（三本の柱と、やらないこと）
 - **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`（触るファイルに応じて読まれる）、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）
