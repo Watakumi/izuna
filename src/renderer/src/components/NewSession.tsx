@@ -397,8 +397,8 @@ export function NewSession({
                 rows={2}
                 placeholder={
                   issues && issues.length > 0
-                    ? 'または、依頼を直接書く（後で会話でもいい）'
-                    : '依頼を書く（後で会話でもいい）'
+                    ? 'または、依頼を直接書く（後で会話でも伝えられます）'
+                    : '依頼を書く（後で会話でも伝えられます）'
                 }
                 onChange={(e) => {
                   setText(e.target.value)

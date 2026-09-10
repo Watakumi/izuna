@@ -51,7 +51,7 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
               void act(() => window.izuna.startLoop({ id: panel.id, maxIterations: max }))
             }
           >
-            {busy ? '始めています…' : '回す'}
+            {busy ? '始めています…' : '始める'}
           </Button>
         </>
       )}

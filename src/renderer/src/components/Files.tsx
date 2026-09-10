@@ -20,7 +20,7 @@ export function Files({ panel }: { panel: Panel }): React.JSX.Element {
   if (files.length === 0) {
     return (
       <div style={{ padding: S.lg }}>
-        <Faint>まだファイルを触っていません</Faint>
+        <Faint>まだファイルを読み書きしていません</Faint>
       </div>
     )
   }

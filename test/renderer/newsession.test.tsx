@@ -82,7 +82,7 @@ describe('NewSession', () => {
       expect(screen.getByText('GitHub に繋がっていません。下に直接書けます')).toBeTruthy()
     )
     expect(screen.getByText('そのまま開きます。依頼は会話で伝えられます')).toBeTruthy()
-    fireEvent.change(screen.getByPlaceholderText('依頼を書く（後で会話でもいい）'), {
+    fireEvent.change(screen.getByPlaceholderText('依頼を書く（後で会話でも伝えられます）'), {
       target: { value: '  README を直して ' }
     })
     fireEvent.click(screen.getByText('開く'))

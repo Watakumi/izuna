@@ -238,8 +238,8 @@ export function Forge({
         {!sandbox ? (
           <>
             <Faint>
-              Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが Upstream
-              に漏れなくなります
+              Forgejo の remote がありません。作業ブランチは sandbox に push し、Upstream には
+              出しません
             </Faint>
             <Button
               disabled={busy !== null}
@@ -399,7 +399,7 @@ export function Forge({
         >
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
-        <span style={{ fontSize: F.micro, color: C.faint }}>承認したものだけ</span>
+        {/* 矢印に標語を添えない（§17.4）。向きは矢印が言っている */}
       </div>
 
       {/* Upstream */}

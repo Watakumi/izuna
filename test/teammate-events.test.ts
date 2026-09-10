@@ -168,9 +168,9 @@ describe('会話に挟む一言', () => {
     ).toBe('実行役 a9d98cdc を開きました（general-purpose）')
     expect(
       teammateNotice({ kind: 'stop', agent: 'a9d98cdc', target: 't', note: 'Done.', at })
-    ).toBe('実行役 a9d98cdc が手を止めました: Done.')
+    ).toBe('実行役 a9d98cdc が止まりました: Done.')
     expect(teammateNotice({ kind: 'stop', agent: 'a9d98cdc', target: 't', note: '', at })).toBe(
-      '実行役 a9d98cdc が手を止めました'
+      '実行役 a9d98cdc が止まりました'
     )
     expect(teammateNotice({ kind: 'idle', agent: 'x', target: '', note: '', at })).toContain(
       'ブレインが読む番'
