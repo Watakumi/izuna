@@ -84,6 +84,8 @@ export interface IzunaApi {
    * Actions が無効なら空。畳むのは `shared/ci.ts`
    */
   forgeRuns(owner: string, repo: string, ref?: string): Promise<ForgejoRun[]>
+  /** sandbox の PR を閉じる（片付け。マージはしない） */
+  forgeClosePull(owner: string, repo: string, index: number): Promise<ForgejoPull>
   forgeEnsureRepo(name: string): Promise<ForgejoRepo>
   /**
    * トークンの一覧。**消すのはここからできない**（Forgejo が
@@ -236,6 +238,7 @@ export const CH = {
   forgePullDiff: 'izuna:forge:pull-diff',
   forgeCreatePull: 'izuna:forge:create-pull',
   forgeRuns: 'izuna:forge:runs',
+  forgeClosePull: 'izuna:forge:close-pull',
   forgeEnsureRepo: 'izuna:forge:ensure-repo',
   forgeTokens: 'izuna:forge:tokens',
   forgeSetToken: 'izuna:forge:set-token',

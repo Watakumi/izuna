@@ -311,3 +311,25 @@ describe('Actions の実行（GOAL.md 測り方「Izuna がその状態を読め
     await expect(listRuns('http://localhost:4649/', 'o', 'r')).rejects.toThrow(/落ちています/)
   })
 })
+
+describe('PR を閉じる（片付け。マージはしない）', () => {
+  it('PATCH /pulls/{n} に state: closed を送り、形を読む', async () => {
+    const { closePull } = await import('../src/main/forge/client')
+    reply({
+      number: 7,
+      title: 't',
+      state: 'closed',
+      head: { ref: 'a' },
+      base: { ref: 'main' },
+      html_url: 'http://x/pulls/7',
+      draft: false,
+      merged: false,
+      created_at: '2026-09-10T00:00:00Z'
+    })
+    const p = await closePull('http://localhost:4649/', 'izuna', 'r', 7)
+    expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/izuna/r/pulls/7')
+    expect(calls[0].init.method).toBe('PATCH')
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ state: 'closed' })
+    expect(p.state).toBe('closed')
+  })
+})
