@@ -222,7 +222,17 @@ export function Forge({
         title="Sandbox"
         sub={sandbox?.host ?? '未設定'}
         note={pulls === null ? '' : `PR ${pulls.length} 件`}
-        action={<Reload onClick={() => void load()} />}
+        action={
+          <>
+            {/* sandbox の頁を中で開く（§32）。remote の URL から .git を落としたものが頁 */}
+            {onPreview && sandbox && (
+              <Button size="sm" onClick={() => onPreview(sandbox.url.replace(/\.git$/, ''))}>
+                頁
+              </Button>
+            )}
+            <Reload onClick={() => void load()} />
+          </>
+        }
       />
       <div style={{ padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.md }}>
         {!sandbox ? (

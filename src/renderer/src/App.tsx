@@ -258,7 +258,12 @@ function App(): React.JSX.Element {
           </div>
         )}
 
-        {!active ? (
+        {!active && preview ? (
+          // セッションが無くても Forgejo の頁は見られる（準備の画面から開く。§32）
+          <div style={{ flexGrow: 1, minHeight: 0 }}>
+            <Preview url={preview} onClose={() => setPreview(null)} />
+          </div>
+        ) : !active ? (
           <div style={S.empty}>
             <span style={{ color: C.dim, fontSize: F.base }}>セッションがありません</span>
             <button style={S.btn} onClick={() => setShowNew(true)}>
@@ -490,7 +495,17 @@ function App(): React.JSX.Element {
         )}
       </div>
 
-      {showSetup && <ForgeSetup onClose={() => setShowSetup(false)} />}
+      {showSetup && (
+        <ForgeSetup
+          onClose={() => setShowSetup(false)}
+          // 準備の画面から Forgejo の頁を中で開く（§32）。埋める頁は renderer の上に重なるので、
+          // 覆いの画面を先に閉じる —— 閉じないと頁の下に覆いが残り、押しても効かない
+          onPreview={(url) => {
+            setShowSetup(false)
+            setPreview(url)
+          }}
+        />
+      )}
 
       {showNew && (
         <NewSession
