@@ -34,13 +34,13 @@ export default defineConfig({
       /**
        * 範囲ごとに線を引く。全体で 1 本にすると、renderer を足した瞬間に
        * main の線が下がる。**shared と main の線は以前のまま。**
-       * renderer は 2026-09-08 に測った床（行 30、分岐 28）から始める ——
-       * 描いた部品は 9 割を超えるが、Forge / NewSession / Inspector など
-       * 画面全体を持つものはまだ描いていない（§28）。
+       * renderer は 2026-09-08 に測った床（行 30、分岐 28）から始め、2026-09-10 に
+       * 画面全体を持つ部品も描いたので床を上げた（行 88.5、分岐 85.4 を測って、
+       * 行 86、分岐 83）。残る 0 は TerminalPane（WASM を jsdom で起こせない。§28）。
        */
       thresholds: {
         'src/{shared,main}/**': { statements: 95, functions: 97, lines: 97, branches: 84 },
-        'src/renderer/src/components/**': { statements: 29, functions: 34, lines: 30, branches: 28 }
+        'src/renderer/src/components/**': { statements: 84, functions: 82, lines: 86, branches: 83 }
       }
     }
   }
