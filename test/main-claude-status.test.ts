@@ -87,4 +87,20 @@ describe('Claude Code の状態', () => {
       loggedIn: null
     })
   })
+
+  it('--version が返らなくても止まらない。auth status が空なら、分からないものは null', async () => {
+    const { claudeStatus } = await load()
+    answers['--version'] = new Error('落ちた')
+    answers['auth status --json'] = '{}'
+    expect(await claudeStatus()).toEqual({
+      path: '/opt/claude',
+      version: null,
+      loggedIn: null,
+      authMethod: null,
+      subscription: null
+    })
+    // 版の文字列に番号が無ければ null
+    answers['--version'] = 'unknown'
+    expect((await claudeStatus()).version).toBeNull()
+  })
 })
