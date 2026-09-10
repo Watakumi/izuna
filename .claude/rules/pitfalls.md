@@ -250,5 +250,7 @@ paths:
   すぐには追えない。揃えるのは `pnpm run catchup`（線を越えるまでは止まる）。それまでの間に合わせは
   `ln -sfn ~/.local/share/claude/versions/<版> ~/.local/bin/claude` で戻す —— ただし更新機構は古い版を
   消す（2.1.263 は 1 日で消えた）ので、戻せるのは残っている版だけ。
-  止めるなら `DISABLE_AUTOUPDATER=1` を rc に置く（人が決める）。
+  2026-09-10 に利用者が止めた（`~/.zshrc` に `export DISABLE_AUTOUPDATER=1`。Izuna はログインシェルの
+  環境を claude に渡すので、Izuna が起こす claude にも効く）。上げるのは人が `claude update` を打ったとき。
+  そのあと `pnpm run catchup` で揃える。
 
