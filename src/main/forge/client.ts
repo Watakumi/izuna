@@ -1,5 +1,5 @@
 import { loadToken } from './store'
-import { tokenMayTravel, transportRefusal } from '../../shared/forge'
+import { tokenMayTravel, transportRefusal, BOT_USER } from '../../shared/forge'
 
 /**
  * Forgejo の API クライアント（段5）。
@@ -350,4 +350,24 @@ export async function closePull(
       }
     )
   )
+}
+
+/**
+ * sandbox を消す。`DELETE /repos/{owner}/{repo}`（204）。
+ *
+ * **ボットの下のものだけ。** トークンが通るかどうかに関係なく、人のリポジトリは
+ * Izuna からは消さない（§26 の線。作業場を触るのはボット、承認するのは人）。
+ * 使い捨ての sandbox（walk や e2e の材料）が溜まったときの片付けで、
+ * 押すのは人、確認も画面でする（`ForgeSetup.tsx`）。
+ */
+export async function deleteRepo(rootUrl: string, owner: string, repo: string): Promise<void> {
+  if (owner !== BOT_USER) {
+    throw new ForgeError(
+      `${owner}/${repo} はボット ${BOT_USER} のものではないので、Izuna からは消しません`,
+      0
+    )
+  }
+  await call<undefined>(rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, {
+    method: 'DELETE'
+  })
 }

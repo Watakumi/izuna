@@ -419,14 +419,34 @@ function Tokens({ onPreview }: { onPreview?: (url: string) => void }): React.JSX
 function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.Element | null {
   const [repos, setRepos] = useState<ForgejoRepo[] | null>(null)
   const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] = useState<string | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
 
-  useEffect(() => {
-    void window.izuna
-      .forgeRepos()
-      .then(setRepos)
-      .catch(() => setRepos(null))
+  const load = useCallback(async () => {
+    setRepos(await window.izuna.forgeRepos().catch(() => null))
   }, [])
-  if (!onPreview || !repos || repos.length === 0) return null
+  useEffect(() => {
+    // 取ってきてから setState する（await の後）。同期の setState ではない
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  }, [load])
+  if (!repos || repos.length === 0) return null
+
+  // 消すのはボットの下のものだけ（main の `deleteRepo` も同じ線で断る）。確認してから
+  const remove = async (r: ForgejoRepo): Promise<void> => {
+    setBusy(r.fullName)
+    setMsg(null)
+    try {
+      setMsg({ text: await window.izuna.forgeDeleteRepo(r.owner, r.name), bad: false })
+      setConfirming(null)
+      await load()
+    } catch (e) {
+      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true })
+    } finally {
+      setBusy(null)
+    }
+  }
 
   return (
     <div style={{ border: `1px solid ${C.line}`, borderRadius: R.md, overflow: 'hidden' }}>
@@ -444,7 +464,7 @@ function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.
           {open ? '▾' : '▸'}
         </span>
         <span style={{ fontSize: F.body }}>sandbox {repos.length} 件</span>
-        <span style={{ fontSize: F.small, color: C.dim2 }}>消すのは Forgejo の設定の頁で</span>
+        <span style={{ fontSize: F.small, color: C.dim2 }}>ボットの下にあるもの。使い捨て</span>
       </div>
 
       {open && (
@@ -458,20 +478,62 @@ function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.
           }}
         >
           {repos.map((r) => (
-            <div key={r.fullName} style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
-              <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>
-                {r.fullName}
-              </span>
-              {r.empty && <Tag>空</Tag>}
-              <div style={{ flexGrow: 1 }} />
-              <Button size="sm" onClick={() => onPreview(r.htmlUrl)}>
-                頁
-              </Button>
-              <Button size="sm" onClick={() => onPreview(`${r.htmlUrl}/settings`)}>
-                設定
-              </Button>
+            <div key={r.fullName} style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
+                <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>
+                  {r.fullName}
+                </span>
+                {r.empty && <Tag>空</Tag>}
+                <div style={{ flexGrow: 1 }} />
+                {onPreview && (
+                  <Button size="sm" onClick={() => onPreview(r.htmlUrl)}>
+                    頁
+                  </Button>
+                )}
+                {confirming !== r.fullName && (
+                  <Button
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() => setConfirming(r.fullName)}
+                  >
+                    消す
+                  </Button>
+                )}
+              </div>
+              {confirming === r.fullName && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: S.md,
+                    background: C.amberBg,
+                    border: `1px solid ${C.amberLine}`,
+                    borderRadius: R.md,
+                    padding: `${S.sm}px ${S.md}px`
+                  }}
+                >
+                  <span style={{ fontSize: F.small, color: C.ink2 }}>
+                    {r.fullName} を Forgejo から消します。PR と Actions の記録も消え、戻せません
+                  </span>
+                  <div style={{ flexGrow: 1 }} />
+                  <Button
+                    size="sm"
+                    kind="primary"
+                    disabled={busy !== null}
+                    onClick={() => void remove(r)}
+                  >
+                    {busy === r.fullName ? '消しています…' : '消す'}
+                  </Button>
+                  <Button size="sm" onClick={() => setConfirming(null)}>
+                    やめる
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
+          {msg && (
+            <span style={{ fontSize: F.small, color: msg.bad ? C.red : C.dim2 }}>{msg.text}</span>
+          )}
         </div>
       )}
     </div>

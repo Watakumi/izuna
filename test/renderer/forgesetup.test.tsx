@@ -77,6 +77,12 @@ beforeEach(() => {
       return '保管しました'
     },
     forgeRepos: async () => repos,
+    forgeDeleteRepo: async (owner: string, name: string) => {
+      calls.push(`delete:${owner}/${name}`)
+      if (name === 'keep') throw new Error('izuna/keep はボット izuna のものではない')
+      repos = repos.filter((r) => r.name !== name)
+      return `${owner}/${name} を消しました`
+    },
     forgeTokens: async () => ({
       tokens,
       mineLast8: 'aaaaaaaa',
@@ -197,17 +203,58 @@ describe('ForgeSetup', () => {
     expect(screen.getByText('izuna/b')).toBeTruthy()
     expect(screen.getByText('空')).toBeTruthy()
     fireEvent.click(screen.getAllByText('頁')[1])
-    fireEvent.click(screen.getAllByText('設定')[0])
     fireEvent.click(screen.getByText('トークン 1 件'))
     fireEvent.click(screen.getByText('Forgejo で消す'))
     expect(opened).toEqual([
       'http://localhost:4649/izuna/b',
-      'http://localhost:4649/izuna/a/settings',
       'http://localhost:4649/user/settings/applications'
     ])
   })
 
-  it('中で開けない構成では sandbox の一覧を出さず、トークンの導線は外のリンクのまま', async () => {
+  it('sandbox は確認してから消し、消えたら一覧から外れる。やめれば呼ばない', async () => {
+    repos = [
+      {
+        fullName: 'izuna/a',
+        owner: 'izuna',
+        name: 'a',
+        private: true,
+        defaultBranch: 'main',
+        htmlUrl: 'http://localhost:4649/izuna/a',
+        empty: false
+      },
+      {
+        fullName: 'izuna/keep',
+        owner: 'izuna',
+        name: 'keep',
+        private: true,
+        defaultBranch: 'main',
+        htmlUrl: 'http://localhost:4649/izuna/keep',
+        empty: false
+      }
+    ]
+    render(<ForgeSetup onClose={() => {}} />)
+    await waitFor(() => expect(screen.getByText('sandbox 2 件')).toBeTruthy())
+    fireEvent.click(screen.getByText('sandbox 2 件'))
+    fireEvent.click(screen.getAllByText('消す')[0])
+    expect(screen.getByText(/izuna\/a を Forgejo から消します/)).toBeTruthy()
+    fireEvent.click(screen.getByText('やめる'))
+    expect(calls).toEqual([])
+    fireEvent.click(screen.getAllByText('消す')[0])
+    // 確認の枠の中の「消す」が本番。行の釦は確認中は隠れるので、先頭が枠のもの
+    fireEvent.click(screen.getAllByText('消す')[0])
+    await waitFor(() => expect(screen.getByText('izuna/a を消しました')).toBeTruthy())
+    expect(calls).toEqual(['delete:izuna/a'])
+    await waitFor(() => expect(screen.queryByText('izuna/a')).toBeNull())
+    // 断られたら、その言い分をそのまま出す
+    fireEvent.click(screen.getAllByText('消す')[0])
+    fireEvent.click(screen.getAllByText('消す')[0])
+    await waitFor(() =>
+      expect(screen.getByText('izuna/keep はボット izuna のものではない')).toBeTruthy()
+    )
+    expect(screen.getByText('izuna/keep')).toBeTruthy()
+  })
+
+  it('中で開けない構成では「頁」を出さず、トークンの導線は外のリンクのまま', async () => {
     repos = [
       {
         fullName: 'izuna/a',
@@ -222,7 +269,10 @@ describe('ForgeSetup', () => {
     tokens = [{ id: 1, name: 'izuna-1', scopes: [], last8: 'aaaaaaaa', createdAt: '' }]
     render(<ForgeSetup onClose={() => {}} />)
     await waitFor(() => expect(screen.getByText('トークン 1 件')).toBeTruthy())
-    expect(screen.queryByText('sandbox 1 件')).toBeNull()
+    // 一覧は出るが「頁」は無い。消すのは口があるので出る
+    fireEvent.click(screen.getByText('sandbox 1 件'))
+    expect(screen.queryByText('頁')).toBeNull()
+    expect(screen.getByText('消す')).toBeTruthy()
     fireEvent.click(screen.getByText('トークン 1 件'))
     expect((screen.getByText('Forgejo で消す') as HTMLAnchorElement).tagName).toBe('A')
   })

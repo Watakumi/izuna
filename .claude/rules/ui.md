@@ -762,7 +762,11 @@ Electron の `WebContentsView` を 1 枚、renderer の上に重ねる（`main/p
 Izuna の口に無い（ボットのトークンに権限を持たせない。§26）ので、それをやる Forgejo の頁を中で開く。
 
 - 準備の画面に **sandbox の一覧**（`forgeRepos`。ボットから見えるもの＝sandbox）を置き、
-  「頁」と「設定」で開く。消すのは設定の頁の下にある。「Forgejo で消す」（トークン）も同じ枠へ
+  「頁」で開く。「Forgejo で消す」（トークン）も同じ枠へ
+- **sandbox は Izuna から消せる**（`forgeDeleteRepo` → `DELETE /repos/{owner}/{repo}`。同日の夜に足した。
+  利用者が使い捨ての 2 本を消したいと言ったので、頁で消させるより口を持つほうが筋が通る）。
+  **ボットの下のものだけ**で、人のリポジトリは main が API を呼ぶ前に断る。画面で確認してから。
+  トークンと違って API が許すので、持てる —— 「消せないものを消せるふりをしない」（§7）とは逆の判断
 - **覆いの画面を先に閉じる。** 埋めた頁は `WebContentsView` で renderer の上に重なるので、
   準備の画面（`position: fixed` の覆い）を残したまま開くと、頁の下に覆いが残って押しても効かない。
   `App.tsx` の `onPreview` が `setShowSetup(false)` してから開く

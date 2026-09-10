@@ -333,3 +333,21 @@ describe('PR を閉じる（片付け。マージはしない）', () => {
     expect(p.state).toBe('closed')
   })
 })
+
+describe('sandbox を消す（片付け。ボットの下だけ）', () => {
+  it('DELETE /repos/{owner}/{repo} を送る。204 で本文は読まない', async () => {
+    const { deleteRepo } = await import('../src/main/forge/client')
+    reply('', 204)
+    await deleteRepo('http://localhost:4649/', 'izuna', 'izuna-ci-check')
+    expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/izuna/izuna-ci-check')
+    expect(calls[0].init.method).toBe('DELETE')
+  })
+
+  it('**人のリポジトリは、トークンが通っても消さない。** API を呼ぶ前に断る', async () => {
+    const { deleteRepo } = await import('../src/main/forge/client')
+    await expect(deleteRepo('http://localhost:4649/', 'watakumi', 'izuna')).rejects.toThrow(
+      /ボット izuna のものではない/
+    )
+    expect(calls).toHaveLength(0)
+  })
+})
