@@ -181,58 +181,62 @@ function App(): React.JSX.Element {
       />
 
       <div style={S.main}>
-        <div style={S.bar}>
-          <span style={S.brand}>Izuna</span>
-          {active && (
-            <>
-              <span style={S.tag}>{active.label}</span>
-              {active.transcript.model && (
-                <span style={S.tag}>{active.transcript.model.replace(/-\d{8}$/, '')}</span>
-              )}
-              <ModeSwitch
-                mode={active.transcript.permissionMode}
-                disabled={active.ended}
-                onChange={changeMode}
-              />
-            </>
-          )}
-          <div style={{ flexGrow: 1 }} />
-          {sessions.panels.filter((p) => p.transcript.state === 'running').length > 0 && (
-            <span style={{ ...S.note, color: C.teal }}>
-              {sessions.panels.filter((p) => p.transcript.state === 'running').length} 実行中
-            </span>
-          )}
-          {sessions.waiting.length > 0 && (
-            <span style={{ ...S.note, color: C.amber }}>承認待ち {sessions.waiting.length}</span>
-          )}
-          {active?.transcript.limits && (
-            // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
-            // 実際の制約はサブスクリプションの上限のほう。
-            //
-            // **「使用量」とも書かない。** 「使用料」と一字しか違わず、金額を
-            // 出していると読める。金額は §14 で消したのに、言葉のほうで
-            // 戻してしまっていた。
-            <span
-              style={S.note}
-              title="5 時間ごとの上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
-            >
-              5時間{' '}
-              <span style={{ color: C.ink2 }}>
-                {Math.round(active.transcript.limits.fiveHour * 100)}%
+        {/*
+          上の帯は**セッションの状態を出す場所**で、名札ではない。「Izuna」の字は
+          macOS の題名欄に既に出ているので、ここには書かない。セッションが無いときは
+          出すものが無いので帯ごと出さない（準備の釦は空の画面に置く）。
+        */}
+        {active && (
+          <div style={S.bar}>
+            <span style={S.tag}>{active.label}</span>
+            {active.transcript.model && (
+              <span style={S.tag}>{active.transcript.model.replace(/-\d{8}$/, '')}</span>
+            )}
+            <ModeSwitch
+              mode={active.transcript.permissionMode}
+              disabled={active.ended}
+              onChange={changeMode}
+            />
+            <div style={{ flexGrow: 1 }} />
+            {sessions.panels.filter((p) => p.transcript.state === 'running').length > 0 && (
+              <span style={{ ...S.note, color: C.teal }}>
+                {sessions.panels.filter((p) => p.transcript.state === 'running').length} 実行中
               </span>
-            </span>
-          )}
-          {/*
+            )}
+            {sessions.waiting.length > 0 && (
+              <span style={{ ...S.note, color: C.amber }}>承認待ち {sessions.waiting.length}</span>
+            )}
+            {active.transcript.limits && (
+              // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
+              // 実際の制約はサブスクリプションの上限のほう。
+              //
+              // **「使用量」とも書かない。** 「使用料」と一字しか違わず、金額を
+              // 出していると読める。金額は §14 で消したのに、言葉のほうで
+              // 戻してしまっていた。
+              <span
+                style={S.note}
+                title="5 時間ごとの上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
+              >
+                5時間{' '}
+                <span style={{ color: C.ink2 }}>
+                  {Math.round(active.transcript.limits.fiveHour * 100)}%
+                </span>
+              </span>
+            )}
+            {/*
             **実行中だけ出す。** 止めるものが無いときに出ていると、
             何をする釦なのか分からない（実際 2 つ並べていて、片方は
             実行中かどうかに関係なく出ていた）。
           */}
-          {active?.transcript.state === 'running' && (
-            <Button kind="danger" size="sm" onClick={() => void window.izuna.interrupt(active.id)}>
-              止める
-            </Button>
-          )}
-          {active && (
+            {active.transcript.state === 'running' && (
+              <Button
+                kind="danger"
+                size="sm"
+                onClick={() => void window.izuna.interrupt(active.id)}
+              >
+                止める
+              </Button>
+            )}
             <button
               style={{
                 ...S.ghostSmall,
@@ -244,21 +248,28 @@ function App(): React.JSX.Element {
             >
               ターミナル
             </button>
-          )}
-          <button
-            style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
-            onClick={() => setShowSetup(true)}
-            title="Forgejo と設定の準備"
-          >
-            準備
-          </button>
-        </div>
+            <button
+              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+              onClick={() => setShowSetup(true)}
+              title="Forgejo と設定の準備"
+            >
+              準備
+            </button>
+          </div>
+        )}
 
         {!active ? (
           <div style={S.empty}>
             <span style={{ color: C.dim, fontSize: F.base }}>セッションがありません</span>
             <button style={S.btn} onClick={() => setShowNew(true)}>
               新しいセッションを開く
+            </button>
+            <button
+              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+              onClick={() => setShowSetup(true)}
+              title="Forgejo と設定の準備"
+            >
+              準備
             </button>
           </div>
         ) : (
@@ -530,7 +541,6 @@ const S: Record<string, React.CSSProperties> = {
     borderBottom: `1px solid ${C.line}`,
     flexShrink: 0
   },
-  brand: { fontWeight: 600, letterSpacing: '0.02em' },
   tag: {
     font: `${F.small}px ${MONO}`,
     color: C.dim2,
