@@ -253,4 +253,10 @@ paths:
   2026-09-10 に利用者が止めた（`~/.zshrc` に `export DISABLE_AUTOUPDATER=1`。Izuna はログインシェルの
   環境を claude に渡すので、Izuna が起こす claude にも効く）。上げるのは人が `claude update` を打ったとき。
   そのあと `pnpm run catchup` で揃える。
-
+- **無い secret を空文字で `CSC_LINK` に渡すと electron-builder が落ちる**（2026-09-10、v0.1.0 の初回で踏んだ）。
+  GitHub Actions は未設定の secret を空文字にする。electron-builder は `CSC_LINK` が base64 でも URL でも
+  なければファイルのパスとして解決し、空文字はリポジトリのディレクトリになって「`<repo> not a file`」。
+  packaging も fuses も通ったあとの署名で落ちるので、原因が読みにくい。`release.yml` は secret が
+  あるときだけ `CSC_LINK` を export し、無ければ `CSC_IDENTITY_AUTO_DISCOVERY=false` にする。
+  あわせて `build:mac` に `--publish never` を付けた —— タグがあると electron-builder は暗黙に
+  publish しようとする（v27 で消える挙動）。Release に付けるのは workflow の step のほう。
