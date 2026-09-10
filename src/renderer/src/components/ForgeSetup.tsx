@@ -154,6 +154,10 @@ export function ForgeSetup({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 660,
+          // 窓より縦に長くなると、下の項目（sandbox の一覧・トークン）が画面の外に出て押せない。
+          // 覆いは fixed でスクロールしないので、中をスクロールさせる（NewSession と同じ）。
+          // pnpm e2e が「sandbox 1 件」を押せずに見つけた（2026-09-10）
+          maxHeight: '84vh',
           background: C.surface,
           border: `1px solid ${C.line2}`,
           borderRadius: 11,
@@ -179,7 +183,17 @@ export function ForgeSetup({
           <Reload onClick={() => void refresh()} />
         </div>
 
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          style={{
+            flexGrow: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8
+          }}
+        >
           {!checks && (
             <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>
           )}

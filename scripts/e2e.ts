@@ -142,6 +142,41 @@ async function main(): Promise<void> {
     // ── 画面。作り物ではなく本物が描いている ──────────────
     check((await page.getByText('セッション', { exact: true }).count()) > 0, '一覧の見出しが出る')
     check((await page.getByText('新しいセッション').count()) > 0, '「新しいセッション」の釦が出る')
+
+    // ── 頁を窓の中で見る（§32）。門と、準備の画面からの入口 ──
+    // 門は main にある。Forgejo の根と GitHub 以外は口で拒む
+    const bounds = { x: 0, y: 0, width: 10, height: 10 }
+    check(
+      await call(page, 'previewOpen', 'https://example.com/', bounds).then(
+        () => false,
+        () => true
+      ),
+      'previewOpen は Forgejo と GitHub 以外の URL を拒む'
+    )
+    const root = facts.config?.rootUrl ?? null
+    if (!root || !facts.reachable || facts.tokenWorks !== true) {
+      skip('Forgejo に届かないので、準備の画面からの「頁」は確かめていない')
+    } else {
+      // 準備の画面 → sandbox の一覧 → 「頁」。覆いが閉じ、本体の柱に枠が出る（セッション無しでも）
+      await page.getByText('準備', { exact: true }).click()
+      const list = page.getByText(/^sandbox \d+ 件$/)
+      await list.waitFor({ timeout: 10_000 })
+      await list.click()
+      const open = page.getByText('頁', { exact: true }).first()
+      await open.waitFor({ timeout: 5_000 })
+      await open.click()
+      const frame = page.locator(`[title^="${root.replace(/\/$/, '')}"]`)
+      await frame.waitFor({ timeout: 5_000 })
+      const url = (await frame.getAttribute('title')) ?? ''
+      check(url.startsWith(root), `枠が Forgejo の頁の URL を出す（${url}）`)
+      check(
+        (await page.getByText('調べるだけ。変えるのは押したときだけ').count()) === 0,
+        '準備の画面（覆い）は閉じている。閉じないと頁の下に残って押せない'
+      )
+      await page.getByText('閉じる', { exact: true }).click()
+      check((await frame.count()) === 0, '「閉じる」で枠が消える')
+      check((await page.getByText('新しいセッション').count()) > 0, '空の画面に戻る')
+    }
   } finally {
     await app.close()
   }

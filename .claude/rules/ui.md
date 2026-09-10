@@ -772,6 +772,10 @@ Izuna の口に無い（ボットのトークンに権限を持たせない。§
   `App.tsx` の `onPreview` が `setShowSetup(false)` してから開く
 - **セッションが無くても開ける。** 枠はそれまで会話の柱の中にしか無かった。無いときは本体の柱をそのまま枠にする
 - PR タブの Sandbox の見出しにも「頁」。remote の URL から `.git` を落としたものが頁の URL
+- **準備の画面は窓より長くなる。** Claude Code の関所・Forgejo の検査・sandbox の一覧・トークン・設定を
+  積むと、既定の窓では下が画面の外に出る。覆いは `position: fixed` でスクロールしないので、
+  `maxHeight: 84vh` にして中をスクロールさせる（NewSession と同じ）。`pnpm e2e` が「sandbox 1 件」を
+  押せずに見つけた（2026-09-10）。jsdom は大きさを持たないので、ここは本物でしか分からない
 
 ### やっていない
 
