@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { diagnose, readyForForge, type Check } from '../../../shared/forge'
 import { diagnoseClaude, readyForClaude } from '../../../shared/prereq'
 import type { FixId } from '../../../main/forge/setup'
-import type { ForgejoToken } from '../../../main/forge/client'
+import type { ForgejoRepo, ForgejoToken } from '../../../main/forge/client'
 import { F, C, MONO, R, S, ellipsis } from '../theme'
 import { Button, Input, Reload, Tag } from './ui'
 
@@ -27,7 +27,14 @@ const MARK: Record<Check['level'], { icon: string; color: string }> = {
   unknown: { icon: '?', color: C.faint }
 }
 
-export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Element {
+export function ForgeSetup({
+  onClose,
+  onPreview
+}: {
+  onClose: () => void
+  /** Forgejo の頁を窓の中で開く（§32）。省略なら外のブラウザに逃がす */
+  onPreview?: (url: string) => void
+}): React.JSX.Element {
   const [checks, setChecks] = useState<Check[] | null>(null)
   /** Claude Code の関所（docs/SETUP.md）。Forgejo より先に見る */
   const [claude, setClaude] = useState<Check[] | null>(null)
@@ -221,7 +228,8 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
             </div>
           )}
 
-          <Tokens />
+          <Repos onPreview={onPreview} />
+          <Tokens onPreview={onPreview} />
 
           {message && (
             <div
@@ -310,7 +318,7 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
  * `auth method not allowed` を返す（パスワード認証が要る。実測 2026-09-08）。
  * だから**見せるところまで**をやり、消すのは Forgejo の画面に任せる。
  */
-function Tokens(): React.JSX.Element | null {
+function Tokens({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.Element | null {
   const [data, setData] = useState<{
     tokens: ForgejoToken[]
     mineLast8: string | null
@@ -380,14 +388,90 @@ function Tokens(): React.JSX.Element | null {
               </div>
             )
           })}
-          <a
-            href={data.settingsUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}
-          >
-            Forgejo で消す
-          </a>
+          {/* 消すのは Forgejo の頁。中で開ければ中で、開けなければ外のブラウザで */}
+          {onPreview ? (
+            <Button size="sm" onClick={() => onPreview(data.settingsUrl)}>
+              Forgejo で消す
+            </Button>
+          ) : (
+            <a
+              href={data.settingsUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}
+            >
+              Forgejo で消す
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * ボットから見える sandbox の一覧。
+ *
+ * **Izuna は消さない**（ボットのトークンに削除の権限を持たせない。§26）。
+ * 消すのは Forgejo の設定の頁で、それを窓の中で開く（§32）。使い捨ての sandbox が
+ * 溜まったとき、Izuna を出ずに片付けられる。頁の中でログインが要る（`Preview` の註）。
+ */
+function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.Element | null {
+  const [repos, setRepos] = useState<ForgejoRepo[] | null>(null)
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    void window.izuna
+      .forgeRepos()
+      .then(setRepos)
+      .catch(() => setRepos(null))
+  }, [])
+  if (!onPreview || !repos || repos.length === 0) return null
+
+  return (
+    <div style={{ border: `1px solid ${C.line}`, borderRadius: R.md, overflow: 'hidden' }}>
+      <div
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: S.md,
+          padding: `${S.lg}px ${S.lg}px`,
+          cursor: 'pointer'
+        }}
+      >
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>
+          {open ? '▾' : '▸'}
+        </span>
+        <span style={{ fontSize: F.body }}>sandbox {repos.length} 件</span>
+        <span style={{ fontSize: F.small, color: C.dim2 }}>消すのは Forgejo の設定の頁で</span>
+      </div>
+
+      {open && (
+        <div
+          style={{
+            borderTop: `1px solid ${C.line}`,
+            padding: S.lg,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: S.md
+          }}
+        >
+          {repos.map((r) => (
+            <div key={r.fullName} style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
+              <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>
+                {r.fullName}
+              </span>
+              {r.empty && <Tag>空</Tag>}
+              <div style={{ flexGrow: 1 }} />
+              <Button size="sm" onClick={() => onPreview(r.htmlUrl)}>
+                頁
+              </Button>
+              <Button size="sm" onClick={() => onPreview(`${r.htmlUrl}/settings`)}>
+                設定
+              </Button>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -733,7 +733,8 @@ Electron の `WebContentsView` を 1 枚、renderer の上に重ねる（`main/p
 | `shared/links.ts` の `canPreview` | 行き先の判定。**Forgejo の根と同じ host と、https の GitHub だけ**。それ以外は口で拒む |
 | `main/preview.ts` | view を 1 枚だけ持つ。node を切り sandbox、`persist:preview` にログインが残る |
 | `components/Preview.tsx` | 枠。**場所を測って送るだけ**で中身は描かない。大きさは ResizeObserver、位置は 250ms ごとに見る |
-| `Forge.tsx` の「頁」 | sandbox の PR と Upstream の PR の札から開く |
+| `Forge.tsx` の「頁」 | Sandbox の見出し、sandbox の PR、Upstream の PR の札から開く |
+| `ForgeSetup.tsx` の「頁」「設定」「Forgejo で消す」 | sandbox の一覧とトークンの導線。覆いの画面を閉じてから開く（下） |
 
 ### 決めたこと
 
@@ -754,6 +755,19 @@ Electron の `WebContentsView` を 1 枚、renderer の上に重ねる（`main/p
 - **sandbox の PR を閉じる。** ブランチを消しても Forgejo は PR を閉じないので、古い PR が一覧に残っていた
   （walk の走行ごとに 1 本増えた）。PR の札に「閉じる」（`forgeClosePull`。マージはしない。判断は人が Forgejo で）
 - **PR タブの取り直し。** 同じタブを押し直しても読み直さない（mount で読む）ので、Sandbox の見出しに `Reload`
+
+### Forgejo の頁も中で開く（2026-09-10）
+
+利用者の「Forgejo の画面を Izuna の中でできないの？」に答えた。sandbox を消す・トークンを消すは
+Izuna の口に無い（ボットのトークンに権限を持たせない。§26）ので、それをやる Forgejo の頁を中で開く。
+
+- 準備の画面に **sandbox の一覧**（`forgeRepos`。ボットから見えるもの＝sandbox）を置き、
+  「頁」と「設定」で開く。消すのは設定の頁の下にある。「Forgejo で消す」（トークン）も同じ枠へ
+- **覆いの画面を先に閉じる。** 埋めた頁は `WebContentsView` で renderer の上に重なるので、
+  準備の画面（`position: fixed` の覆い）を残したまま開くと、頁の下に覆いが残って押しても効かない。
+  `App.tsx` の `onPreview` が `setShowSetup(false)` してから開く
+- **セッションが無くても開ける。** 枠はそれまで会話の柱の中にしか無かった。無いときは本体の柱をそのまま枠にする
+- PR タブの Sandbox の見出しにも「頁」。remote の URL から `.git` を落としたものが頁の URL
 
 ### やっていない
 

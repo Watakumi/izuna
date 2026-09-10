@@ -185,10 +185,15 @@ describe('Forge', () => {
     // 差分を畳む「閉じる」と、PR を閉じる「閉じる」
     expect(screen.getAllByText('閉じる').length).toBe(2)
 
-    fireEvent.click(screen.getAllByText('頁')[0])
-    expect(previewed).toEqual(['https://sandbox.example/o/r/pulls/4'])
-    fireEvent.click(screen.getAllByText('頁')[1])
-    expect(previewed[1]).toBe('https://github.com/o/r/pull/9')
+    // 頁は 3 つ: Sandbox の見出し（remote の URL から .git を落とす）、sandbox の PR、Upstream の PR
+    const pages = screen.getAllByText('頁')
+    expect(pages.length).toBe(3)
+    pages.forEach((b) => fireEvent.click(b))
+    expect(previewed).toEqual([
+      'https://sandbox.example/o/r',
+      'https://sandbox.example/o/r/pulls/4',
+      'https://github.com/o/r/pull/9'
+    ])
 
     fireEvent.click(screen.getAllByText('消す')[0])
     await waitFor(() => expect(screen.getByText('agent-1 を消しました')).toBeTruthy())

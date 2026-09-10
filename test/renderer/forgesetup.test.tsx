@@ -48,6 +48,7 @@ let tokens: Array<{
 }> = []
 let calls: string[] = []
 let fixFails = false
+let repos: Array<Record<string, unknown>> = []
 
 beforeEach(() => {
   facts = good()
@@ -55,6 +56,7 @@ beforeEach(() => {
   tokens = []
   calls = []
   fixFails = false
+  repos = []
   ;(window as unknown as { izuna: unknown }).izuna = {
     configInfo: async () => ({
       path: '/home/.izuna/config.json',
@@ -74,6 +76,7 @@ beforeEach(() => {
       facts = good({ remote: true, binary: null })
       return '保管しました'
     },
+    forgeRepos: async () => repos,
     forgeTokens: async () => ({
       tokens,
       mineLast8: 'aaaaaaaa',
@@ -163,5 +166,64 @@ describe('ForgeSetup', () => {
     )
     fireEvent.click(screen.getByText('閉じる'))
     expect(closed).toEqual([1])
+  })
+
+  it('Forgejo の頁を中で開ける。sandbox の一覧から頁と設定、トークンは設定の頁', async () => {
+    repos = [
+      {
+        fullName: 'izuna/a',
+        owner: 'izuna',
+        name: 'a',
+        private: true,
+        defaultBranch: 'main',
+        htmlUrl: 'http://localhost:4649/izuna/a',
+        empty: false
+      },
+      {
+        fullName: 'izuna/b',
+        owner: 'izuna',
+        name: 'b',
+        private: true,
+        defaultBranch: 'main',
+        htmlUrl: 'http://localhost:4649/izuna/b',
+        empty: true
+      }
+    ]
+    tokens = [{ id: 1, name: 'izuna-1', scopes: [], last8: 'aaaaaaaa', createdAt: '' }]
+    const opened: string[] = []
+    render(<ForgeSetup onClose={() => {}} onPreview={(u) => opened.push(u)} />)
+    await waitFor(() => expect(screen.getByText('sandbox 2 件')).toBeTruthy())
+    fireEvent.click(screen.getByText('sandbox 2 件'))
+    expect(screen.getByText('izuna/b')).toBeTruthy()
+    expect(screen.getByText('空')).toBeTruthy()
+    fireEvent.click(screen.getAllByText('頁')[1])
+    fireEvent.click(screen.getAllByText('設定')[0])
+    fireEvent.click(screen.getByText('トークン 1 件'))
+    fireEvent.click(screen.getByText('Forgejo で消す'))
+    expect(opened).toEqual([
+      'http://localhost:4649/izuna/b',
+      'http://localhost:4649/izuna/a/settings',
+      'http://localhost:4649/user/settings/applications'
+    ])
+  })
+
+  it('中で開けない構成では sandbox の一覧を出さず、トークンの導線は外のリンクのまま', async () => {
+    repos = [
+      {
+        fullName: 'izuna/a',
+        owner: 'izuna',
+        name: 'a',
+        private: true,
+        defaultBranch: 'main',
+        htmlUrl: 'http://localhost:4649/izuna/a',
+        empty: false
+      }
+    ]
+    tokens = [{ id: 1, name: 'izuna-1', scopes: [], last8: 'aaaaaaaa', createdAt: '' }]
+    render(<ForgeSetup onClose={() => {}} />)
+    await waitFor(() => expect(screen.getByText('トークン 1 件')).toBeTruthy())
+    expect(screen.queryByText('sandbox 1 件')).toBeNull()
+    fireEvent.click(screen.getByText('トークン 1 件'))
+    expect((screen.getByText('Forgejo で消す') as HTMLAnchorElement).tagName).toBe('A')
   })
 })
