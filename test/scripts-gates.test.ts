@@ -9,6 +9,7 @@ import {
   secretScanArgs
 } from '../scripts/prepush.mjs'
 import { needsGate } from '../scripts/commit-gate.mjs'
+import { agedEnough, cliVersionOf, readReleagePolicy, sdkVersionFor } from '../scripts/catchup.mjs'
 
 /** push とコミットの門（docs/NIMBALYST.md §3 の 5 と 7）。門そのものを検査する */
 const ROOT = join(__dirname, '..')
@@ -100,5 +101,29 @@ describe('コミットの門', () => {
     }
     const pre = s.hooks?.PreToolUse?.find((h) => h.matcher === 'Bash')
     expect(pre?.hooks[0].command).toBe('node scripts/commit-gate.mjs')
+  })
+})
+
+describe('claude に揃える（pnpm run catchup）', () => {
+  it('claude --version から版を読み、連動する SDK の版を組む', () => {
+    expect(cliVersionOf('2.1.266 (Claude Code)')).toBe('2.1.266')
+    expect(cliVersionOf('garbage')).toBeNull()
+    expect(sdkVersionFor('2.1.266')).toBe('0.3.266')
+    expect(sdkVersionFor('x')).toBeNull()
+  })
+
+  it('熟成の線（§27）を越えたときだけ入れる。時刻が読めなければ入れない', () => {
+    const now = Date.parse('2026-09-10T21:00:00Z')
+    expect(agedEnough('2026-09-09T20:03:34Z', 1440, now)).toBe(true)
+    expect(agedEnough('2026-09-10T05:00:00Z', 1440, now)).toBe(false)
+    expect(agedEnough(undefined, 1440, now)).toBe(false)
+    expect(agedEnough('not a date', 1440, now)).toBe(false)
+  })
+
+  it('pnpm-workspace.yaml から線と、除外に書かれた SDK の版を読む', () => {
+    const yaml =
+      'minimumReleaseAge: 1440\nminimumReleaseAgeExclude:\n  - "@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.266"\n'
+    expect(readReleagePolicy(yaml)).toEqual({ minMinutes: 1440, pinned: '0.3.266' })
+    expect(readReleagePolicy('')).toEqual({ minMinutes: 0, pinned: null })
   })
 })
