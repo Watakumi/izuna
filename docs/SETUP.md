@@ -51,8 +51,10 @@ Izuna は管理者の Basic 認証で `POST /admin/users`（ボット `izuna`。
 `POST /users/izuna/tokens`（`write:user`, `write:repository`）を呼び、返ってきたトークンを貼られたときと
 同じ関所（通るか・`izuna` のものか）を通して保管する。**パスワードは保管しない** —— この 2 回の要求に
 載せて捨てる。ディスクにもログにも失敗の文面にも出ない。送るのはループバックか https だけ。
-管理者に二要素認証があるとこの形は 403 になるので、b を使う。**管理者が他人のトークンを作れることは
-Gitea 系の実装（`reqSelfOrAdmin`）から読んだもので、この Forgejo で試してはいない**（2026-09-10）。
+管理者に二要素認証があるとこの形は 403 になるので、b を使う。管理者が他人のトークンを作れることは
+Forgejo 16.0.3 で測った（2026-09-11。使い捨ての管理者で `POST /admin/users` が 201、2 回目は 422
+「user already exists」、`POST /users/<bot>/tokens` が 201 で `sha1` 40 文字、そのトークンで `GET /user` が
+ボットとして通る。終わって両方消した）。
 
 **b. 人が Forgejo の画面で作る。**
 
