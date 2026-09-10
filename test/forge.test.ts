@@ -4,7 +4,7 @@ import {
   missingScopes,
   parseAppIni,
   readyForForge,
-  reachableFromContainer,
+  openToLan,
   tokenMayTravel,
   transportRefusal,
   type ForgeFacts
@@ -94,35 +94,33 @@ describe('app.ini を読む', () => {
   })
 })
 
-describe('runner から届くか', () => {
-  it('loopback は届かない', () => {
-    // macOS では runner を Docker で回すしかない。コンテナはホストの
-    // 127.0.0.1 に届かないので、ここが loopback だと Actions は必ず失敗する
+describe('待ち受けが LAN に開いているか', () => {
+  it('loopback は閉じている', () => {
     for (const a of ['127.0.0.1', 'localhost', '::1', ' 127.0.0.1 ']) {
-      expect(reachableFromContainer(a), a).toBe(false)
+      expect(openToLan(a), a).toBe(false)
     }
   })
 
-  it('開いていれば届く', () => {
-    expect(reachableFromContainer('0.0.0.0')).toBe(true)
-    expect(reachableFromContainer('192.168.1.10')).toBe(true)
+  it('0.0.0.0 と LAN のアドレスは開いている。未設定は Forgejo の既定（0.0.0.0）', () => {
+    expect(openToLan('0.0.0.0')).toBe(true)
+    expect(openToLan('192.168.1.10')).toBe(true)
+    expect(openToLan(null)).toBe(true)
   })
 
-  it('未設定は Forgejo の既定（0.0.0.0）とみなす', () => {
-    expect(reachableFromContainer(null)).toBe(true)
-  })
-
-  it('Actions が無効なら、この検査は出さない（関係ないので）', () => {
-    const off = diagnose(facts({}))
-    expect(off.find((c) => c.id === 'reachableFromRunner')).toBeUndefined()
-  })
-
-  it('Actions が有効で loopback なら警告する', () => {
-    const on = { ...facts({}).config!, actionsEnabled: true, httpAddr: '127.0.0.1' }
-    const c = diagnose(facts({ config: on })).find((x) => x.id === 'reachableFromRunner')
+  it('開いていれば Actions の有無によらず警告する。押して直す釦は無い（人が app.ini を戻す）', () => {
+    const open = { ...facts({}).config!, httpAddr: '0.0.0.0' }
+    const c = diagnose(facts({ config: open })).find((x) => x.id === 'lanOpen')
     expect(c?.level).toBe('warn')
-    // 押すと外から見えるようになることを、押す前に伝える
-    expect(c?.fix?.warning).toContain('他の端末')
+    expect(c?.detail).toContain('他の端末')
+    // runner のために開く必要は無いことを、その場で言う（2026-09-10 実測）
+    expect(c?.detail).toContain('host.docker.internal')
+    expect(c?.fix).toBeNull()
+  })
+
+  it('loopback なら ok で、runner が届く理由を添える', () => {
+    const c = diagnose(facts({})).find((x) => x.id === 'lanOpen')
+    expect(c?.level).toBe('ok')
+    expect(c?.detail).toContain('host.docker.internal')
   })
 })
 

@@ -265,7 +265,7 @@ function workPathOf(config: ForgeConfig): string {
   return config.path.replace(/\/custom\/conf\/app\.ini$/, '')
 }
 
-export type FixId = 'install' | 'start' | 'token' | 'actions' | 'openAddr' | 'runnerToken'
+export type FixId = 'install' | 'start' | 'token' | 'actions' | 'runnerToken'
 
 /** 押されたときだけ走る。戻り値は人に見せる結果 */
 export async function applyFix(id: FixId): Promise<string> {
@@ -320,24 +320,6 @@ export async function applyFix(id: FixId): Promise<string> {
       await writeFile(facts.config.path, next, 'utf8')
       await run('brew', ['services', 'restart', 'forgejo'])
       return 'Actions を有効にして再起動しました（元の app.ini は .izuna-backup に残してあります）'
-    }
-
-    case 'openAddr': {
-      if (!facts.config) throw new Error('app.ini が見つかりません')
-      const text = await readFile(facts.config.path, 'utf8')
-      if (!/^\s*HTTP_ADDR\s*=/m.test(text)) {
-        throw new Error(
-          'HTTP_ADDR の行が見つかりません。手で [server] に HTTP_ADDR = 0.0.0.0 を足してください'
-        )
-      }
-      await writeFile(`${facts.config.path}.izuna-backup`, text, 'utf8')
-      await writeFile(
-        facts.config.path,
-        text.replace(/^(\s*HTTP_ADDR\s*=\s*).*$/m, '$10.0.0.0'),
-        'utf8'
-      )
-      await run('brew', ['services', 'restart', 'forgejo'])
-      return '0.0.0.0 で待ち受けるようにして再起動しました。同じネットワークの他の端末からも見えます（元の app.ini は .izuna-backup に残してあります）'
     }
 
     case 'runnerToken': {

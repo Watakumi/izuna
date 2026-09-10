@@ -15,7 +15,7 @@ const good = (over: Partial<ForgeFacts> = {}): ForgeFacts => ({
     path: '/opt/homebrew/etc/forgejo/app.ini',
     rootUrl: 'http://localhost:4649/',
     httpPort: 4649,
-    httpAddr: '0.0.0.0',
+    httpAddr: '127.0.0.1',
     installLocked: true,
     actionsEnabled: true
   },

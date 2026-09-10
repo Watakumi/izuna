@@ -239,28 +239,6 @@ describe('設定を書き換えるときは控えを残す', () => {
     expect(text).toContain('ENABLED = true')
   })
 
-  it('待ち受けを開くときも控えを残す', async () => {
-    setUp()
-    out = ['/f', 'version 1', '']
-    const { applyFix } = await load()
-    await applyFix('openAddr')
-    const path = join(work, 'custom', 'conf', 'app.ini')
-    expect(existsSync(`${path}.izuna-backup`)).toBe(true)
-    expect(readFileSync(path, 'utf8')).toContain('HTTP_ADDR = 0.0.0.0')
-  })
-
-  it('**書ける形でなければ触らない。** 手でやる場所を言う', async () => {
-    mkdirSync(join(work, 'custom', 'conf'), { recursive: true })
-    writeFileSync(
-      join(work, 'custom', 'conf', 'app.ini'),
-      '[server]\nROOT_URL = http://localhost:4649/\n[security]\nINSTALL_LOCK = true\n'
-    )
-    out = ['/f', 'version 1']
-    const { applyFix } = await load()
-    await expect(applyFix('openAddr')).rejects.toThrow(/HTTP_ADDR/)
-    expect(existsSync(join(work, 'custom', 'conf', 'app.ini.izuna-backup'))).toBe(false)
-  })
-
   it('app.ini が無ければ書き換えない', async () => {
     out = ['/f', 'version 1']
     const { applyFix } = await load()

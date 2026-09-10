@@ -260,3 +260,8 @@ paths:
   あるときだけ `CSC_LINK` を export し、無ければ `CSC_IDENTITY_AUTO_DISCOVERY=false` にする。
   あわせて `build:mac` に `--publish never` を付けた —— タグがあると electron-builder は暗黙に
   publish しようとする（v27 で消える挙動）。Release に付けるのは workflow の step のほう。
+- **macOS の Docker では、127.0.0.1 に束ねたホストのサービスにコンテナから届く**（2026-09-10 に測った）。
+  `host.docker.internal` を Docker Desktop / OrbStack がホスト側で中継するからで、Linux の
+  `--add-host=host.docker.internal:host-gateway` とは仕組みが違う。「届かない」と書いて Forgejo を
+  0.0.0.0 に開かせていたが、測っていない前提だった。runner のために `HTTP_ADDR` を開く必要は無い
+  （docs/ACTIONS.md § 壁 2）。

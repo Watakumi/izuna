@@ -17,7 +17,6 @@ const FIX_OF: Partial<Record<Check['id'], FixId>> = {
   running: 'start',
   token: 'token',
   actions: 'actions',
-  reachableFromRunner: 'openAddr',
   runner: 'runnerToken'
 }
 
