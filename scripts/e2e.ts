@@ -170,7 +170,7 @@ async function main(): Promise<void> {
       const url = (await frame.getAttribute('title')) ?? ''
       check(url.startsWith(root), `枠が Forgejo の頁の URL を出す（${url}）`)
       check(
-        (await page.getByText('調べるだけ。変えるのは押したときだけ').count()) === 0,
+        (await page.getByText('Forgejo', { exact: true }).count()) === 0,
         '準備の画面（覆い）は閉じている。閉じないと頁の下に残って押せない'
       )
       await page.getByText('閉じる', { exact: true }).click()
