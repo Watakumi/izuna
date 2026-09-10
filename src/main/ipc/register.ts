@@ -12,7 +12,8 @@ import {
   listTokens,
   pullDiff,
   whoami,
-  closePull
+  closePull,
+  deleteRepo
 } from '../forge/client'
 import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
@@ -122,6 +123,10 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
       createPull(await forgeRoot(), owner, repo, input),
     forgeRuns: async (owner, repo, ref) => listRuns(await forgeRoot(), owner, repo, ref),
     forgeClosePull: async (owner, repo, index) => closePull(await forgeRoot(), owner, repo, index),
+    forgeDeleteRepo: async (owner, repo) => {
+      await deleteRepo(await forgeRoot(), owner, repo)
+      return `${owner}/${repo} を消しました`
+    },
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
     forgeSetToken: async (token) => adoptToken(await forgeRoot(), token),
     forgeTokens: async () => {
