@@ -1,10 +1,9 @@
 # 自宅で CI を回す（Forgejo Actions）
 
-> **いま有効にする必要はない。** v1 の測り方（docs/GOAL.md）のうち Izuna 側の
-> 「状態を読める」は 2026-09-09 に入った（`forgeRuns` → `shared/ci.ts` → PR の札の `CiBadge`）。
-> **回すほう（runner）は人が決める** —— `HTTP_ADDR` を LAN に開き、`docker.sock` を渡す判断を
-> アプリが押し切らない。これは「回したくなったときに読む」ための基盤である。
-> 手順の途中で詰まる箇所は全部**実測で確認済み**。
+> 2026-09-10 に作者の Mac で回した。push から 30 秒で `success` になり、Izuna の `forgeRuns` が
+> `running` → `success` を読んだ（`shared/ci.ts` → PR の札の `CiBadge`）。
+> **回すかどうかは人が決める** —— `HTTP_ADDR` を LAN に開き、`docker.sock` を渡す判断をアプリが押し切らない。
+> 手順 4 は最初の版が間違っていた（下）。いまの手順は実測で通る。
 
 ---
 
@@ -93,26 +92,36 @@ forgejo forgejo-cli actions generate-runner-token \
 
 ### 4. runner を Docker で動かす
 
+**環境変数だけでは登録しない**（2026-09-10 に踏んだ。`FORGEJO_RUNNER_REGISTRATION_TOKEN` を渡しても
+イメージはヘルプを出して終わる）。`register` を明示してから `daemon` を起こす。2 回目以降は `.runner` が
+`~/.izuna/runner` に残っているので `daemon` だけでよい。
+
 ```bash
-docker run -d --name forgejo-runner --restart unless-stopped \
+# 登録（1 回だけ）
+docker run --rm -v "$HOME/.izuna/runner:/data" -w /data data.forgejo.org/forgejo/runner:13 \
+  forgejo-runner register --no-interactive \
+    --instance http://host.docker.internal:4649 \
+    --token "<3 で出したトークン>" --name mac --labels "docker:docker://node:24"
+
+# 常駐
+docker run -d --name forgejo-runner --restart unless-stopped --user root \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v "$HOME/.izuna/runner:/data" \
-  -e FORGEJO_INSTANCE_URL="http://host.docker.internal:4649" \
-  -e FORGEJO_RUNNER_REGISTRATION_TOKEN="<3 で出したトークン>" \
-  -e FORGEJO_RUNNER_NAME="mac" \
-  -e FORGEJO_RUNNER_LABELS="docker:docker://node:24" \
-  data.forgejo.org/forgejo/runner:13
+  -v "$HOME/.izuna/runner:/data" -w /data \
+  data.forgejo.org/forgejo/runner:13 forgejo-runner daemon
 ```
 
 - `docker.sock` を渡すのは、runner がジョブごとにコンテナを立てるため。
   **これはホストの Docker を完全に操作できる権限**なので、信用できるリポジトリだけを回すこと
-- `host.docker.internal` で Docker Desktop からホストに届く（§ 壁 2 が前提）
+- `--user root` が要る。イメージの既定の利用者（uid 1000）は `docker.sock` に触れず
+  「permission denied while trying to connect to the docker API」で落ちる（OrbStack で実測）
+- `host.docker.internal` で OrbStack / Docker Desktop からホストに届く（§ 壁 2 が前提）
 - ラベル `docker` がワークフローの `runs-on: docker` に対応する
 
 ### 5. 確かめる
 
-Forgejo の `/admin/actions/runners` に `mac` が出れば繋がっている。
-リポジトリに push すると `.forgejo/workflows/verify.yml` が走る。
+`docker logs forgejo-runner` に `declared successfully` と `[poller] launched` が出れば繋がっている。
+Forgejo の `/admin/actions/runners` にも `mac` が出る。リポジトリに push すると `.forgejo/workflows/` の
+workflow が走り、Izuna の PR の札が `CI running` → `CI 緑` に変わる（2026-09-10 の実測では push から 30 秒）。
 
 ---
 
