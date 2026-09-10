@@ -461,4 +461,45 @@ describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
     ).rejects.toThrow(/要ります/)
     expect(saved).toBeNull()
   })
+
+  it('403 は管理者でないか二要素認証。それ以外の失敗は Forgejo の文面を添える。sha1 が無ければ保管しない', async () => {
+    const { provisionBot } = await loadRemote()
+    const res = (status: number, body: string): unknown => ({
+      ok: status < 400,
+      status,
+      json: async () => JSON.parse(body || '{}'),
+      text: async () => body,
+      clone: () => ({ text: async () => body })
+    })
+    const admin = { user: 'admin', password: 'pw-secret' }
+
+    vi.stubGlobal('fetch', async () => res(403, '{"message":"Must be admin or OTP required"}'))
+    await expect(provisionBot('http://localhost:4649/', admin)).rejects.toThrow(
+      /403.*二要素認証.*OTP/
+    )
+
+    vi.stubGlobal('fetch', async () => res(500, '{"message":"database is locked"}'))
+    await expect(provisionBot('http://localhost:4649/', admin)).rejects.toThrow(
+      /500.*database is locked/
+    )
+
+    // ボットは作れたが、トークンが作れない
+    vi.stubGlobal('fetch', async (url: URL) =>
+      String(url).endsWith('/admin/users') ? res(201, '{}') : res(403, '{"message":"token scope"}')
+    )
+    await expect(provisionBot('http://localhost:4649/', admin)).rejects.toThrow(
+      /トークンを作れませんでした（403）/
+    )
+
+    // 201 なのに本体が無い
+    vi.stubGlobal('fetch', async (url: URL) =>
+      String(url).endsWith('/admin/users') ? res(201, '{}') : res(201, '{"name":"x"}')
+    )
+    await expect(provisionBot('http://localhost:4649/', admin)).rejects.toThrow(/sha1/)
+    expect(saved).toBeNull()
+
+    // 文面にパスワードが混ざっても伏せる
+    vi.stubGlobal('fetch', async () => res(500, '{"message":"bad: pw-secret"}'))
+    await expect(provisionBot('http://localhost:4649/', admin)).rejects.toThrow(/bad: \*\*\*/)
+  })
 })
