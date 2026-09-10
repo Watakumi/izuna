@@ -81,9 +81,10 @@ macOS の既定のファイルシステムは大小を区別しないので同�
 ### 手元に `forgejo` が無い構成（2026-09-09）
 
 `forgejoWorkPaths` を空にして `forgejoUrl` を書けば、`gatherFacts` は binary 無しでも応答と
-トークンを調べ、`remote: true` を立てる。CLI を使う修正（ボットの作成・トークンの発行・
-app.ini の書き換え）は出さず、トークンは人が Forgejo で作って準備画面に貼る（`adoptToken`。
-通るか・ボット `izuna` のものかを聞いてから保管する）。手順は docs/SETUP.md。
+トークンを調べ、`remote: true` を立てる。CLI を使う修正（app.ini の書き換え）は出さない。
+ボットとトークンは、管理者の名前とパスワードで API から作る（`provisionBot`。2026-09-10 に足した。
+パスワードはその場で使って捨てる）か、人が Forgejo で作って準備画面に貼る（`adoptToken`）。
+どちらも通るか・ボット `izuna` のものかを聞いてから保管する。手順は docs/SETUP.md。
 
 ### まだ残っている決め打ち
 

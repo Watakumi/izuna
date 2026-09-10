@@ -44,13 +44,23 @@ electron-builder が ad-hoc の署名を付けているので「壊れている�
 }
 ```
 
-手元に `forgejo` の CLI が無いので、**ボットとトークンは人が Forgejo の画面で作る**。
+手元に `forgejo` の CLI が無いので、ボットとトークンは **Forgejo の API で作る**。やり方は 2 つ。
+
+**a. 準備画面で作る（推奨）。** 「Forgejo の管理者の名前」と「そのパスワード」を入れて「ボットとトークンを作る」。
+Izuna は管理者の Basic 認証で `POST /admin/users`（ボット `izuna`。既にあれば飛ばす）と
+`POST /users/izuna/tokens`（`write:user`, `write:repository`）を呼び、返ってきたトークンを貼られたときと
+同じ関所（通るか・`izuna` のものか）を通して保管する。**パスワードは保管しない** —— この 2 回の要求に
+載せて捨てる。ディスクにもログにも失敗の文面にも出ない。送るのはループバックか https だけ。
+管理者に二要素認証があるとこの形は 403 になるので、b を使う。**管理者が他人のトークンを作れることは
+Gitea 系の実装（`reqSelfOrAdmin`）から読んだもので、この Forgejo で試してはいない**（2026-09-10）。
+
+**b. 人が Forgejo の画面で作る。**
 
 1. Forgejo に `izuna` という利用者を作る（管理者でなくてよい）
 2. `izuna` でログインし、設定 → アプリケーション → アクセストークンを作る。権限は `write:user` と `write:repository`（PR にコメントを付けるなら `write:issue` も）
-3. Izuna の準備画面の「izuna のトークンを貼る」に貼って「保管する」
+3. Izuna の準備画面の「Forgejo で作った izuna のトークンを貼る」に貼って「保管する」
 
-Izuna は貼られたトークンが**通るか・`izuna` のものか**を Forgejo に聞いてから保管する。
+どちらも Izuna は貼られたトークンが**通るか・`izuna` のものか**を Forgejo に聞いてから保管する。
 人（管理者）のトークンは受け取らない —— 人の鍵をアプリに置かない（CLAUDE.md §26）。
 
 ### 3. 別のマシンの Forgejo

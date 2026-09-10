@@ -1,3 +1,4 @@
+import { GRANTED_SCOPES } from '../src/shared/forge'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -326,6 +327,138 @@ describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
     await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/401/)
     await expect(adoptToken('http://localhost:4649/', '   ')).rejects.toThrow(/空/)
     await expect(adoptToken('http://192.168.1.5:4649/', 'tok')).rejects.toThrow(/平文/)
+    expect(saved).toBeNull()
+  })
+
+  it('管理者の名前とパスワードでボットを作り、トークンを発行し、同じ関所を通して保管する', async () => {
+    const { provisionBot } = await loadRemote()
+    const reqs: Array<{ url: string; method?: string; auth?: string; body?: unknown }> = []
+    vi.stubGlobal('fetch', async (url: URL, init?: RequestInit) => {
+      const u = String(url)
+      const auth = (init?.headers as Record<string, string> | undefined)?.Authorization
+      reqs.push({
+        url: u,
+        method: init?.method,
+        auth,
+        body: init?.body ? JSON.parse(String(init.body)) : undefined
+      })
+      if (u.endsWith('/admin/users'))
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({}),
+          text: async () => '',
+          clone: () => ({ text: async () => '' })
+        }
+      if (u.endsWith('/users/izuna/tokens') && init?.method === 'POST')
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ sha1: 'fake-bbbbbbbb' }),
+          text: async () => ''
+        }
+      if (u.includes('/users/izuna/tokens'))
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => [
+            {
+              id: 2,
+              name: 'izuna-x',
+              scopes: ['write:user', 'write:repository'],
+              token_last_eight: 'bbbbbbbb',
+              created_at: ''
+            }
+          ],
+          text: async () => ''
+        }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ login: 'izuna' }),
+        text: async () => ''
+      }
+    })
+    const msg = await provisionBot('http://localhost:4649/', { user: 'admin', password: 'p@ss' })
+    expect(msg).toContain('ボット izuna を作り')
+    expect(saved).toEqual({ token: 'fake-bbbbbbbb', scopes: ['write:user', 'write:repository'] })
+    // 1 本目: 管理者の Basic 認証でボットを作る。パスワードは乱数で、変更を求めない
+    expect(reqs[0].url).toBe('http://localhost:4649/api/v1/admin/users')
+    expect(reqs[0].auth).toBe(`Basic ${Buffer.from('admin:p@ss').toString('base64')}`)
+    expect(reqs[0].body).toMatchObject({ username: 'izuna', must_change_password: false })
+    expect((reqs[0].body as { password: string }).password.length).toBeGreaterThan(20)
+    // 2 本目: ボットのトークンを、要る権限で
+    expect(reqs[1].url).toBe('http://localhost:4649/api/v1/users/izuna/tokens')
+    // CLI の形と同じ権限（GRANTED_SCOPES）
+    expect(reqs[1].body).toMatchObject({ scopes: [...GRANTED_SCOPES] })
+    // 保管する前に、貼られたときと同じ関所（/user で本人確認）を通る
+    expect(
+      reqs.some((r) => r.url.endsWith('/api/v1/user') && r.auth === 'token fake-bbbbbbbb')
+    ).toBe(true)
+  })
+
+  it('ボットが既にあれば作らずに進む。401 は名前かパスワード、LAN と空は送る前に断る', async () => {
+    const { provisionBot } = await loadRemote()
+    vi.stubGlobal('fetch', async (url: URL, init?: RequestInit) => {
+      const u = String(url)
+      if (u.endsWith('/admin/users'))
+        return {
+          ok: false,
+          status: 422,
+          json: async () => ({}),
+          text: async () => '{"message":"user already exists [name: izuna]"}',
+          clone: () => ({ text: async () => '{"message":"user already exists [name: izuna]"}' })
+        }
+      if (u.endsWith('/users/izuna/tokens') && init?.method === 'POST')
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({ sha1: 'fake-cccccccc' }),
+          text: async () => ''
+        }
+      if (u.includes('/users/izuna/tokens'))
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => [],
+          text: async () => ''
+        }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ login: 'izuna' }),
+        text: async () => ''
+      }
+    })
+    const msg = await provisionBot('http://localhost:4649/', { user: 'admin', password: 'x' })
+    expect(msg).toContain('既にあった')
+    expect(saved?.token).toBe('fake-cccccccc')
+
+    saved = null
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+      text: async () => '',
+      clone: () => ({ text: async () => '' })
+    }))
+    await expect(
+      provisionBot('http://localhost:4649/', { user: 'admin', password: 'secret-pw' })
+    ).rejects.toThrow(/401/)
+    // パスワードは文面に出さない
+    await expect(
+      provisionBot('http://localhost:4649/', { user: 'admin', password: 'secret-pw' })
+    ).rejects.not.toThrow(/secret-pw/)
+    await expect(
+      provisionBot('http://192.168.1.5:4649/', { user: 'admin', password: 'x' })
+    ).rejects.toThrow(/平文/)
+    await expect(
+      provisionBot('http://localhost:4649/', { user: '', password: 'x' })
+    ).rejects.toThrow(/要ります/)
     expect(saved).toBeNull()
   })
 })

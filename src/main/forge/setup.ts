@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { randomBytes } from 'node:crypto'
 import { run as exec0 } from '../exec'
 import { join } from 'node:path'
 import {
@@ -334,4 +335,84 @@ export async function applyFix(id: FixId): Promise<string> {
       return `runner の登録トークン: ${out.split('\n').pop()?.trim() ?? out}`
     }
   }
+}
+
+/**
+ * 手元に `forgejo` の CLI が無い構成（Docker・別マシン）で、ボットとそのトークンを作る。
+ *
+ * CLI の代わりに Forgejo の API を**管理者の名前とパスワード**で呼ぶ（Basic 認証）。
+ * `POST /admin/users` でボット `izuna` を作り（既にあれば飛ばす）、
+ * `POST /users/izuna/tokens` でトークンを発行する（Gitea 系は管理者なら他人のトークンを作れる。
+ * `reqSelfOrAdmin`。**この Forgejo で実際に通るかは未検証**）。受け取ったトークンは `adoptToken` と
+ * 同じ関所（通るか・ボットのものか）を通して保管する。
+ *
+ * **パスワードは持たない。** この関数の中で 2 回の要求に載せて捨てる。ディスクに書かず、
+ * ログにも失敗の文面にも出さない。§26 の「人の鍵をアプリに置かない」は、置かないことであって、
+ * 人が打ったその場で使うことまでは禁じない —— Homebrew の形で CLI が管理者として動くのと同じ権限。
+ * 送るのは `adoptToken` と同じくループバックか https だけ。
+ */
+export async function provisionBot(
+  rootUrl: string,
+  admin: { user: string; password: string }
+): Promise<string> {
+  const user = admin.user.trim()
+  if (!user || !admin.password) throw new Error('管理者の名前とパスワードが要ります')
+  if (!tokenMayTravel(rootUrl))
+    throw new Error(`${rootUrl} にはパスワードを送りません（平文で LAN を通ります）`)
+  const basic = `Basic ${Buffer.from(`${user}:${admin.password}`).toString('base64')}`
+  const post = async (path: string, body: unknown): Promise<Response> =>
+    fetch(new URL(`api/v1/${path}`, rootUrl), {
+      method: 'POST',
+      headers: { Authorization: basic, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000)
+    })
+  const reason = async (res: Response): Promise<string> => {
+    const text = await res.text().catch(() => '')
+    let detail = ''
+    try {
+      detail = String((JSON.parse(text) as { message?: string }).message ?? '')
+    } catch {
+      detail = text
+    }
+    // パスワードは絶対に文面へ出さない（Forgejo が返すことは無いが、念のため落とす）
+    return detail.replaceAll(admin.password, '***').slice(0, 200)
+  }
+
+  // 1. ボットの利用者。既にあれば 422（user already exists）で、それは続けてよい
+  const created = await post('admin/users', {
+    username: BOT_USER,
+    email: `${BOT_USER}@localhost.invalid`,
+    password: randomBytes(24).toString('base64url'),
+    must_change_password: false,
+    send_notify: false
+  })
+  let made = false
+  if (created.status === 201) made = true
+  else if (created.status === 401)
+    throw new Error('Forgejo が 401 を返しました。管理者の名前かパスワードが違います')
+  else if (created.status === 403)
+    throw new Error(
+      `Forgejo が 403 を返しました。管理者ではないか、二要素認証が要ります: ${await reason(created)}`
+    )
+  else if (created.status === 422 && /already exists/i.test(await created.clone().text()))
+    made = false
+  else if (!created.ok)
+    throw new Error(`Forgejo が ${created.status} を返しました: ${await reason(created)}`)
+
+  // 2. ボットのトークン。同名は作れないので名前に時刻を混ぜる（CLI の形と同じ）
+  const issued = await post(`users/${encodeURIComponent(BOT_USER)}/tokens`, {
+    name: `izuna-${Date.now().toString(36)}`,
+    scopes: [...GRANTED_SCOPES]
+  })
+  if (!issued.ok)
+    throw new Error(
+      `${BOT_USER} のトークンを作れませんでした（${issued.status}）: ${await reason(issued)}`
+    )
+  const token = ((await issued.json()) as { sha1?: string }).sha1
+  if (!token) throw new Error('Forgejo がトークンの本体（sha1）を返しませんでした')
+
+  // 3. 貼られたときと同じ関所を通して保管する
+  const saved = await adoptToken(rootUrl, token)
+  return `${made ? `ボット ${BOT_USER} を作り、` : `ボット ${BOT_USER} は既にあったので、`}${saved}`
 }
