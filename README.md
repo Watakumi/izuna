@@ -17,7 +17,8 @@ PR にしてまとめて見て、GitHub（upstream）には仕上がったもの
 brew install gitleaks # pre-push の門（秘密の走査）。無いと push できない
 pnpm install          # git hook と Electron 向けの再ビルドもここで
 pnpm dev              # 開発。renderer は HMR、main は再起動が要る（CLAUDE.md §7）
-pnpm verify           # 型検査と検査（カバレッジの線つき）。緑でなければ進まない
+pnpm verify           # 型検査・lint・検査（カバレッジの線つき）。緑でなければ進まない
+pnpm run catchup      # claude が上がったら、SDK と fixture と版を揃える（熟成の線を越えるまでは止まる）
 pnpm shots            # 実 renderer を作り物の window.izuna で撮る（§22）
 pnpm e2e              # 本物の Electron を起動して口を叩く（§30）。要 build と Forgejo
 pnpm walk             # v1 の 7 手を本物で通して撮る（§31）。実 API を呼び、GitHub と Forgejo に書く

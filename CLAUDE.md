@@ -108,6 +108,7 @@ scripts/shots.ts            実 renderer を作り物の window.izuna で撮る�
 scripts/e2e.ts              本物の Electron を起動して口を叩く（§30）。起動は scripts/lib/electron.ts
 scripts/walk.ts             v1 の 7 手を本物で通し、docs/v1-walk/ に撮る（§31）。実 API を呼ぶ
 scripts/probe-team.ts       実行役 2 つを並走させて hook と worktree を測る（§12）。実 API を呼ぶ
+scripts/catchup.mjs         claude が上がったら SDK・fixture・版を揃える（pnpm run catchup。§10）
 
 test/docs.test.ts           **文書と実装のズレの門**（§24）
 test/surface.test.ts        renderer に出す面・HTML の注入口・execFile の呼び手の門（§26–27）
