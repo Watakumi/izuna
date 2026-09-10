@@ -11,6 +11,7 @@ Claude Code を Codex のようにデスクトップから使う macOS アプリ
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
+- Orca と何が違い、何を取り何を取らないかは [docs/ORCA.md](docs/ORCA.md)（2026-09-11。5 つの観点）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
