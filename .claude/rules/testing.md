@@ -29,7 +29,7 @@ ANSI の制御列を探す正規表現、型の無い `.js` / `.mjs` の 3 種�
 | | |
 | --- | --- |
 | `shared/` + `main/` | **行 98.0%、分岐 88.0%**（2026-09-08）。線は行 97、分岐 84 |
-| `renderer/src/components/` | **行 30.6%**。描いた部品は 9 割超、画面全体を持つ 10 部品は未着手。線は測った床（§28） |
+| `renderer/src/components/` | **行 88.5%、分岐 85.4%**（2026-09-10）。線は行 86、分岐 83。0 なのは `TerminalPane` だけ（§28） |
 
 **数えるのは検査できるものだけ**（`vitest.config.ts` の `include`）。
 Electron の起動（`index.ts`）と口の表（`ipc/register.ts`）は外す —— 判断は
@@ -280,9 +280,23 @@ Izuna は library ではない。**外部の利用者という逃げ道が無い
 `TerminalPane` / `Worktrees` / `ModeSwitch` は画面全体を持っていて、まだ描いていない。
 床は下がったら落ちる線であって、目標ではない。
 
+### 画面全体を持つ部品も描いた（2026-09-10）
+
+`ModeSwitch` / `Palette` / `Worktrees` / `Inspector` / `NewSession` / `ForgeSetup` / `Forge` を
+`window.izuna` を差し替えて描いた（`Loop` と同じ形。`beforeEach` で口を置き直す）。見ているのは
+props の描き分けではなく、**口に渡している引数と、返りをどう言葉にするか** —— `removeWorktree` に
+`force` が付くのは未 push のときだけ、`forgeCreatePull` の本文がコミットの一覧、`ghCreatePull` の
+`base` が upstream の既定ブランチ、会話が無ければコミット文もレビューも頼めない、など。
+
+踏んだもの: jsdom に `scrollIntoView` が無い（`Element.prototype` に空を置く）。同じ字が 2 か所に
+出る部品（`Forge` の「閉じる」は差分を畳むのと PR を閉じるの 2 つ、`ForgeSetup` の「Claude Code」は
+見出しと行）は `getAllByText` で数を見る。`remember.ts` の控えは module の寿命なので、検査ごとに
+`cwd` を変える —— 同じ鍵だと前の検査の値が先に描かれる。
+
 ### まだ測っていないもの
 
-- 上の 10 部品と `App.tsx`（387 行）、`useSessions.ts`（163 行）
+- `TerminalPane`（ghostty-web の WASM。jsdom では起こせない。`pnpm shots` が見る）、
+  `App.tsx`、`useSessions.ts`
 - `main/index.ts`（Electron の起動そのもの。実機で起動して見る）
 
 ### push の門（2026-09-08、docs/NIMBALYST.md §3 の 5）
