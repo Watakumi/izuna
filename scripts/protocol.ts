@@ -176,7 +176,7 @@ export function userInput(text: string): UserInputMessage {
  * この定数と、録画した fixture と、手元の `claude --version` の 3 つが
  * 一致することをテストで見る。ずれたら §5 を測り直す合図。
  */
-export const MEASURED_CLI_VERSION = '2.1.263'
+export const MEASURED_CLI_VERSION = '2.1.266'
 
 /**
  * NDJSON の 1 行を解釈した結果。
