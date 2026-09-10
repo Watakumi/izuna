@@ -32,7 +32,6 @@ export async function loadConfig(): Promise<MergeResult> {
   return cached
 }
 
-
 /** 探索先などは `~` を展開して使う */
 export async function resolved(): Promise<IzunaConfig & { ignored: string[] }> {
   const { config, ignored } = await loadConfig()

@@ -1,7 +1,15 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { SettingSource } from '@anthropic-ai/claude-agent-sdk'
-import { hookEventsIn, hookFilesFor, hooksRefusal, isTrusted, MCP_FILE, mcpCommandsIn, type FoundHooks } from '../../shared/hooks'
+import {
+  hookEventsIn,
+  hookFilesFor,
+  hooksRefusal,
+  isTrusted,
+  MCP_FILE,
+  mcpCommandsIn,
+  type FoundHooks
+} from '../../shared/hooks'
 import { CONFIG_PATH, resolved } from '../config'
 
 /**
@@ -9,7 +17,10 @@ import { CONFIG_PATH, resolved } from '../config'
  *
  * **hook が無ければ何も聞かない。** 毎回聞くと、いずれ全部「はい」になる。
  */
-export async function findProjectHooks(cwd: string, sources: readonly SettingSource[]): Promise<FoundHooks[]> {
+export async function findProjectHooks(
+  cwd: string,
+  sources: readonly SettingSource[]
+): Promise<FoundHooks[]> {
   const out: FoundHooks[] = []
   const look = async (file: string, count: (text: string) => string[]): Promise<void> => {
     let text: string

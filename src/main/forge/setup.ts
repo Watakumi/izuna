@@ -1,7 +1,14 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { run as exec0 } from '../exec'
 import { join } from 'node:path'
-import { BOT_USER, GRANTED_SCOPES, parseAppIni, tokenMayTravel, type ForgeConfig, type ForgeFacts } from '../../shared/forge'
+import {
+  BOT_USER,
+  GRANTED_SCOPES,
+  parseAppIni,
+  tokenMayTravel,
+  type ForgeConfig,
+  type ForgeFacts
+} from '../../shared/forge'
 import { loginShellEnv } from '../claude/locate'
 import { loadScopes, loadToken, saveToken, tokenStatus } from './store'
 import { listTokens } from './client'
@@ -15,8 +22,6 @@ import { resolved } from '../config'
  * **検出は自動、変更は明示のクリック。** 利用者の Forgejo 設定を黙って
  * 書き換えたり brew install を勝手に走らせたりしない。
  */
-
-
 
 /** forgejo / brew の出力は末尾の改行を落として使う */
 async function run(cmd: string, args: string[]): Promise<string> {
@@ -50,8 +55,14 @@ async function findConfig(): Promise<ForgeConfig | null> {
   // app.ini が読めない環境（Docker で建てている等）。URL だけ設定から使う
   const cfg2 = await resolved()
   if (cfg2.forgejoUrl) {
-    return { path: '(設定から)', rootUrl: cfg2.forgejoUrl, httpPort: null,
-      httpAddr: null, installLocked: true, actionsEnabled: true }
+    return {
+      path: '(設定から)',
+      rootUrl: cfg2.forgejoUrl,
+      httpPort: null,
+      httpAddr: null,
+      installLocked: true,
+      actionsEnabled: true
+    }
   }
   return null
 }
@@ -94,14 +105,19 @@ async function inspectToken(rootUrl: string | null, token: string | null): Promi
       signal: AbortSignal.timeout(4000)
     })
     if (!res.ok) {
-      return { scopes: null, works: false, rejection: {
-        status: res.status,
-        detail: res.status === 401
-          ? `${url.href} が 401 を返しました（トークンが無効か、失効しています）`
-          : res.status === 403
-            ? `${url.href} が 403 を返しました（権限が足りません）`
-            : `${url.href} が ${res.status} ${res.statusText} を返しました`
-      } }
+      return {
+        scopes: null,
+        works: false,
+        rejection: {
+          status: res.status,
+          detail:
+            res.status === 401
+              ? `${url.href} が 401 を返しました（トークンが無効か、失効しています）`
+              : res.status === 403
+                ? `${url.href} が 403 を返しました（権限が足りません）`
+                : `${url.href} が ${res.status} ${res.statusText} を返しました`
+        }
+      }
     }
     /**
      * **サーバが持っている権限を見る。**
@@ -124,30 +140,58 @@ async function inspectToken(rootUrl: string | null, token: string | null): Promi
   } catch (e) {
     // **繋がらないのはトークンのせいではない。** status を付けないことで、
     // 診断は「発行し直す」を出さない（出しても増えるだけだから）
-    return { scopes: null, works: false, rejection: {
-      status: null,
-      detail: `${url.href} に繋がりません（${String(e).replace(/^\w*Error:\s*/, '')}）`
-    } }
+    return {
+      scopes: null,
+      works: false,
+      rejection: {
+        status: null,
+        detail: `${url.href} に繋がりません（${String(e).replace(/^\w*Error:\s*/, '')}）`
+      }
+    }
   }
 }
 
 export async function gatherFacts(): Promise<ForgeFacts> {
   const binary = await which('forgejo')
   const [version, config, token] = await Promise.all([
-    binary ? run(binary, ['--version']).then((v) => /version (\S+)/.exec(v)?.[1] ?? null).catch(() => null) : null,
+    binary
+      ? run(binary, ['--version'])
+          .then((v) => /version (\S+)/.exec(v)?.[1] ?? null)
+          .catch(() => null)
+      : null,
     findConfig(),
     loadToken()
   ])
   // 手元に無く、設定にも無ければ、そこで止める（先を出しても混乱するだけ）
   if (!binary && !config) {
-    return { binary: null, version: null, config: null, reachable: false,
-      tokenScopes: null, tokenWorks: null, tokenRejection: null, tokenUnreadable: false, runners: null, remote: false }
+    return {
+      binary: null,
+      version: null,
+      config: null,
+      reachable: false,
+      tokenScopes: null,
+      tokenWorks: null,
+      tokenRejection: null,
+      tokenUnreadable: false,
+      runners: null,
+      remote: false
+    }
   }
   const reachable = await probe(config?.rootUrl ?? null)
   const { scopes, works, rejection } = await inspectToken(config?.rootUrl ?? null, token)
   const tokenUnreadable = (await tokenStatus()) === 'unreadable'
-  return { binary, version, config, reachable, tokenScopes: scopes, tokenWorks: works,
-    tokenRejection: rejection, tokenUnreadable, runners: null, remote: !binary }
+  return {
+    binary,
+    version,
+    config,
+    reachable,
+    tokenScopes: scopes,
+    tokenWorks: works,
+    tokenRejection: rejection,
+    tokenUnreadable,
+    runners: null,
+    remote: !binary
+  }
 }
 
 /**
@@ -160,16 +204,23 @@ export async function gatherFacts(): Promise<ForgeFacts> {
 export async function adoptToken(rootUrl: string, token: string): Promise<string> {
   const t = token.trim()
   if (!t) throw new Error('トークンが空です')
-  if (!tokenMayTravel(rootUrl)) throw new Error(`${rootUrl} にはトークンを送りません（平文で LAN を通ります）`)
+  if (!tokenMayTravel(rootUrl))
+    throw new Error(`${rootUrl} にはトークンを送りません（平文で LAN を通ります）`)
   const res = await fetch(new URL('api/v1/user', rootUrl), {
-    headers: { Authorization: `token ${t}` }, signal: AbortSignal.timeout(5000)
+    headers: { Authorization: `token ${t}` },
+    signal: AbortSignal.timeout(5000)
   })
-  if (!res.ok) throw new Error(`Forgejo が ${res.status} を返しました。トークンが違うか、失効しています`)
+  if (!res.ok)
+    throw new Error(`Forgejo が ${res.status} を返しました。トークンが違うか、失効しています`)
   const me = (await res.json()) as { login?: string }
   if (me.login !== BOT_USER) {
-    throw new Error(`これは ${me.login ?? '不明'} のトークンです。Izuna が持つのはボット ${BOT_USER} のものだけです（人の鍵はアプリに置かない）`)
+    throw new Error(
+      `これは ${me.login ?? '不明'} のトークンです。Izuna が持つのはボット ${BOT_USER} のものだけです（人の鍵はアプリに置かない）`
+    )
   }
-  const tokens = await listTokens(rootUrl, BOT_USER).catch(() => [] as Awaited<ReturnType<typeof listTokens>>)
+  const tokens = await listTokens(rootUrl, BOT_USER).catch(
+    () => [] as Awaited<ReturnType<typeof listTokens>>
+  )
   const mine = tokens.find((x) => t.endsWith(x.last8))
   await saveToken(t, mine?.scopes ?? undefined)
   return `${BOT_USER} のトークンを保管しました${mine ? `（${mine.scopes.join(', ')}）` : ''}`
@@ -188,14 +239,24 @@ export async function adoptToken(rootUrl: string, token: string): Promise<string
 async function ensureBotUser(binary: string, workPath: string): Promise<string> {
   const out = await run(binary, ['admin', 'user', 'list', '--work-path', workPath])
   // 1 行目は見出し。ID<TAB>Username<TAB>... の形
-  const names = out.split('\n').slice(1).map((l) => l.trim().split(/\s+/)[1]).filter(Boolean)
+  const names = out
+    .split('\n')
+    .slice(1)
+    .map((l) => l.trim().split(/\s+/)[1])
+    .filter(Boolean)
   if (names.includes(BOT_USER)) return BOT_USER
   await run(binary, [
-    'admin', 'user', 'create',
-    '--username', BOT_USER,
-    '--email', `${BOT_USER}@localhost.invalid`,
-    '--random-password', '--must-change-password=false',
-    '--work-path', workPath
+    'admin',
+    'user',
+    'create',
+    '--username',
+    BOT_USER,
+    '--email',
+    `${BOT_USER}@localhost.invalid`,
+    '--random-password',
+    '--must-change-password=false',
+    '--work-path',
+    workPath
   ])
   return BOT_USER
 }
@@ -226,13 +287,21 @@ export async function applyFix(id: FixId): Promise<string> {
       // 同名トークンがあると失敗するので、名前に時刻を混ぜる
       const name = `izuna-${Date.now().toString(36)}`
       const token = await run(facts.binary, [
-        'admin', 'user', 'generate-access-token',
-        '--username', user, '--token-name', name, '--raw',
+        'admin',
+        'user',
+        'generate-access-token',
+        '--username',
+        user,
+        '--token-name',
+        name,
+        '--raw',
         // **`write:user` が要る。** `POST /user/repos` は `write:repository`
         // だけでは 403 になる（2026-09-08 に実測。片方ずつ試して確かめた）。
         // 「ユーザーの下に作る」ので、どちらの権限も要求される。
-        '--scopes', GRANTED_SCOPES.join(','),
-        '--work-path', workPath
+        '--scopes',
+        GRANTED_SCOPES.join(','),
+        '--work-path',
+        workPath
       ])
       const value = token.split('\n').pop()?.trim()
       if (!value) throw new Error('トークンを受け取れませんでした')
@@ -257,10 +326,16 @@ export async function applyFix(id: FixId): Promise<string> {
       if (!facts.config) throw new Error('app.ini が見つかりません')
       const text = await readFile(facts.config.path, 'utf8')
       if (!/^\s*HTTP_ADDR\s*=/m.test(text)) {
-        throw new Error('HTTP_ADDR の行が見つかりません。手で [server] に HTTP_ADDR = 0.0.0.0 を足してください')
+        throw new Error(
+          'HTTP_ADDR の行が見つかりません。手で [server] に HTTP_ADDR = 0.0.0.0 を足してください'
+        )
       }
       await writeFile(`${facts.config.path}.izuna-backup`, text, 'utf8')
-      await writeFile(facts.config.path, text.replace(/^(\s*HTTP_ADDR\s*=\s*).*$/m, '$10.0.0.0'), 'utf8')
+      await writeFile(
+        facts.config.path,
+        text.replace(/^(\s*HTTP_ADDR\s*=\s*).*$/m, '$10.0.0.0'),
+        'utf8'
+      )
       await run('brew', ['services', 'restart', 'forgejo'])
       return '0.0.0.0 で待ち受けるようにして再起動しました。同じネットワークの他の端末からも見えます（元の app.ini は .izuna-backup に残してあります）'
     }
@@ -268,8 +343,11 @@ export async function applyFix(id: FixId): Promise<string> {
     case 'runnerToken': {
       if (!facts.binary || !facts.config) throw new Error('Forgejo が見つかりません')
       const out = await run(facts.binary, [
-        'forgejo-cli', 'actions', 'generate-runner-token',
-        '--work-path', workPathOf(facts.config)
+        'forgejo-cli',
+        'actions',
+        'generate-runner-token',
+        '--work-path',
+        workPathOf(facts.config)
       ])
       return `runner の登録トークン: ${out.split('\n').pop()?.trim() ?? out}`
     }

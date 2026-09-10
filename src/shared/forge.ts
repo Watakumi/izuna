@@ -10,10 +10,17 @@
  */
 
 export type CheckId =
-  | 'installed' | 'configured' | 'transport' | 'running' | 'token'
-  | 'actions' | 'reachableFromRunner' | 'runner'
+  | 'installed'
+  | 'configured'
+  | 'transport'
+  | 'running'
+  | 'token'
+  | 'actions'
+  | 'reachableFromRunner'
+  | 'runner'
   /** Claude Code の関所（`shared/prereq.ts`） */
-  | 'claude' | 'claudeLogin'
+  | 'claude'
+  | 'claudeLogin'
 export type Level = 'ok' | 'warn' | 'ng' | 'unknown'
 
 export interface Check {
@@ -172,10 +179,15 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
   const label = 'トークン'
 
   if (facts.tokenUnreadable) {
-    return { id, label, level: 'ng',
+    return {
+      id,
+      label,
+      level: 'ng',
       // **「未設定」と言わない。** 設定した人は「したのに」としか思えない
-      detail: '保管したトークンを復号できません。暗号化に使った鍵と違う鍵で動いています（別の keychain、または --use-mock-keychain）',
-      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
+      detail:
+        '保管したトークンを復号できません。暗号化に使った鍵と違う鍵で動いています（別の keychain、または --use-mock-keychain）',
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE }
+    }
   }
 
   // **通らなかったことを最初に見る。** 権限の話はその後でしか意味を持たない
@@ -183,36 +195,57 @@ function tokenCheck(facts: ForgeFacts, lacking: string[]): Check {
     const r = facts.tokenRejection
     // 繋がらないのはトークンのせいではない。**押しても増えるだけ**なので釦を出さない
     const reissuable = r?.status === 401 || r?.status === 403
-    return { id, label, level: 'ng',
+    return {
+      id,
+      label,
+      level: 'ng',
       detail: r ? `通りませんでした: ${r.detail}` : '通りませんでした',
-      fix: reissuable && !facts.remote
-        ? { label: '発行し直す', warning: REISSUE }
-        : null }
+      fix: reissuable && !facts.remote ? { label: '発行し直す', warning: REISSUE } : null
+    }
   }
 
   if (facts.tokenScopes === null) {
     // 手元に CLI が無ければ発行できない。人が Forgejo で作って貼る（画面に貼る欄が出る）
     if (facts.remote) {
-      return { id, label, level: 'ng',
+      return {
+        id,
+        label,
+        level: 'ng',
         detail: `未設定です。Forgejo で ${BOT_USER} という利用者を作り、そのトークン（${REQUIRED_SCOPES.join(', ')}）を下に貼ってください`,
-        fix: null }
+        fix: null
+      }
     }
-    return { id, label, level: 'ng', detail: '未設定です',
-      fix: { label: 'トークンを発行する',
-        warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します` } }
+    return {
+      id,
+      label,
+      level: 'ng',
+      detail: '未設定です',
+      fix: {
+        label: 'トークンを発行する',
+        warning: `Forgejo に ${BOT_USER} というボットの利用者を作り（無ければ）、そのトークンを発行します`
+      }
+    }
   }
 
   if (facts.tokenScopes.length === 0) {
     // **分からないことを「足りない」と言わない**
-    return { id, label, level: 'warn',
+    return {
+      id,
+      label,
+      level: 'warn',
       detail: '権限が分かりません（古い版で発行されたか、サーバが返しませんでした）',
-      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE }
+    }
   }
 
   if (lacking.length > 0) {
-    return { id, label, level: 'ng',
+    return {
+      id,
+      label,
+      level: 'ng',
       detail: `スコープが足りません: ${lacking.join(', ')}`,
-      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE } }
+      fix: facts.remote ? null : { label: '発行し直す', warning: REISSUE }
+    }
   }
 
   return { id, label, level: 'ok', detail: facts.tokenScopes.join(', '), fix: null }
@@ -229,69 +262,151 @@ const REISSUE =
 export function diagnose(facts: ForgeFacts): Check[] {
   const checks: Check[] = []
 
-  checks.push(facts.binary
-    ? { id: 'installed', label: 'インストール', level: 'ok',
-        detail: `${facts.version ?? '版不明'} · ${facts.binary}`, fix: null }
-    : facts.remote
-      ? { id: 'installed', label: 'インストール', level: 'ok',
-          detail: `手元には無い。設定の forgejoUrl（${facts.config?.rootUrl ?? ''}）を使う`, fix: null }
-      : { id: 'installed', label: 'インストール', level: 'ng',
-          detail: '見つかりません。Homebrew で入れるか、Docker や別マシンの Forgejo を ~/.izuna/config.json の forgejoUrl に書く（docs/SETUP.md）',
-          fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' } })
+  checks.push(
+    facts.binary
+      ? {
+          id: 'installed',
+          label: 'インストール',
+          level: 'ok',
+          detail: `${facts.version ?? '版不明'} · ${facts.binary}`,
+          fix: null
+        }
+      : facts.remote
+        ? {
+            id: 'installed',
+            label: 'インストール',
+            level: 'ok',
+            detail: `手元には無い。設定の forgejoUrl（${facts.config?.rootUrl ?? ''}）を使う`,
+            fix: null
+          }
+        : {
+            id: 'installed',
+            label: 'インストール',
+            level: 'ng',
+            detail:
+              '見つかりません。Homebrew で入れるか、Docker や別マシンの Forgejo を ~/.izuna/config.json の forgejoUrl に書く（docs/SETUP.md）',
+            fix: { label: 'Homebrew で入れる', warning: 'brew install forgejo を実行します' }
+          }
+  )
 
   if (!facts.binary && !facts.remote) return checks
 
   const cfg = facts.config
-  checks.push(!cfg
-    ? { id: 'configured', label: '初期設定', level: 'ng',
-        detail: 'app.ini が見つかりません', fix: null }
-    : cfg.installLocked
-      ? { id: 'configured', label: '初期設定', level: 'ok',
-          detail: `${cfg.rootUrl ?? '(ROOT_URL 未設定)'} · ${cfg.path}`, fix: null }
-      : { id: 'configured', label: '初期設定', level: 'warn',
-          detail: 'INSTALL_LOCK が false。ブラウザで初期設定を終えてください', fix: null })
+  checks.push(
+    !cfg
+      ? {
+          id: 'configured',
+          label: '初期設定',
+          level: 'ng',
+          detail: 'app.ini が見つかりません',
+          fix: null
+        }
+      : cfg.installLocked
+        ? {
+            id: 'configured',
+            label: '初期設定',
+            level: 'ok',
+            detail: `${cfg.rootUrl ?? '(ROOT_URL 未設定)'} · ${cfg.path}`,
+            fix: null
+          }
+        : {
+            id: 'configured',
+            label: '初期設定',
+            level: 'warn',
+            detail: 'INSTALL_LOCK が false。ブラウザで初期設定を終えてください',
+            fix: null
+          }
+  )
 
   // 経路が危なければ、その先（起動・トークン）を試す前に止める
   if (cfg?.rootUrl && !tokenMayTravel(cfg.rootUrl)) {
-    checks.push({ id: 'transport', label: '経路', level: 'ng',
-      detail: transportRefusal(cfg.rootUrl), fix: null })
+    checks.push({
+      id: 'transport',
+      label: '経路',
+      level: 'ng',
+      detail: transportRefusal(cfg.rootUrl),
+      fix: null
+    })
   }
 
-  checks.push(facts.reachable
-    ? { id: 'running', label: '起動', level: 'ok',
-        detail: `${cfg?.rootUrl ?? ''} が応答しました`, fix: null }
-    : { id: 'running', label: '起動', level: 'ng',
-        detail: '応答がありません',
-        fix: { label: '起動する', warning: 'brew services start forgejo を実行します' } })
+  checks.push(
+    facts.reachable
+      ? {
+          id: 'running',
+          label: '起動',
+          level: 'ok',
+          detail: `${cfg?.rootUrl ?? ''} が応答しました`,
+          fix: null
+        }
+      : {
+          id: 'running',
+          label: '起動',
+          level: 'ng',
+          detail: '応答がありません',
+          fix: { label: '起動する', warning: 'brew services start forgejo を実行します' }
+        }
+  )
 
   const lacking = missingScopes(facts.tokenScopes)
   checks.push(tokenCheck(facts, lacking))
 
   // Actions は v1 の必須ではない。無くても PR は作れる
-  checks.push(cfg?.actionsEnabled
-    ? { id: 'actions', label: 'Actions（任意）', level: 'ok', detail: '有効です', fix: null }
-    : { id: 'actions', label: 'Actions（任意）', level: 'warn',
-        detail: '無効です。CI を自分で実行しないなら、このままで構いません',
-        fix: { label: '有効にする', warning: 'app.ini を書き換えて Forgejo を再起動します' } })
+  checks.push(
+    cfg?.actionsEnabled
+      ? { id: 'actions', label: 'Actions（任意）', level: 'ok', detail: '有効です', fix: null }
+      : {
+          id: 'actions',
+          label: 'Actions（任意）',
+          level: 'warn',
+          detail: '無効です。CI を自分で実行しないなら、このままで構いません',
+          fix: { label: '有効にする', warning: 'app.ini を書き換えて Forgejo を再起動します' }
+        }
+  )
 
   if (cfg?.actionsEnabled) {
     // macOS では runner を Docker で回すしかないので、loopback だと必ず失敗する。
     // Actions を有効にした人にだけ見せる（無効なら関係ない）
-    checks.push(reachableFromContainer(cfg.httpAddr)
-      ? { id: 'reachableFromRunner', label: 'runner から Forgejo に届く（任意）', level: 'ok',
-          detail: `HTTP_ADDR = ${cfg.httpAddr ?? '(既定)'}`, fix: null }
-      : { id: 'reachableFromRunner', label: 'runner から Forgejo に届く（任意）', level: 'warn',
-          detail: `HTTP_ADDR = ${cfg.httpAddr} は Docker のコンテナから届きません。` +
-            'macOS では runner を Docker で回すため、Actions を使うなら開く必要があります',
-          fix: { label: '0.0.0.0 で待ち受ける',
-            warning: 'app.ini を書き換えて再起動します。**同じネットワークの他の端末からも見えるようになります**' } })
+    checks.push(
+      reachableFromContainer(cfg.httpAddr)
+        ? {
+            id: 'reachableFromRunner',
+            label: 'runner から Forgejo に届く（任意）',
+            level: 'ok',
+            detail: `HTTP_ADDR = ${cfg.httpAddr ?? '(既定)'}`,
+            fix: null
+          }
+        : {
+            id: 'reachableFromRunner',
+            label: 'runner から Forgejo に届く（任意）',
+            level: 'warn',
+            detail:
+              `HTTP_ADDR = ${cfg.httpAddr} は Docker のコンテナから届きません。` +
+              'macOS では runner を Docker で回すため、Actions を使うなら開く必要があります',
+            fix: {
+              label: '0.0.0.0 で待ち受ける',
+              warning:
+                'app.ini を書き換えて再起動します。**同じネットワークの他の端末からも見えるようになります**'
+            }
+          }
+    )
 
-    checks.push((facts.runners ?? 0) > 0
-      ? { id: 'runner', label: 'runner が登録されている（任意）', level: 'ok',
-          detail: `${facts.runners} 台`, fix: null }
-      : { id: 'runner', label: 'runner が登録されている（任意）', level: 'warn',
-          detail: 'ありません。Actions は動きますが、実行するものがいません',
-          fix: { label: '登録用トークンを出す', warning: 'runner のバイナリは別途必要です' } })
+    checks.push(
+      (facts.runners ?? 0) > 0
+        ? {
+            id: 'runner',
+            label: 'runner が登録されている（任意）',
+            level: 'ok',
+            detail: `${facts.runners} 台`,
+            fix: null
+          }
+        : {
+            id: 'runner',
+            label: 'runner が登録されている（任意）',
+            level: 'warn',
+            detail: 'ありません。Actions は動きますが、実行するものがいません',
+            fix: { label: '登録用トークンを出す', warning: 'runner のバイナリは別途必要です' }
+          }
+    )
   }
 
   return checks
@@ -300,7 +415,13 @@ export function diagnose(facts: ForgeFacts): Check[] {
 /** 段5 に進めるか。任意の項目は数えない */
 export function readyForForge(checks: Check[]): boolean {
   return checks
-    .filter((c) => c.id === 'installed' || c.id === 'configured' || c.id === 'transport' ||
-      c.id === 'running' || c.id === 'token')
+    .filter(
+      (c) =>
+        c.id === 'installed' ||
+        c.id === 'configured' ||
+        c.id === 'transport' ||
+        c.id === 'running' ||
+        c.id === 'token'
+    )
     .every((c) => c.level === 'ok')
 }

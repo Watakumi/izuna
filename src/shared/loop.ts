@@ -74,16 +74,17 @@ export function parseProgress(text: string): Progress {
     phase,
     status,
     completionSignal: raw.completionSignal === true,
-    learnings: Array.isArray(raw.learnings)
-      ? raw.learnings.filter(isLearning)
+    learnings: Array.isArray(raw.learnings) ? raw.learnings.filter(isLearning) : [],
+    blockers: Array.isArray(raw.blockers)
+      ? raw.blockers.filter((b): b is string => typeof b === 'string')
       : [],
-    blockers: Array.isArray(raw.blockers) ? raw.blockers.filter((b): b is string => typeof b === 'string') : [],
     ...(typeof raw.userFeedback === 'string' ? { userFeedback: raw.userFeedback } : {})
   }
 }
 
 const isLearning = (v: unknown): v is Learning =>
-  typeof v === 'object' && v !== null &&
+  typeof v === 'object' &&
+  v !== null &&
   typeof (v as Learning).summary === 'string' &&
   typeof (v as Learning).iteration === 'number'
 
@@ -101,7 +102,8 @@ export function decide(progress: Progress, maxIterations: number): Stop | null {
   if (progress.status === 'blocked') {
     return {
       reason: 'blocked',
-      detail: progress.blockers.length > 0 ? progress.blockers.join(' / ') : '理由は書かれていません'
+      detail:
+        progress.blockers.length > 0 ? progress.blockers.join(' / ') : '理由は書かれていません'
     }
   }
   if (progress.currentIteration >= maxIterations) {
@@ -133,35 +135,40 @@ export function iterationPrompt(input: {
   const { progress, teamDir, iteration } = input
   const learnings = trimLearnings(progress.learnings)
 
-  const carried = learnings.length === 0
-    ? '（まだありません。これが最初の反復です）'
-    : learnings.map((l) => `- 反復 ${l.iteration}: ${l.summary}` +
-        (l.filesChanged.length > 0 ? `\n  触ったファイル: ${l.filesChanged.join(', ')}` : '')).join('\n')
+  const carried =
+    learnings.length === 0
+      ? '（まだありません。これが最初の反復です）'
+      : learnings
+          .map(
+            (l) =>
+              `- 反復 ${l.iteration}: ${l.summary}` +
+              (l.filesChanged.length > 0 ? `\n  触ったファイル: ${l.filesChanged.join(', ')}` : '')
+          )
+          .join('\n')
 
-  const feedback = progress.userFeedback
-    ? `\n## 人からの指示\n\n${progress.userFeedback}\n`
-    : ''
+  const feedback = progress.userFeedback ? `\n## 人からの指示\n\n${progress.userFeedback}\n` : ''
 
-  const work = progress.phase === 'planning'
-    ? [
-        '## いまやること: 計画',
-        '',
-        `1. \`${teamDir}/brief.md\` を読んで、狙いと制約と受け入れ条件を把握する。`,
-        '2. コードを読んで、すでにあるものと突き合わせる。**無いと決めつけず、必ず探してから判断する。**',
-        `3. \`${teamDir}/tasks/\` に、優先順に並べた作業単位を書く（1 ファイル 1 件）。`,
-        '',
-        '**実装はしない。** この反復は計画だけである。'
-      ].join('\n')
-    : [
-        '## いまやること: 実装',
-        '',
-        `1. \`${teamDir}/tasks/\` を読み、**いちばん優先度の高い未着手の 1 件だけ**に取り組む。`,
-        '2. 変更したら、その範囲の検査を走らせる。',
-        '3. 通ったら `tasks/` の状態を更新し、コミットする。',
-        '',
-        '**1 反復 1 件。** まとめて片付けようとしない。',
-        '**置き石を残さない。** 後で書き直す前提の仮実装は、二度手間になるだけである。'
-      ].join('\n')
+  const work =
+    progress.phase === 'planning'
+      ? [
+          '## いまやること: 計画',
+          '',
+          `1. \`${teamDir}/brief.md\` を読んで、狙いと制約と受け入れ条件を把握する。`,
+          '2. コードを読んで、すでにあるものと突き合わせる。**無いと決めつけず、必ず探してから判断する。**',
+          `3. \`${teamDir}/tasks/\` に、優先順に並べた作業単位を書く（1 ファイル 1 件）。`,
+          '',
+          '**実装はしない。** この反復は計画だけである。'
+        ].join('\n')
+      : [
+          '## いまやること: 実装',
+          '',
+          `1. \`${teamDir}/tasks/\` を読み、**いちばん優先度の高い未着手の 1 件だけ**に取り組む。`,
+          '2. 変更したら、その範囲の検査を走らせる。',
+          '3. 通ったら `tasks/` の状態を更新し、コミットする。',
+          '',
+          '**1 反復 1 件。** まとめて片付けようとしない。',
+          '**置き石を残さない。** 後で書き直す前提の仮実装は、二度手間になるだけである。'
+        ].join('\n')
 
   return [
     `# 反復 ${iteration}`,

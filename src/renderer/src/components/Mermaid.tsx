@@ -20,7 +20,7 @@ import { Button } from './ui'
  * ユーザ権限のコード実行になる（§26）。
  */
 
-type MermaidModule = typeof import('mermaid')['default']
+type MermaidModule = (typeof import('mermaid'))['default']
 let loaded: Promise<MermaidModule> | null = null
 
 /**
@@ -28,7 +28,10 @@ let loaded: Promise<MermaidModule> | null = null
  * 先頭で import すると、図の無い会話でも起動時に読まれる（§27）。
  */
 function load(): Promise<MermaidModule> {
-  loaded ??= import('mermaid').then((m) => { init(m.default); return m.default })
+  loaded ??= import('mermaid').then((m) => {
+    init(m.default)
+    return m.default
+  })
   return loaded
 }
 
@@ -73,7 +76,7 @@ export function Mermaid({ text }: { text: string }): React.JSX.Element {
   const [failed, setFailed] = useState<string | null>(null)
   const [source, setSource] = useState(false)
   // mermaid は id を CSS セレクタに使う。`useId` の `:` は落とし、`m` で始める（撮影の門が探す形）
-  const id = { current: 'm' + useId().replace(/\W/g, '') }
+  const id = 'm' + useId().replace(/\W/g, '')
 
   useEffect(() => {
     let live = true
@@ -84,27 +87,57 @@ export function Mermaid({ text }: { text: string }): React.JSX.Element {
      */
     const timer = setTimeout(() => {
       load()
-        .then((mermaid) => mermaid.render(id.current, text))
-        .then((r) => { if (live) { setSvg(r.svg); setFailed(null) } })
-        .catch((e: unknown) => { if (live) setFailed(String(e).replace(/^Error:\s*/, '').split('\n')[0]) })
+        .then((mermaid) => mermaid.render(id, text))
+        .then((r) => {
+          if (live) {
+            setSvg(r.svg)
+            setFailed(null)
+          }
+        })
+        .catch((e: unknown) => {
+          if (live)
+            setFailed(
+              String(e)
+                .replace(/^Error:\s*/, '')
+                .split('\n')[0]
+            )
+        })
     }, SETTLE_MS)
-    return () => { live = false; clearTimeout(timer) }
-  }, [text])
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+  }, [text, id])
 
   // 描けなかったときは**字をそのまま出す**。図にならなかったことは下に書く
   if (failed !== null || source || svg === null) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs, margin: '8px 0' }}>
-        <pre style={{ margin: 0, padding: S.md, background: C.raised, borderRadius: R.md,
-          border: `1px solid ${C.line}`, overflowX: 'auto', font: `${F.small}px ${MONO}`,
-          color: C.ink2 }}>{text}</pre>
+        <pre
+          style={{
+            margin: 0,
+            padding: S.md,
+            background: C.raised,
+            borderRadius: R.md,
+            border: `1px solid ${C.line}`,
+            overflowX: 'auto',
+            font: `${F.small}px ${MONO}`,
+            color: C.ink2
+          }}
+        >
+          {text}
+        </pre>
         <div style={{ display: 'flex', alignItems: 'center', gap: S.sm }}>
           {failed !== null && (
-            <span style={{ font: `${F.micro}px ${MONO}`, color: C.amber }}>図にできません: {failed}</span>
+            <span style={{ font: `${F.micro}px ${MONO}`, color: C.amber }}>
+              図にできません: {failed}
+            </span>
           )}
           <div style={{ flexGrow: 1 }} />
           {failed === null && svg !== null && (
-            <Button size="sm" onClick={() => setSource(false)}>図で見る</Button>
+            <Button size="sm" onClick={() => setSource(false)}>
+              図で見る
+            </Button>
           )}
         </div>
       </div>
@@ -113,12 +146,21 @@ export function Mermaid({ text }: { text: string }): React.JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs, margin: '8px 0' }}>
-      <div style={{ padding: S.md, background: C.panel, borderRadius: R.md,
-        border: `1px solid ${C.line}`, overflowX: 'auto' }}
-        dangerouslySetInnerHTML={{ __html: svg }} />
+      <div
+        style={{
+          padding: S.md,
+          background: C.panel,
+          borderRadius: R.md,
+          border: `1px solid ${C.line}`,
+          overflowX: 'auto'
+        }}
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
       <div style={{ display: 'flex' }}>
         <div style={{ flexGrow: 1 }} />
-        <Button size="sm" onClick={() => setSource(true)}>字で見る</Button>
+        <Button size="sm" onClick={() => setSource(true)}>
+          字で見る
+        </Button>
       </div>
     </div>
   )

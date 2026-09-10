@@ -55,11 +55,18 @@ async function record(kind: Kind): Promise<void> {
   let asked = 0
 
   console.log(`[${kind}] cwd: ${cwd}`)
-  const session = new ClaudeSession({ cwd, model: 'haiku', permissionMode: 'default', settingSources: [] })
+  const session = new ClaudeSession({
+    cwd,
+    model: 'haiku',
+    permissionMode: 'default',
+    settingSources: []
+  })
 
   session.on('permission', (req) => {
     asked++
-    console.log(`\n  [承認 ${asked}] ${req.toolName} / agentId=${req.agentId ?? '(ブレイン本体)'} → allow`)
+    console.log(
+      `\n  [承認 ${asked}] ${req.toolName} / agentId=${req.agentId ?? '(ブレイン本体)'} → allow`
+    )
     session.respondToPermission(req.id, { behavior: 'allow' })
   })
 
@@ -71,7 +78,10 @@ async function record(kind: Kind): Promise<void> {
         if (scenario.until(m as Frame)) resolve()
       })
       session.on('error', reject)
-      session.start().then(() => session.send(scenario.prompt)).catch(reject)
+      session
+        .start()
+        .then(() => session.send(scenario.prompt))
+        .catch(reject)
       setTimeout(() => reject(new Error('240 秒で終わらなかった')), 240_000)
     })
     mkdirSync(dirname(out), { recursive: true })

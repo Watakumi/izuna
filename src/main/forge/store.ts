@@ -24,7 +24,10 @@ export async function saveToken(token: string, scopes?: readonly string[]): Prom
   }
   const path = file()
   await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, safeStorage.encryptString(JSON.stringify({ token, scopes: scopes ?? null })))
+  await writeFile(
+    path,
+    safeStorage.encryptString(JSON.stringify({ token, scopes: scopes ?? null }))
+  )
 }
 
 /** 記録した権限。**古い形式（文字列だけ）なら null**（＝分からない） */

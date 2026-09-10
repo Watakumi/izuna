@@ -41,7 +41,7 @@ export function hookEventsIn(text: string): string[] {
   const hooks = (raw as { hooks?: unknown }).hooks
   if (hooks === null || typeof hooks !== 'object') return []
   return Object.entries(hooks as Record<string, unknown>)
-    .filter(([, v]) => Array.isArray(v) ? v.length > 0 : Boolean(v))
+    .filter(([, v]) => (Array.isArray(v) ? v.length > 0 : Boolean(v)))
     .map(([k]) => k)
 }
 
@@ -63,7 +63,12 @@ export function mcpCommandsIn(text: string): string[] {
   const servers = (raw as { mcpServers?: unknown } | null)?.mcpServers
   if (servers === null || typeof servers !== 'object') return []
   return Object.entries(servers as Record<string, unknown>)
-    .filter(([, v]) => typeof v === 'object' && v !== null && typeof (v as { command?: unknown }).command === 'string')
+    .filter(
+      ([, v]) =>
+        typeof v === 'object' &&
+        v !== null &&
+        typeof (v as { command?: unknown }).command === 'string'
+    )
     .map(([k]) => `mcp:${k}`)
 }
 
@@ -87,8 +92,14 @@ export function isTrusted(cwd: string, trusted: readonly string[]): boolean {
 }
 
 /** 止めるときに人へ見せる文。何が・どこに・どうすれば通るか */
-export function hooksRefusal(cwd: string, found: readonly FoundHooks[], configPath: string): string {
+export function hooksRefusal(
+  cwd: string,
+  found: readonly FoundHooks[],
+  configPath: string
+): string {
   const what = found.map((f) => `${f.file}（${f.events.join(', ')}）`).join('、')
-  return `${cwd} に hook があります: ${what}。開くと、そのコマンドが実行されます。` +
+  return (
+    `${cwd} に hook があります: ${what}。開くと、そのコマンドが実行されます。` +
     `信頼するなら ${configPath} の trustedRepos にこのパスを足してください`
+  )
 }

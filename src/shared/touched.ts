@@ -71,5 +71,6 @@ export function touchedFiles(t: Transcript, tasks: TaskRun[] = []): Touched[] {
   return [...into.values()].sort((a, b) =>
     a.wrote > 0 !== b.wrote > 0
       ? (b.wrote > 0 ? 1 : 0) - (a.wrote > 0 ? 1 : 0)
-      : a.path.localeCompare(b.path))
+      : a.path.localeCompare(b.path)
+  )
 }

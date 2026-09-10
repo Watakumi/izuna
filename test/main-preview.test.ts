@@ -47,7 +47,11 @@ vi.mock('electron', () => ({
   }
 }))
 
-const win = () => ({
+type Win = {
+  isDestroyed: () => boolean
+  contentView: { addChildView: (v: unknown) => void; removeChildView: (v: unknown) => void }
+}
+const win = (): Win => ({
   isDestroyed: () => false,
   contentView: {
     addChildView: (v: unknown) => {

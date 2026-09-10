@@ -41,7 +41,9 @@ describe('自分の画面の中か', () => {
 
 describe('外に出すか（自分の origin を見る）', () => {
   it('**dev サーバと同じ origin の http は出さない**（本文の相対リンクが漏れたもの）', () => {
-    expect(shouldOpenOutside('http://localhost:5173/src/a.ts', 'http://localhost:5173/')).toBe(false)
+    expect(shouldOpenOutside('http://localhost:5173/src/a.ts', 'http://localhost:5173/')).toBe(
+      false
+    )
     expect(shouldOpenOutside('https://example.com/', 'http://localhost:5173/')).toBe(true)
   })
 

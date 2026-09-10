@@ -43,21 +43,36 @@ session.on('message', (m) => {
   } else if (m.type === 'result') {
     console.log('\n[result]', m.subtype, '/ 承認を求められた回数:', asked)
     void session.stop().then(() => {
-      console.log(asked > 0 ? '\n握手は成立している。§6 は解決。' : '\n握手が成立していない。§6 は未解決のまま。')
+      console.log(
+        asked > 0
+          ? '\n握手は成立している。§6 は解決。'
+          : '\n握手が成立していない。§6 は未解決のまま。'
+      )
       process.exit(asked > 0 ? 0 : 1)
     })
   }
 })
 
-session.on('error', (e) => { console.error('[error]', e.message); process.exit(1) })
+session.on('error', (e) => {
+  console.error('[error]', e.message)
+  process.exit(1)
+})
 
 session
   .start()
   .then(async () => {
     console.log('cwd:', cwd)
     console.log('/ コマンド:', (await session.slashCommands()).length, '件')
-    session.send('Create a file named hello.txt containing the word hi in the current directory. Then stop.')
+    session.send(
+      'Create a file named hello.txt containing the word hi in the current directory. Then stop.'
+    )
   })
-  .catch((e) => { console.error(String(e)); process.exit(1) })
+  .catch((e) => {
+    console.error(String(e))
+    process.exit(1)
+  })
 
-setTimeout(() => { console.error('\n120 秒で終わらなかった'); process.exit(1) }, 120_000)
+setTimeout(() => {
+  console.error('\n120 秒で終わらなかった')
+  process.exit(1)
+}, 120_000)

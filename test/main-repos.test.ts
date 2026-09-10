@@ -21,7 +21,9 @@ const repo = (rel: string): void => {
   writeFileSync(join(root, rel, '.git', 'HEAD'), 'ref: refs/heads/main\n')
 }
 
-beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'izuna-r-')) })
+beforeEach(() => {
+  root = mkdtempSync(join(tmpdir(), 'izuna-r-'))
+})
 afterEach(() => rmSync(root, { recursive: true, force: true }))
 
 describe('探索', () => {
@@ -59,9 +61,12 @@ describe('探索', () => {
   })
 
   it('見出しと名前で並べる（呼ぶたびに順が変わらない）', async () => {
-    repo('b/z'); repo('b/a'); repo('a/m')
-    expect((await findRepos([root], 3)).map((r) => `${r.group.split('/').pop()}/${r.name}`))
-      .toEqual(['a/m', 'b/a', 'b/z'])
+    repo('b/z')
+    repo('b/a')
+    repo('a/m')
+    expect(
+      (await findRepos([root], 3)).map((r) => `${r.group.split('/').pop()}/${r.name}`)
+    ).toEqual(['a/m', 'b/a', 'b/z'])
   })
 
   it('複数の置き場をまたぐ', async () => {

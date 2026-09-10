@@ -95,11 +95,16 @@ describe('HTML の注入口', () => {
   const sinks = walk(join(ROOT, 'src')).filter((f) =>
     /dangerouslySetInnerHTML|\.innerHTML\s*=/.test(
       // コメントの中の言及は数えない。見たいのは実際に流している箇所
-      readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-    ))
+      readFileSync(f, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+    )
+  )
 
   it('**mermaid 以外に無い**（本文は木で描く。`shared/markdown.ts` の註）', () => {
-    expect(sinks.map((f) => f.replace(ROOT + '/', ''))).toEqual(['src/renderer/src/components/Mermaid.tsx'])
+    expect(sinks.map((f) => f.replace(ROOT + '/', ''))).toEqual([
+      'src/renderer/src/components/Mermaid.tsx'
+    ])
   })
 
   it('mermaid は消毒し、失敗した図を body に描かせない', () => {

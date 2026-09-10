@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -31,12 +31,21 @@ const load = async (): Promise<typeof import('../src/main/team')> =>
   await import('../src/main/team')
 
 const taskFile = (over: Record<string, unknown>): string => {
-  const d = { id: 'A-01', title: 'やる', status: 'doing', paths: [], depends_on: [],
-    updated: '2026-09-08T00:00:00Z', ...over }
+  const d = {
+    id: 'A-01',
+    title: 'やる',
+    status: 'doing',
+    paths: [],
+    depends_on: [],
+    updated: '2026-09-08T00:00:00Z',
+    ...over
+  }
   const yaml = Object.entries(d)
-    .map(([k, v]) => Array.isArray(v)
-      ? `${k}:\n${v.map((x) => `  - ${String(x)}`).join('\n') || '  []'}`
-      : `${k}: ${String(v)}`)
+    .map(([k, v]) =>
+      Array.isArray(v)
+        ? `${k}:\n${v.map((x) => `  - ${String(x)}`).join('\n') || '  []'}`
+        : `${k}: ${String(v)}`
+    )
     .join('\n')
   return `---\n${yaml}\n---\n\n本文\n`
 }
@@ -46,10 +55,14 @@ describe('盤面を読む', () => {
     const { ensureTeam, readBoard } = await load()
     const dir = await ensureTeam('t', '狙いはこう')
     writeFileSync(join(dir, 'tasks', '01-a.md'), taskFile({ id: 'A-01', paths: ['src/x.ts'] }))
-    writeFileSync(join(dir, 'summaries', 'A-01.md'),
-      '---\ntask: A-01\nby: exec-1\nat: 2026-09-08T01:00:00Z\noutcome: partial\n---\n\nやった\n')
-    writeFileSync(join(dir, 'decisions.md'),
-      '# 決めたこと\n\n## 2026-09-08T01:00:00Z · A-01 · brain\n\n先に読む側を通す\n')
+    writeFileSync(
+      join(dir, 'summaries', 'A-01.md'),
+      '---\ntask: A-01\nby: exec-1\nat: 2026-09-08T01:00:00Z\noutcome: partial\n---\n\nやった\n'
+    )
+    writeFileSync(
+      join(dir, 'decisions.md'),
+      '# 決めたこと\n\n## 2026-09-08T01:00:00Z · A-01 · brain\n\n先に読む側を通す\n'
+    )
 
     const board = await readBoard(dir)
     expect(board.tasks.map((t) => t.id)).toEqual(['A-01'])
@@ -78,10 +91,14 @@ describe('盤面を読む', () => {
     const { ensureTeam, readBoard } = await load()
     const dir = await ensureTeam('t')
     writeFileSync(join(dir, 'tasks', '01.md'), taskFile({ id: 'A-01', status: 'done' }))
-    writeFileSync(join(dir, 'tasks', '02.md'),
-      taskFile({ id: 'A-02', status: 'todo', depends_on: ['A-01'] }))
-    writeFileSync(join(dir, 'tasks', '03.md'),
-      taskFile({ id: 'A-03', status: 'todo', depends_on: ['A-02'] }))
+    writeFileSync(
+      join(dir, 'tasks', '02.md'),
+      taskFile({ id: 'A-02', status: 'todo', depends_on: ['A-01'] })
+    )
+    writeFileSync(
+      join(dir, 'tasks', '03.md'),
+      taskFile({ id: 'A-03', status: 'todo', depends_on: ['A-02'] })
+    )
 
     const board = await readBoard(dir)
     expect(board.ready.map((t) => t.id)).toEqual(['A-02'])
@@ -124,10 +141,22 @@ describe('log.md は Izuna が書く', () => {
     const { ensureTeam, appendLog } = await load()
     const dir = await ensureTeam('t')
     const before = readFileSync(join(dir, 'log.md'), 'utf8')
-    await appendLog(dir, { at: '2026-09-08T01:00:00Z', from: 'izuna', to: 'brain',
-      kind: 'start', target: '/w', note: '新規' })
-    await appendLog(dir, { at: '2026-09-08T02:00:00Z', from: 'izuna', to: 'brain',
-      kind: 'end', target: '/w', note: '終了' })
+    await appendLog(dir, {
+      at: '2026-09-08T01:00:00Z',
+      from: 'izuna',
+      to: 'brain',
+      kind: 'start',
+      target: '/w',
+      note: '新規'
+    })
+    await appendLog(dir, {
+      at: '2026-09-08T02:00:00Z',
+      from: 'izuna',
+      to: 'brain',
+      kind: 'end',
+      target: '/w',
+      note: '終了'
+    })
 
     const after = readFileSync(join(dir, 'log.md'), 'utf8')
     expect(after.startsWith(before)).toBe(true)
@@ -138,8 +167,14 @@ describe('log.md は Izuna が書く', () => {
   it('タブ区切りで書く（§16 の形）', async () => {
     const { ensureTeam, appendLog, readBoard } = await load()
     const dir = await ensureTeam('t')
-    await appendLog(dir, { at: '2026-09-08T01:00:00Z', from: 'izuna', to: 'brain',
-      kind: 'start', target: '/w', note: '新規' })
+    await appendLog(dir, {
+      at: '2026-09-08T01:00:00Z',
+      from: 'izuna',
+      to: 'brain',
+      kind: 'start',
+      target: '/w',
+      note: '新規'
+    })
     const board = await readBoard(dir)
     expect(board.log).toHaveLength(1)
     expect(board.log[0].kind).toBe('start')
@@ -148,8 +183,14 @@ describe('log.md は Izuna が書く', () => {
   it('フォルダが無ければ作ってから書く', async () => {
     const { appendLog } = await load()
     const dir = join(home, 'まだない')
-    await appendLog(dir, { at: '2026-09-08T01:00:00Z', from: 'izuna', to: 'x',
-      kind: 'start', target: '/w', note: '' })
+    await appendLog(dir, {
+      at: '2026-09-08T01:00:00Z',
+      from: 'izuna',
+      to: 'x',
+      kind: 'start',
+      target: '/w',
+      note: ''
+    })
     expect(existsSync(join(dir, 'log.md'))).toBe(true)
   })
 })

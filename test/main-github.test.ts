@@ -18,7 +18,10 @@ vi.mock('node:child_process', () => ({
   // **引数の数は可変で、コールバックは末尾。** 位置で受けると、
   // 呼ぶ側が options を省いた瞬間に壊れる（実際それで嵌った）
   execFile: (...all: unknown[]) => {
-    const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
+    const cb = all[all.length - 1] as (
+      e: Error | null,
+      r?: { stdout: string; stderr: string }
+    ) => void
     runs.push(all[1] as string[])
     const next = out.shift()
     if (next instanceof Error) cb(next)
@@ -34,8 +37,18 @@ beforeEach(() => {
 
 describe('読み取り', () => {
   it('Issue を読む', async () => {
-    out = [JSON.stringify([{ number: 12, title: 'パレットを直す', url: 'http://gh/12',
-      state: 'OPEN', labels: [{ name: 'bug' }], updatedAt: '' }])]
+    out = [
+      JSON.stringify([
+        {
+          number: 12,
+          title: 'パレットを直す',
+          url: 'http://gh/12',
+          state: 'OPEN',
+          labels: [{ name: 'bug' }],
+          updatedAt: ''
+        }
+      ])
+    ]
     const { listIssues } = await import('../src/main/forge/github')
     const [i] = await listIssues('/w')
     expect(i).toMatchObject({ number: 12, title: 'パレットを直す' })
@@ -44,8 +57,18 @@ describe('読み取り', () => {
   })
 
   it('PR を読む', async () => {
-    out = [JSON.stringify([{ number: 3, title: 'なおす', url: 'http://gh/3',
-      headRefName: 'feat', baseRefName: 'main', state: 'OPEN' }])]
+    out = [
+      JSON.stringify([
+        {
+          number: 3,
+          title: 'なおす',
+          url: 'http://gh/3',
+          headRefName: 'feat',
+          baseRefName: 'main',
+          state: 'OPEN'
+        }
+      ])
+    ]
     const { listPulls } = await import('../src/main/forge/github')
     const [p] = await listPulls('/w')
     expect(p).toMatchObject({ number: 3, headRefName: 'feat', state: 'OPEN' })
@@ -88,7 +111,9 @@ describe('PR を作る', () => {
     const { createPull } = await import('../src/main/forge/github')
     const url = await createPull('/w', { title: 't', head: 'feat', base: 'main', body: '本文' })
     expect(url).toContain('/pull/9')
-    expect(runs[0]).toEqual(expect.arrayContaining(['pr', 'create', '--title', 't', '--head', 'feat']))
+    expect(runs[0]).toEqual(
+      expect.arrayContaining(['pr', 'create', '--title', 't', '--head', 'feat'])
+    )
     expect(runs[0]).toContain('main')
   })
 

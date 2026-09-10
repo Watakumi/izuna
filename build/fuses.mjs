@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- 型の無い .js/.mjs */
 import { flipFuses, FuseVersion, FuseV1Options } from '@electron/fuses'
 import { join } from 'node:path'
 

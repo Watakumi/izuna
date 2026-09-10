@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
-import {
-  applyCompletion,
-  filterCommands,
-  originOf,
-  parseSlashInput
-} from '../src/shared/palette'
+import { applyCompletion, filterCommands, originOf, parseSlashInput } from '../src/shared/palette'
 
 /**
  * `/` パレットの絞り込みに対する門。
@@ -115,7 +110,10 @@ describe('入力欄の解釈', () => {
   })
 
   it('2 行目以降は引数に含めない', () => {
-    expect(parseSlashInput('/review-pr 12\nあと説明もお願い')).toEqual({ name: 'review-pr', args: '12' })
+    expect(parseSlashInput('/review-pr 12\nあと説明もお願い')).toEqual({
+      name: 'review-pr',
+      args: '12'
+    })
   })
 
   it('確定すると引数を打てる形になる', () => {
@@ -134,7 +132,9 @@ describe('後ろに下げるもの', () => {
 
   it('空の問い合わせで内部用と廃止済みが先頭に来ない', () => {
     // 全員同点だと名前順になり、`_` 始まりが最初に来てしまう
-    const top = filterCommands('', SET2).slice(0, 3).map((s) => s.command.name)
+    const top = filterCommands('', SET2)
+      .slice(0, 3)
+      .map((s) => s.command.name)
     expect(top).not.toContain('__remote-workflow')
     expect(top).not.toContain('agents')
   })
@@ -157,7 +157,8 @@ describe('後ろに下げるもの', () => {
 describe('出どころ', () => {
   it('名前空間つきを見分ける', () => {
     expect(originOf(cmd('everything-claude-code:code-review'))).toEqual({
-      kind: 'namespaced', namespace: 'everything-claude-code'
+      kind: 'namespaced',
+      namespace: 'everything-claude-code'
     })
     expect(originOf(cmd('commit'))).toEqual({ kind: 'plain', namespace: null })
   })

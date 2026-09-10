@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { canDraft, draftPrompt, type CommitContext } from '../src/shared/commit'
 
 const ctx = (over: Partial<CommitContext> = {}): CommitContext => ({
-  changed: [' M src/a.ts', '?? src/b.ts'], branch: 'main', recent: [], ...over
+  changed: [' M src/a.ts', '?? src/b.ts'],
+  branch: 'main',
+  recent: [],
+  ...over
 })
 
 describe('頼むかどうか', () => {

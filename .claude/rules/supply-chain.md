@@ -70,6 +70,8 @@ Release に付ける）。action は全部コミットで固定。自宅の Forg
 ### やっていないこと
 
 - （`register.ts` の駆動部と renderer の単体検査は §28 でやった）
-- lint。エラー 28、警告 1590 で `verify` に入っていない。prettier を守るか外すかは書き手が決めること
+- ~~lint。エラー 28、警告 1590 で `verify` に入っていない~~ → **2026-09-10 に入れた。** エラー 35 件を直し（`ref` という名前の prop、
+  effect の中の同期 setState、描画中の `Date.now`、コンポーネント以外の export、制御文字の正規表現、未使用の import）、
+  prettier を全体に当てて警告 1,831 件を 0 にした。`pnpm lint` は `--max-warnings 0`。markdown と `design/` は prettier の対象外
 - 握りつぶした例外 57 か所の仕分け
 - 使われていない 9 つの口（`listWakeups` ほか。起床の予約は UI がまるごと無い）

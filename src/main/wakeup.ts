@@ -65,7 +65,12 @@ export class Wakeups {
     return load()
   }
 
-  async add(input: { sessionId: string; cwd: string; prompt: string; fireAt: number }): Promise<Wakeup> {
+  async add(input: {
+    sessionId: string
+    cwd: string
+    prompt: string
+    fireAt: number
+  }): Promise<Wakeup> {
     const w: Wakeup = { ...input, id: randomUUID(), state: 'pending', createdAt: Date.now() }
     this.#known.add(w.id)
     const all = [...(await load()), w]
@@ -109,7 +114,12 @@ export class Wakeups {
     // **上限を切る。** 何日も先の予約に長いタイマーを張ると、
     // その間に足された近いものを取り逃がす
     const wait = soonest ? Math.min(soonest.fireAt - now, 60_000) : 0
-    this.#timer = setTimeout(() => { void this.#tick() }, Math.max(wait, 250))
+    this.#timer = setTimeout(
+      () => {
+        void this.#tick()
+      },
+      Math.max(wait, 250)
+    )
   }
 
   async #tick(): Promise<void> {
@@ -118,7 +128,11 @@ export class Wakeups {
     const { fire, reject } = split(due(all, now), this.#known)
     if (fire.length > 0 || reject.length > 0) {
       const state = (w: Wakeup): Wakeup['state'] =>
-        fire.some((r) => r.id === w.id) ? 'fired' : reject.some((r) => r.id === w.id) ? 'rejected' : w.state
+        fire.some((r) => r.id === w.id)
+          ? 'fired'
+          : reject.some((r) => r.id === w.id)
+            ? 'rejected'
+            : w.state
       await save(all.map((w) => ({ ...w, state: state(w) })))
       for (const w of fire) this.#fire(w)
     }

@@ -21,6 +21,8 @@ export function makeCache<T>(): Cache<T> {
   const store = new Map<string, T>()
   return {
     get: (key) => store.get(key) ?? null,
-    set: (key, value) => { store.set(key, value) }
+    set: (key, value) => {
+      store.set(key, value)
+    }
   }
 }

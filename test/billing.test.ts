@@ -4,7 +4,12 @@ import { BILLING_KEYS, withoutBillingKeys } from '../src/shared/billing'
 /** 課金の経路を黙って変えない（§14、docs/NIMBALYST.md §3） */
 describe('鍵を落とす', () => {
   it('ANTHROPIC の鍵を落とし、落としたものを言う', () => {
-    const r = withoutBillingKeys({ PATH: '/x', ANTHROPIC_API_KEY: 'sk-ant-1', ANTHROPIC_AUTH_TOKEN: 't', HOME: '/h' })
+    const r = withoutBillingKeys({
+      PATH: '/x',
+      ANTHROPIC_API_KEY: 'sk-ant-1',
+      ANTHROPIC_AUTH_TOKEN: 't',
+      HOME: '/h'
+    })
     expect(r.env).toEqual({ PATH: '/x', HOME: '/h' })
     expect(r.removed).toEqual(['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'])
   })

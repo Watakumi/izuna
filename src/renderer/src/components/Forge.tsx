@@ -39,7 +39,12 @@ interface Snapshot {
 }
 const remembered = makeCache<Snapshot>()
 
-export function Forge({ cwd, sessionId, onDone, onPreview }: {
+export function Forge({
+  cwd,
+  sessionId,
+  onDone,
+  onPreview
+}: {
   cwd: string
   /** レビューを流し込む先。会話が無ければ頼めない */
   sessionId: string | null
@@ -130,19 +135,36 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
       nextSandboxHeads = sbHeads
       setSandboxHeads(sbHeads)
       if (up) {
-        nextLeaks = upstreamLeaks({ upstreamHeads: upHeads, sandboxHeads: sbHeads, allowed: [upstreamBase, br] })
+        nextLeaks = upstreamLeaks({
+          upstreamHeads: upHeads,
+          sandboxHeads: sbHeads,
+          allowed: [upstreamBase, br]
+        })
         setLeaks(nextLeaks)
       }
     }
 
     remembered.set(cwd, {
-      remotes: rs, branch: br, gh: status, pushed: nextPushed, pulls: nextPulls, runs: nextRuns,
-      issues: nextIssues, ghPulls: nextGhPulls, commits: nextCommits,
-      bases: { sandbox: sandboxBase, upstream: upstreamBase }, leaks: nextLeaks, sandboxHeads: nextSandboxHeads
+      remotes: rs,
+      branch: br,
+      gh: status,
+      pushed: nextPushed,
+      pulls: nextPulls,
+      runs: nextRuns,
+      issues: nextIssues,
+      ghPulls: nextGhPulls,
+      commits: nextCommits,
+      bases: { sandbox: sandboxBase, upstream: upstreamBase },
+      leaks: nextLeaks,
+      sandboxHeads: nextSandboxHeads
     })
   }, [cwd])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    // 取ってきてから setState する（await の後）。同期の setState ではない
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  }, [load])
 
   const [openPull, setOpenPull] = useState<number | null>(null)
   // PullDiff は load の同一性で読み直す。番号ごとに 1 つ作って持つ
@@ -178,10 +200,9 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
    * 二段であることは**あいだの矢印が既に言っている**ので重複していたし、
    * 見るたびに同じ文字が出るだけで、何も分からなかった。
    */
-  const upstreamNote = [
-    ghPulls === null ? null : `PR ${ghPulls.length} 件`,
-    bases.upstream
-  ].filter(Boolean).join(' · ')
+  const upstreamNote = [ghPulls === null ? null : `PR ${ghPulls.length} 件`, bases.upstream]
+    .filter(Boolean)
+    .join(' · ')
   const stage = stageOf({ remotes: remotes ?? [], pushedToSandbox: pushed })
 
   // 読み終わるまでは**何も断定しない**
@@ -195,21 +216,31 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
-
       {/* Sandbox */}
-      <Head dot={sandbox ? C.teal : C.faint} title="Sandbox"
+      <Head
+        dot={sandbox ? C.teal : C.faint}
+        title="Sandbox"
         sub={sandbox?.host ?? '未設定'}
-        note={pulls === null ? '' : `PR ${pulls.length} 件`} />
-      <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
+        note={pulls === null ? '' : `PR ${pulls.length} 件`}
+      />
+      <div style={{ padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.md }}>
         {!sandbox ? (
           <>
-            <Faint>Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが Upstream に漏れなくなります</Faint>
-            <Button disabled={busy !== null} kind="primary"
-              onClick={() => void act('remote', async () => {
-                const name = upstream?.repo ?? cwd.split('/').pop() ?? 'repo'
-                const repo = await window.izuna.forgeEnsureRepo(name)
-                return window.izuna.ensureSandboxRemote(cwd, repo.owner, repo.name)
-              })}>
+            <Faint>
+              Forgejo の remote がありません。ここを sandbox にすると、作業ブランチが Upstream
+              に漏れなくなります
+            </Faint>
+            <Button
+              disabled={busy !== null}
+              kind="primary"
+              onClick={() =>
+                void act('remote', async () => {
+                  const name = upstream?.repo ?? cwd.split('/').pop() ?? 'repo'
+                  const repo = await window.izuna.forgeEnsureRepo(name)
+                  return window.izuna.ensureSandboxRemote(cwd, repo.owner, repo.name)
+                })
+              }
+            >
               {busy === 'remote' ? '用意しています…' : 'sandbox を用意する'}
             </Button>
           </>
@@ -218,8 +249,13 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
             {!pushed && branch && (
               <>
                 <Faint>{branch} はまだ sandbox にありません</Faint>
-                <Button disabled={busy !== null} kind="primary"
-                  onClick={() => void act('push', () => window.izuna.push(cwd, sandbox.name, branch))}>
+                <Button
+                  disabled={busy !== null}
+                  kind="primary"
+                  onClick={() =>
+                    void act('push', () => window.izuna.push(cwd, sandbox.name, branch))
+                  }
+                >
                   {busy === 'push' ? 'push しています…' : `${sandbox.name} に push`}
                 </Button>
               </>
@@ -228,8 +264,10 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
             {(pulls ?? []).map((p) => (
               <Card key={p.number}>
                 {/* 押すと差分。柱 2 の「sandbox でまとめて見る」の見る側（docs/NIMBALYST.md §7 の 3） */}
-                <div onClick={() => setOpenPull(openPull === p.number ? null : p.number)}
-                  style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}>
+                <div
+                  onClick={() => setOpenPull(openPull === p.number ? null : p.number)}
+                  style={{ display: 'flex', alignItems: 'baseline', gap: 8, cursor: 'pointer' }}
+                >
                   <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>!{p.number}</span>
                   <span style={{ fontSize: F.body, ...ellipsis }}>{p.title}</span>
                   <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
@@ -237,11 +275,17 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
-                  <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{p.head} → {p.base}</span>
-                  <CiBadge runs={runs} ref={p.head} />
+                  <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>
+                    {p.head} → {p.base}
+                  </span>
+                  <CiBadge runs={runs} branch={p.head} />
                   <div style={{ flexGrow: 1 }} />
                   {/* 頁を中で見る。承認の判断を Izuna から出ずに済ませる（§32） */}
-                  {onPreview && <Button size="sm" onClick={() => onPreview(p.htmlUrl)}>頁</Button>}
+                  {onPreview && (
+                    <Button size="sm" onClick={() => onPreview(p.htmlUrl)}>
+                      頁
+                    </Button>
+                  )}
                 </div>
                 {openPull === p.number && sandbox.owner && sandbox.repo && (
                   <div style={{ marginTop: S.md }}>
@@ -254,13 +298,29 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
             {/* 7 手目: 作業ブランチは sandbox で捨てる */}
             {workBranches.length > 0 && (
               <>
-                <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>作業ブランチ</span>
+                <span
+                  style={{
+                    fontSize: F.small,
+                    letterSpacing: '0.08em',
+                    color: C.dim2,
+                    fontWeight: 600
+                  }}
+                >
+                  作業ブランチ
+                </span>
                 {workBranches.map((b) => (
                   <div key={b} style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
                     <span style={{ font: `${F.small}px ${MONO}`, ...ellipsis }}>{b}</span>
                     <div style={{ flexGrow: 1 }} />
-                    <Button size="sm" disabled={busy !== null}
-                      onClick={() => void act(`del:${b}`, () => window.izuna.deleteRemoteBranch(cwd, sandbox.name, b))}>
+                    <Button
+                      size="sm"
+                      disabled={busy !== null}
+                      onClick={() =>
+                        void act(`del:${b}`, () =>
+                          window.izuna.deleteRemoteBranch(cwd, sandbox.name, b)
+                        )
+                      }
+                    >
                       {busy === `del:${b}` ? '消しています…' : '消す'}
                     </Button>
                   </div>
@@ -269,15 +329,21 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
             )}
 
             {pulls?.length === 0 && pushed && branch && (
-              <Button disabled={busy !== null} kind="primary"
-                onClick={() => void act('pr', async () => {
-                  const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
-                    title: branch, head: branch,
-                    base: bases.sandbox ?? bases.upstream ?? 'main',
-                    body: (commits ?? []).map((c) => `- ${c}`).join('\n')
+              <Button
+                disabled={busy !== null}
+                kind="primary"
+                onClick={() =>
+                  void act('pr', async () => {
+                    const pr = await window.izuna.forgeCreatePull(sandbox.owner!, sandbox.repo!, {
+                      title: branch,
+                      head: branch,
+                      base: bases.sandbox ?? bases.upstream ?? 'main',
+                      body: (commits ?? []).map((c) => `- ${c}`).join('\n')
+                    })
+                    return `sandbox に PR !${pr.number} を作りました`
                   })
-                  return `sandbox に PR !${pr.number} を作りました`
-                })}>
+                }
+              >
                 {busy === 'pr' ? '作っています…' : 'sandbox で PR を作る'}
               </Button>
             )}
@@ -286,21 +352,40 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
       </div>
 
       {/* 受け渡し */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        padding: '12px 0', background: C.panel, borderTop: `1px solid ${C.line}`,
-        borderBottom: `1px solid ${C.line}` }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-          stroke={stage === 'readyForUpstream' ? C.amber : C.faint} strokeWidth="1.8" strokeLinecap="round">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          padding: '12px 0',
+          background: C.panel,
+          borderTop: `1px solid ${C.line}`,
+          borderBottom: `1px solid ${C.line}`
+        }}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={stage === 'readyForUpstream' ? C.amber : C.faint}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        >
           <path d="M12 5v14M6 13l6 6 6-6" />
         </svg>
         <span style={{ fontSize: F.micro, color: C.faint }}>承認したものだけ</span>
       </div>
 
       {/* Upstream */}
-      <Head dot={gh?.ok ? C.teal : C.red} title="Upstream"
+      <Head
+        dot={gh?.ok ? C.teal : C.red}
+        title="Upstream"
         sub={gh?.ok ? gh.detail : 'gh が使えません'}
-        note={upstreamNote} />
-      <div style={{ padding: S.lg, display: "flex", flexDirection: "column", gap: S.md }}>
+        note={upstreamNote}
+      />
+      <div style={{ padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.md }}>
         {!gh?.ok && <Faint>{gh?.detail ?? '読んでいます…'}</Faint>}
         {leaks && leaks.length > 0 && (
           <span style={{ fontSize: F.small, color: C.red, lineHeight: 1.6 }}>
@@ -308,7 +393,9 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
           </span>
         )}
         {leaks && leaks.length === 0 && sandbox && (
-          <span style={{ fontSize: F.micro, color: C.faint }}>作業ブランチは Upstream に出ていません</span>
+          <span style={{ fontSize: F.micro, color: C.faint }}>
+            作業ブランチは Upstream に出ていません
+          </span>
         )}
         {gh?.ok && branch && (
           <Card tone="attention">
@@ -317,42 +404,60 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
             </span>
             <span style={{ fontSize: F.small, color: C.dim2 }}>
               {/* 読み終わるまで「差分がありません」と言わない */}
-              {commits === null ? '…' : commits.length ? `${commits.length} コミット` : '差分がありません'}
+              {commits === null
+                ? '…'
+                : commits.length
+                  ? `${commits.length} コミット`
+                  : '差分がありません'}
             </span>
-            <Button disabled={busy !== null || stage !== 'readyForUpstream'}
+            <Button
+              disabled={busy !== null || stage !== 'readyForUpstream'}
               kind="primary"
-              onClick={() => void act('gh', async () => {
-                const url = await window.izuna.ghCreatePull(cwd, {
-                  title: branch, head: branch,
-                  ...(bases.upstream ? { base: bases.upstream } : {}),
-                  body: (commits ?? []).map((c) => `- ${c}`).join('\n') || '（本文なし）'
+              onClick={() =>
+                void act('gh', async () => {
+                  const url = await window.izuna.ghCreatePull(cwd, {
+                    title: branch,
+                    head: branch,
+                    ...(bases.upstream ? { base: bases.upstream } : {}),
+                    body: (commits ?? []).map((c) => `- ${c}`).join('\n') || '（本文なし）'
+                  })
+                  onDone()
+                  return url
                 })
-                onDone()
-                return url
-              })}>
+              }
+            >
               {busy === 'gh' ? '作っています…' : 'Upstream に PR を作る'}
             </Button>
             {/* コミット文も会話に頼む。口は前からあったが、釦が無かった（docs/NIMBALYST.md §7 の 2） */}
-            <Button disabled={busy !== null || sessionId === null}
-              onClick={() => void act('commit', async () => {
-                await window.izuna.draftCommitMessage(sessionId!)
-                onDone()
-                return 'いまの会話にコミット文を頼みました'
-              })}>
+            <Button
+              disabled={busy !== null || sessionId === null}
+              onClick={() =>
+                void act('commit', async () => {
+                  await window.izuna.draftCommitMessage(sessionId!)
+                  onDone()
+                  return 'いまの会話にコミット文を頼みました'
+                })
+              }
+            >
               {busy === 'commit' ? '頼んでいます…' : 'コミット文を頼む'}
             </Button>
             {/* **PR を作る前でもレビューは頼める。** 出す前に読むほうが安い */}
-            <Button disabled={busy !== null || !bases.upstream || sessionId === null}
-              onClick={() => void act('review', async () => {
-                await window.izuna.requestReview(sessionId!, { base: bases.upstream! })
-                onDone()
-                return 'いまの会話にレビューを頼みました'
-              })}>
+            <Button
+              disabled={busy !== null || !bases.upstream || sessionId === null}
+              onClick={() =>
+                void act('review', async () => {
+                  await window.izuna.requestReview(sessionId!, { base: bases.upstream! })
+                  onDone()
+                  return 'いまの会話にレビューを頼みました'
+                })
+              }
+            >
               {busy === 'review' ? '頼んでいます…' : '差分のレビューを頼む'}
             </Button>
             {stage !== 'readyForUpstream' && (
               <span style={{ fontSize: F.micro, color: C.faint, lineHeight: 1.6 }}>
-                先に sandbox で見てください（{stage === 'needsSandbox' ? 'sandbox が未設定' : 'push が未了'}）
+                先に sandbox で見てください（
+                {stage === 'needsSandbox' ? 'sandbox が未設定' : 'push が未了'}）
               </span>
             )}
           </Card>
@@ -360,14 +465,22 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
 
         {gh?.ok && ghPulls && ghPulls.length > 0 && (
           <>
-            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>PR</span>
+            <span
+              style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+            >
+              PR
+            </span>
             {ghPulls.slice(0, 4).map((p) => (
               <Card key={p.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>#{p.number}</span>
                   <span style={{ fontSize: F.body, ...ellipsis }}>{p.title}</span>
                   <div style={{ flexGrow: 1 }} />
-                  {onPreview && <Button size="sm" onClick={() => onPreview(p.url)}>頁</Button>}
+                  {onPreview && (
+                    <Button size="sm" onClick={() => onPreview(p.url)}>
+                      頁
+                    </Button>
+                  )}
                 </div>
               </Card>
             ))}
@@ -376,7 +489,11 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
 
         {gh?.ok && issues && issues.length > 0 && (
           <>
-            <span style={{ fontSize: F.small, letterSpacing: "0.08em", color: C.dim2, fontWeight: 600 }}>Issue</span>
+            <span
+              style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+            >
+              Issue
+            </span>
             {issues.slice(0, 4).map((i) => (
               <Card key={i.number}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -398,10 +515,29 @@ export function Forge({ cwd, sessionId, onDone, onPreview }: {
   )
 }
 
-function Head({ dot, title, sub, note }: { dot: string; title: string; sub: string; note: string }): React.JSX.Element {
+function Head({
+  dot,
+  title,
+  sub,
+  note
+}: {
+  dot: string
+  title: string
+  sub: string
+  note: string
+}): React.JSX.Element {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
-      background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 16px',
+        background: C.panel,
+        borderBottom: `1px solid ${C.line}`,
+        flexShrink: 0
+      }}
+    >
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       <span style={{ fontWeight: 600, fontSize: F.body }}>{title}</span>
       <span style={{ font: `${F.micro}px ${MONO}`, color: C.dim2, ...ellipsis }}>{sub}</span>
@@ -410,5 +546,3 @@ function Head({ dot, title, sub, note }: { dot: string; title: string; sub: stri
     </div>
   )
 }
-
-

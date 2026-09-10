@@ -52,7 +52,8 @@ async function callText(rootUrl: string, path: string): Promise<string> {
 
 async function request(rootUrl: string, path: string, init?: RequestInit): Promise<Response> {
   const token = await loadToken()
-  if (!token) throw new ForgeError('Forgejo のトークンが未設定です。「Forgejo」画面から発行してください', 0)
+  if (!token)
+    throw new ForgeError('Forgejo のトークンが未設定です。「Forgejo」画面から発行してください', 0)
   // 平文で LAN を通る経路には載せない（§26）
   if (!tokenMayTravel(rootUrl)) throw new ForgeError(transportRefusal(rootUrl), 0)
 
@@ -72,10 +73,11 @@ async function request(rootUrl: string, path: string, init?: RequestInit): Promi
     // 403 tokenRequiresScopes は実際に踏んだ。**足りない権限を名指しする** ——
     // 「スコープが足りません」だけでは、何をどう直すのか分からない
     const missing = /required scope\(s\): \[([^\]]+)\]/.exec(body)?.[1]
-    const hint = res.status === 403 && /scope/i.test(body)
-      ? `トークンに ${missing ?? '必要な権限'} がありません。`
-        + '「Forgejo」画面の「トークンを発行」で作り直してください（古いものは差し替わります）'
-      : body.slice(0, 300) || res.statusText
+    const hint =
+      res.status === 403 && /scope/i.test(body)
+        ? `トークンに ${missing ?? '必要な権限'} がありません。` +
+          '「Forgejo」画面の「トークンを発行」で作り直してください（古いものは差し替わります）'
+        : body.slice(0, 300) || res.statusText
     throw new ForgeError(`Forgejo が ${res.status} を返しました: ${hint}`, res.status)
   }
   return res
@@ -139,9 +141,15 @@ const toPull = (p: RawPull): ForgejoPull => ({
  * **コミットが 1 つも無ければ PR は存在しえない。** 404 は異常ではなく
  * 「まだ無い」なので、空で返す。**それ以外の失敗は握りつぶさない。**
  */
-export async function listPulls(rootUrl: string, owner: string, repo: string): Promise<ForgejoPull[]> {
+export async function listPulls(
+  rootUrl: string,
+  owner: string,
+  repo: string
+): Promise<ForgejoPull[]> {
   try {
-    return (await call<RawPull[]>(rootUrl, `repos/${owner}/${repo}/pulls?state=open&limit=50`)).map(toPull)
+    return (await call<RawPull[]>(rootUrl, `repos/${owner}/${repo}/pulls?state=open&limit=50`)).map(
+      toPull
+    )
   } catch (e) {
     if (e instanceof ForgeError && e.status === 404) return []
     throw e
@@ -154,10 +162,12 @@ export async function createPull(
   repo: string,
   input: { title: string; head: string; base: string; body?: string }
 ): Promise<ForgejoPull> {
-  return toPull(await call<RawPull>(rootUrl, `repos/${owner}/${repo}/pulls`, {
-    method: 'POST',
-    body: JSON.stringify(input)
-  }))
+  return toPull(
+    await call<RawPull>(rootUrl, `repos/${owner}/${repo}/pulls`, {
+      method: 'POST',
+      body: JSON.stringify(input)
+    })
+  )
 }
 
 /** 接続確認。トークンが誰のものかを返す */
@@ -183,11 +193,15 @@ export async function ensureRepo(rootUrl: string, name: string): Promise<Forgejo
     })
   })
   return {
-    fullName: raw.full_name, owner: raw.owner.login, name: raw.name, private: raw.private,
-    defaultBranch: raw.default_branch, htmlUrl: raw.html_url, empty: raw.empty
+    fullName: raw.full_name,
+    owner: raw.owner.login,
+    name: raw.name,
+    private: raw.private,
+    defaultBranch: raw.default_branch,
+    htmlUrl: raw.html_url,
+    empty: raw.empty
   }
 }
-
 
 export interface ForgejoToken {
   id: number
@@ -207,12 +221,21 @@ export interface ForgejoToken {
  * だから Izuna は**見せるところまで**をやり、消すのは Forgejo の画面に任せる。
  */
 export async function listTokens(rootUrl: string, user: string): Promise<ForgejoToken[]> {
-  const raw = await call<Array<{ id: number; name: string; scopes: string[] | null; token_last_eight: string; created_at: string }>>(
-    rootUrl, `users/${encodeURIComponent(user)}/tokens`
-  )
+  const raw = await call<
+    Array<{
+      id: number
+      name: string
+      scopes: string[] | null
+      token_last_eight: string
+      created_at: string
+    }>
+  >(rootUrl, `users/${encodeURIComponent(user)}/tokens`)
   return raw.map((t) => ({
-    id: t.id, name: t.name, scopes: t.scopes ?? [],
-    last8: t.token_last_eight, createdAt: t.created_at
+    id: t.id,
+    name: t.name,
+    scopes: t.scopes ?? [],
+    last8: t.token_last_eight,
+    createdAt: t.created_at
   }))
 }
 
@@ -220,8 +243,16 @@ export async function listTokens(rootUrl: string, user: string): Promise<Forgejo
  * PR の差分（unified diff の文字列）。読むのは `shared/patch.ts`。
  * `GET /repos/{owner}/{repo}/pulls/{index}.diff`（2026-09-09 に `pnpm e2e` で実機確認。§30）
  */
-export async function pullDiff(rootUrl: string, owner: string, repo: string, index: number): Promise<string> {
-  return callText(rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}.diff`)
+export async function pullDiff(
+  rootUrl: string,
+  owner: string,
+  repo: string,
+  index: number
+): Promise<string> {
+  return callText(
+    rootUrl,
+    `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}.diff`
+  )
 }
 
 /** Actions の 1 回の実行。形は `shared/ci.ts` が読む */
@@ -265,13 +296,17 @@ type RawRun = {
  * それ以外の失敗は握りつぶさない（`listPulls` と同じ）。
  */
 export async function listRuns(
-  rootUrl: string, owner: string, repo: string, ref?: string
+  rootUrl: string,
+  owner: string,
+  repo: string,
+  ref?: string
 ): Promise<ForgejoRun[]> {
   const q = new URLSearchParams({ limit: '20' })
   if (ref) q.set('ref', ref.startsWith('refs/') ? ref : `refs/heads/${ref}`)
   try {
     const raw = await call<RawRun[] | { workflow_runs?: RawRun[] }>(
-      rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs?${q}`
+      rootUrl,
+      `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs?${q}`
     )
     const list = Array.isArray(raw) ? raw : (raw.workflow_runs ?? [])
     return list.map((r) => ({

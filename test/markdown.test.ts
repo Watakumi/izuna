@@ -10,7 +10,15 @@ import { parseInline, parseMarkdown, type Inline, type Node } from '../src/share
 
 /** 木を読みやすい文字列にして比べる（構造だけ見たいとき用） */
 const flat = (ns: Inline[]): string =>
-  ns.map((n) => (n.kind === 'text' ? n.text : n.kind === 'code' ? `<${n.text}>` : `${n.kind}(${flat(n.children)})`)).join('')
+  ns
+    .map((n) =>
+      n.kind === 'text'
+        ? n.text
+        : n.kind === 'code'
+          ? `<${n.text}>`
+          : `${n.kind}(${flat(n.children)})`
+    )
+    .join('')
 
 describe('行内', () => {
   it('強調を取る', () => {

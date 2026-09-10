@@ -2,7 +2,11 @@ import { open, readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import {
-  persistedOutputPath, replay, replayTask, summarize, withPersistedOutput,
+  persistedOutputPath,
+  replay,
+  replayTask,
+  summarize,
+  withPersistedOutput,
   type SessionSummary
 } from '../shared/sessions'
 import type { TaskRun, Transcript } from '../shared/transcript'
@@ -65,7 +69,9 @@ export async function scanSessions(): Promise<SessionSummary[]> {
   const root = claudeProjectsDir()
   let dirs: string[]
   try {
-    dirs = (await readdir(root, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name)
+    dirs = (await readdir(root, { withFileTypes: true }))
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
   } catch {
     return [] // まだ一度も使っていない環境。空は異常ではない
   }
@@ -84,7 +90,12 @@ export async function scanSessions(): Promise<SessionSummary[]> {
       try {
         const st = await stat(path)
         if (!st.isFile() || st.size === 0) continue
-        found.push({ path, id: n.slice(0, -'.jsonl'.length), updatedAt: st.mtimeMs, bytes: st.size })
+        found.push({
+          path,
+          id: n.slice(0, -'.jsonl'.length),
+          updatedAt: st.mtimeMs,
+          bytes: st.size
+        })
       } catch {
         continue
       }
@@ -171,7 +182,6 @@ export async function replaySession(id: string): Promise<Transcript> {
   return { ...t, tasks: [...t.tasks, ...tasks] }
 }
 
-
 /** 記録の在り処と中身。置き場所は復元でサイドカーを引くのに要る */
 async function locate(id: string): Promise<{ lines: string[]; dir: string }> {
   const root = claudeProjectsDir()
@@ -179,7 +189,9 @@ async function locate(id: string): Promise<{ lines: string[]; dir: string }> {
   // 下の「見つかりません」に落として、探した id を見せる
   let names: string[] = []
   try {
-    names = (await readdir(root, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name)
+    names = (await readdir(root, { withFileTypes: true }))
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
   } catch {
     names = []
   }

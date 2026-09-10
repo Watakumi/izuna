@@ -12,7 +12,10 @@
  */
 export const BILLING_KEYS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'] as const
 
-export function withoutBillingKeys(env: NodeJS.ProcessEnv): { env: NodeJS.ProcessEnv; removed: string[] } {
+export function withoutBillingKeys(env: NodeJS.ProcessEnv): {
+  env: NodeJS.ProcessEnv
+  removed: string[]
+} {
   const out: NodeJS.ProcessEnv = {}
   const removed: string[] = []
   for (const [k, v] of Object.entries(env)) {

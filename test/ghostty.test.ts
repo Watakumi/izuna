@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
-  atContrast, contrast, isDark, luminance, mergeColors, mix, normalizeHex,
-  monoFrom, parseGhosttyConfig, readableOn, readingFrom, skinFrom, type GhosttyColors
+  atContrast,
+  contrast,
+  isDark,
+  luminance,
+  mergeColors,
+  mix,
+  normalizeHex,
+  monoFrom,
+  parseGhosttyConfig,
+  readableOn,
+  readingFrom,
+  skinFrom,
+  type GhosttyColors
 } from '../src/shared/ghostty'
 
 /**
@@ -86,7 +97,10 @@ describe('読む面の組み', () => {
 
   it('adjust-cell-height を行間に足す', () => {
     // 22% 増し → 1.6 + 0.22
-    expect(readingFrom(parseGhosttyConfig('adjust-cell-height = 22%')).lineHeight).toBeCloseTo(1.82, 5)
+    expect(readingFrom(parseGhosttyConfig('adjust-cell-height = 22%')).lineHeight).toBeCloseTo(
+      1.82,
+      5
+    )
   })
 
   it('指定が無くても読める既定に落ちる', () => {
@@ -99,7 +113,11 @@ describe('読む面の組み', () => {
 describe('重ね順', () => {
   it('設定ファイル本体がテーマを上書きする（Ghostty と同じ順）', () => {
     const theme = parseGhosttyConfig(REAL_THEME).colors
-    const over: GhosttyColors = { background: '#000000', foreground: null, palette: Array(16).fill(null) }
+    const over: GhosttyColors = {
+      background: '#000000',
+      foreground: null,
+      palette: Array(16).fill(null)
+    }
     const merged = mergeColors(theme, over)
     expect(merged.background).toBe('#000000')
     expect(merged.foreground).toBe('#cfcecc')
@@ -129,7 +147,10 @@ describe('色の計算', () => {
 })
 
 describe('トークンへの割り当て', () => {
-  const colors = mergeColors(parseGhosttyConfig(REAL_THEME).colors, parseGhosttyConfig(REAL_CONFIG).colors)
+  const colors = mergeColors(
+    parseGhosttyConfig(REAL_THEME).colors,
+    parseGhosttyConfig(REAL_CONFIG).colors
+  )
   const skin = skinFrom(colors)!
 
   it('地と文字がそのまま入る', () => {
@@ -193,14 +214,22 @@ describe('トークンへの割り当て', () => {
   })
 
   it('明るいテーマでも段階の向きが保たれる（式を分けていない）', () => {
-    const light = skinFrom({ background: '#fdf6e3', foreground: '#3b3b32', palette: Array(16).fill(null) })!
+    const light = skinFrom({
+      background: '#fdf6e3',
+      foreground: '#3b3b32',
+      palette: Array(16).fill(null)
+    })!
     expect(luminance(light.ink)).toBeLessThan(luminance(light.dim))
     expect(luminance(light.dim)).toBeLessThan(luminance(light.bg))
   })
 
   it('低コントラストの文字色を選んでいたら、それより濃くしない', () => {
     // 地に近い文字色。目標 8.0 には届かないので、文字色そのままで止める
-    const s2 = skinFrom({ background: '#191919', foreground: '#6a6a6a', palette: Array(16).fill(null) })!
+    const s2 = skinFrom({
+      background: '#191919',
+      foreground: '#6a6a6a',
+      palette: Array(16).fill(null)
+    })!
     expect(s2.dim).toBe('#6a6a6a')
     expect(atContrast('#191919', '#191919', '#6a6a6a', 8)).toBe('#6a6a6a')
   })
@@ -210,7 +239,11 @@ describe('トークンへの割り当て', () => {
   })
 
   it('palette が空でも落ちない', () => {
-    const s = skinFrom({ background: '#191919', foreground: '#cfcecc', palette: Array(16).fill(null) })
+    const s = skinFrom({
+      background: '#191919',
+      foreground: '#cfcecc',
+      palette: Array(16).fill(null)
+    })
     expect(s?.amber).toMatch(/^#/)
   })
 })

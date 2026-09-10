@@ -27,7 +27,14 @@ export type ToolState = 'running' | 'done' | 'error' | 'denied'
 export type Block =
   | { kind: 'text'; text: string }
   | { kind: 'thinking'; text: string }
-  | { kind: 'tool'; id: string; name: string; input: unknown; state: ToolState; result: string | null }
+  | {
+      kind: 'tool'
+      id: string
+      name: string
+      input: unknown
+      state: ToolState
+      result: string | null
+    }
 
 export type TaskStatus = 'running' | 'completed' | 'failed' | 'stopped'
 
@@ -112,9 +119,19 @@ export interface Transcript {
 
 export function emptyTranscript(): Transcript {
   return {
-    items: [], draft: null, sessionId: null, model: null,
-    slashCommands: [], permissionMode: 'default', state: 'idle', tasks: [],
-    running: false, costUsd: null, limits: null, streamingMessageId: null, deniedToolUseIds: []
+    items: [],
+    draft: null,
+    sessionId: null,
+    model: null,
+    slashCommands: [],
+    permissionMode: 'default',
+    state: 'idle',
+    tasks: [],
+    running: false,
+    costUsd: null,
+    limits: null,
+    streamingMessageId: null,
+    deniedToolUseIds: []
   }
 }
 
@@ -133,9 +150,15 @@ export function setPermissionMode(t: Transcript, permissionMode: PermissionMode)
 }
 
 export function appendUserText(
-  t: Transcript, text: string, id: string, images: Attachment[] = []
+  t: Transcript,
+  text: string,
+  id: string,
+  images: Attachment[] = []
 ): Transcript {
-  const item = images.length > 0 ? { kind: 'user' as const, id, text, images } : { kind: 'user' as const, id, text }
+  const item =
+    images.length > 0
+      ? { kind: 'user' as const, id, text, images }
+      : { kind: 'user' as const, id, text }
   return { ...t, items: [...t.items, item], running: true }
 }
 
@@ -165,7 +188,9 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
       return applyStreamEvent(t, m.event as StreamEvent)
 
     case 'assistant': {
-      const blocks = (m.message.content as RawBlock[]).map(toBlock).filter((b): b is Block => b !== null)
+      const blocks = (m.message.content as RawBlock[])
+        .map(toBlock)
+        .filter((b): b is Block => b !== null)
       // 実行役の発話はブレインの会話に混ぜない。混ぜると誰が言ったのか分からなくなる
       if (m.parent_tool_use_id) {
         return { ...t, tasks: appendToTask(t.tasks, m.parent_tool_use_id, blocks) }
@@ -187,8 +212,11 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
       return { ...t, items: attachResults(t.items, m.message.content, t.deniedToolUseIds) }
 
     case 'rate_limit_event': {
-      const w = (m as unknown as { rate_limit_info?: { unifiedWindows?: Record<string, { utilization?: number }> } })
-        .rate_limit_info?.unifiedWindows
+      const w = (
+        m as unknown as {
+          rate_limit_info?: { unifiedWindows?: Record<string, { utilization?: number }> }
+        }
+      ).rate_limit_info?.unifiedWindows
       if (!w) return t
       return {
         ...t,
@@ -204,14 +232,16 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
         ...t,
         draft: null,
         running: false,
-        costUsd: 'total_cost_usd' in m && typeof m.total_cost_usd === 'number' ? m.total_cost_usd : t.costUsd
+        costUsd:
+          'total_cost_usd' in m && typeof m.total_cost_usd === 'number'
+            ? m.total_cost_usd
+            : t.costUsd
       }
 
     default:
       return t
   }
 }
-
 
 // ── 途中経過 ────────────────────────────────────────────────
 
@@ -244,7 +274,8 @@ function applyStreamEvent(t: Transcript, e: StreamEvent): Transcript {
     case 'content_block_delta': {
       if (!t.draft) return t
       const d = e.delta
-      const add = d?.type === 'text_delta' ? d.text : d?.type === 'thinking_delta' ? d.thinking : undefined
+      const add =
+        d?.type === 'text_delta' ? d.text : d?.type === 'thinking_delta' ? d.thinking : undefined
       // signature_delta と input_json_delta は人に見せない
       if (add === undefined) return t
       return { ...t, draft: { ...t.draft, text: t.draft.text + add } }
@@ -286,19 +317,22 @@ function applyTask(tasks: TaskRun[], frame: TaskFrame): TaskRun[] {
 
   if (frame.subtype === 'task_started') {
     if (tasks.some((t) => t.taskId === id)) return tasks
-    return [...tasks, {
-      taskId: id,
-      toolUseId: frame.tool_use_id ?? null,
-      description: frame.description ?? '',
-      subagentType: frame.subagent_type ?? null,
-      prompt: frame.prompt ?? null,
-      status: 'running',
-      summary: null,
-      lastTool: null,
-      backgrounded: frame.is_backgrounded === true,
-      usage: null,
-      blocks: []
-    }]
+    return [
+      ...tasks,
+      {
+        taskId: id,
+        toolUseId: frame.tool_use_id ?? null,
+        description: frame.description ?? '',
+        subagentType: frame.subagent_type ?? null,
+        prompt: frame.prompt ?? null,
+        status: 'running',
+        summary: null,
+        lastTool: null,
+        backgrounded: frame.is_backgrounded === true,
+        usage: null,
+        blocks: []
+      }
+    ]
   }
 
   return tasks.map((task) => {
@@ -323,18 +357,34 @@ function applyTask(tasks: TaskRun[], frame: TaskFrame): TaskRun[] {
 
 function appendToTask(tasks: TaskRun[], toolUseId: string, blocks: Block[]): TaskRun[] {
   if (blocks.length === 0) return tasks
-  return tasks.map((t) => (t.toolUseId === toolUseId ? { ...t, blocks: [...t.blocks, ...blocks] } : t))
+  return tasks.map((t) =>
+    t.toolUseId === toolUseId ? { ...t, blocks: [...t.blocks, ...blocks] } : t
+  )
 }
 
 // ── 確定 ────────────────────────────────────────────────────
 
-type RawBlock = { type: string; text?: string; thinking?: string; id?: string; name?: string; input?: unknown }
+type RawBlock = {
+  type: string
+  text?: string
+  thinking?: string
+  id?: string
+  name?: string
+  input?: unknown
+}
 
 function toBlock(b: RawBlock): Block | null {
   if (b.type === 'text') return { kind: 'text', text: b.text ?? '' }
   if (b.type === 'thinking') return { kind: 'thinking', text: b.thinking ?? '' }
   if (b.type === 'tool_use') {
-    return { kind: 'tool', id: b.id ?? '', name: b.name ?? '?', input: b.input, state: 'running', result: null }
+    return {
+      kind: 'tool',
+      id: b.id ?? '',
+      name: b.name ?? '?',
+      input: b.input,
+      state: 'running',
+      result: null
+    }
   }
   return null
 }
@@ -367,22 +417,28 @@ type ResultBlock = { type: string; tool_use_id?: string; content?: unknown; is_e
  *
  * **段6 で ghostty-web を入れたら、落とさずに描く。** それまでの安全側。
  */
+/* eslint-disable no-control-regex -- ANSI の制御列（ESC・BEL）をわざと探している */
 export function stripAnsi(text: string): string {
-  return text
-    // CSI（色・カーソル移動）
-    .replace(/\u001B\[[0-9;?]*[ -/]*[@-~]/g, '')
-    // OSC（タイトル・ハイパーリンク）
-    .replace(/\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)/g, '')
-    // 単発のエスケープ
-    .replace(/\u001B[@-Z\\-_]/g, '')
+  return (
+    text
+      // CSI（色・カーソル移動）
+      .replace(/\u001B\[[0-9;?]*[ -/]*[@-~]/g, '')
+      // OSC（タイトル・ハイパーリンク）
+      .replace(/\u001B\][^\u0007\u001B]*(?:\u0007|\u001B\\)/g, '')
+      // 単発のエスケープ
+      .replace(/\u001B[@-Z\\-_]/g, '')
+  )
 }
+/* eslint-enable no-control-regex */
 
 function textOf(content: unknown): string {
   if (typeof content === 'string') return stripAnsi(content)
   if (Array.isArray(content)) {
     return stripAnsi(
       content
-        .map((c) => (c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : ''))
+        .map((c) =>
+          c && typeof c === 'object' && 'text' in c ? String((c as { text: unknown }).text) : ''
+        )
         .filter(Boolean)
         .join('\n')
     )
@@ -417,4 +473,3 @@ function attachResults(items: Item[], content: unknown, denied: string[]): Item[
     return blocks === item.blocks ? item : { ...item, blocks }
   })
 }
-

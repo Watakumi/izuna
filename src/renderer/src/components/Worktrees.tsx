@@ -26,6 +26,13 @@ type Row = Worktree & { status: WorktreeStatus | null; session: Panel | null }
  */
 const remembered = makeCache<Omit<Row, 'session'>[]>()
 
+/** 結果の札。時刻は押した瞬間（描画の中で時計を読まない。react-hooks/purity） */
+const outcome = (text: string, bad: boolean): { text: string; bad: boolean; at: number } => ({
+  text,
+  bad,
+  at: Date.now()
+})
+
 export function Worktrees({
   cwd,
   panels,
@@ -46,27 +53,36 @@ export function Worktrees({
 
   const load = useCallback(async () => {
     const repo = await window.izuna.repo(cwd)
-    const withStatus = await Promise.all(repo.worktrees.map(async (w) => ({
-      ...w,
-      status: await window.izuna.worktreeStatus(w.path).catch(() => null),
-      session: panels.find((p) => p.cwd === w.path) ?? null
-    })))
+    const withStatus = await Promise.all(
+      repo.worktrees.map(async (w) => ({
+        ...w,
+        status: await window.izuna.worktreeStatus(w.path).catch(() => null),
+        session: panels.find((p) => p.cwd === w.path) ?? null
+      }))
+    )
     setRows(withStatus)
-    remembered.set(cwd, withStatus.map(({ session: _session, ...rest }) => rest))
+    remembered.set(
+      cwd,
+      withStatus.map(({ session: _session, ...rest }) => rest)
+    )
   }, [cwd, panels])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    // 取ってきてから setState する（await の後）。同期の setState ではない
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load()
+  }, [load])
 
   const remove = async (row: Row, force: boolean): Promise<void> => {
     setBusy(row.path)
     setMsg(null)
     try {
       await window.izuna.removeWorktree(cwd, row.path, force)
-      setMsg({ text: `${row.branch ?? row.path} を消しました`, bad: false, at: Date.now() })
+      setMsg(outcome(`${row.branch ?? row.path} を消しました`, false))
       setConfirming(null)
       await load()
     } catch (e) {
-      setMsg({ text: String(e).replace(/^Error:\s*/, ''), bad: true, at: Date.now() })
+      setMsg(outcome(String(e).replace(/^Error:\s*/, ''), true))
     } finally {
       setBusy(null)
     }
@@ -74,8 +90,17 @@ export function Worktrees({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
-        background: C.panel, borderBottom: `1px solid ${C.line}`, flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '12px 16px',
+          background: C.panel,
+          borderBottom: `1px solid ${C.line}`,
+          flexShrink: 0
+        }}
+      >
         <span style={{ fontWeight: 600, fontSize: F.body }}>ブランチ</span>
 
         <div style={{ flexGrow: 1 }} />
@@ -89,14 +114,33 @@ export function Worktrees({
           const blocked = canRemove(row)
           const unpushed = (row.status?.ahead ?? 0) > 0 || (row.status?.changed ?? 0) > 0
           return (
-            <div key={row.path} style={{ border: `1px solid ${row.session ? C.line2 : C.line}`,
-              borderRadius: 7, padding: '12px 12px', display: 'flex', flexDirection: 'column', gap: 8,
-              background: row.session ? C.raised : 'transparent' }}>
-
+            <div
+              key={row.path}
+              style={{
+                border: `1px solid ${row.session ? C.line2 : C.line}`,
+                borderRadius: 7,
+                padding: '12px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                background: row.session ? C.raised : 'transparent'
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                  background: row.session?.pending ? C.amber : row.session ? C.teal : 'transparent',
-                  border: row.session ? 'none' : `1.5px solid ${C.faint}` }} />
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    background: row.session?.pending
+                      ? C.amber
+                      : row.session
+                        ? C.teal
+                        : 'transparent',
+                    border: row.session ? 'none' : `1.5px solid ${C.faint}`
+                  }}
+                />
                 <span style={{ font: `${F.small}px ${MONO}`, color: C.ink, ...ellipsis }}>
                   {row.branch ?? '(detached)'}
                 </span>
@@ -109,31 +153,53 @@ export function Worktrees({
                   <span style={{ color: C.teal }}>+{row.status.added}</span>
                   <span style={{ color: C.red }}>−{row.status.removed}</span>
                   <span style={{ color: C.dim2 }}>{row.status.changed} ファイル</span>
-                  {row.status.ahead > 0 && <span style={{ color: C.amber }}>↑{row.status.ahead}</span>}
+                  {row.status.ahead > 0 && (
+                    <span style={{ color: C.amber }}>↑{row.status.ahead}</span>
+                  )}
                 </div>
               )}
 
               {confirming === row.path ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: C.amberBg,
-                  border: `1px solid ${C.amberLine}`, borderRadius: 7, padding: '8px 12px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    background: C.amberBg,
+                    border: `1px solid ${C.amberLine}`,
+                    borderRadius: 7,
+                    padding: '8px 12px'
+                  }}
+                >
                   <span style={{ fontSize: F.small, color: C.ink2, lineHeight: 1.6 }}>
-                    {unpushed ? '未 push の変更があります。消すと戻せません' : 'ディレクトリを消します'}
+                    {unpushed
+                      ? '未 push の変更があります。消すと戻せません'
+                      : 'ディレクトリを消します'}
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <Button disabled={busy !== null} kind="primary"
-                      onClick={() => void remove(row, unpushed)}>
+                    <Button
+                      disabled={busy !== null}
+                      kind="primary"
+                      onClick={() => void remove(row, unpushed)}
+                    >
                       {busy === row.path ? '消しています…' : '消す'}
                     </Button>
-                    <Button  onClick={() => setConfirming(null)}>やめる</Button>
+                    <Button onClick={() => setConfirming(null)}>やめる</Button>
                   </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: 6 }}>
                   {!row.session && !row.main && (
-                    <Button kind="primary" onClick={() => onOpen(row)}>ここで開く</Button>
+                    <Button kind="primary" onClick={() => onOpen(row)}>
+                      ここで開く
+                    </Button>
                   )}
                   {!blocked && <Button onClick={() => setConfirming(row.path)}>消す</Button>}
-                  {blocked && <span style={{ fontSize: F.micro, color: C.faint, alignSelf: 'center' }}>{blocked}</span>}
+                  {blocked && (
+                    <span style={{ fontSize: F.micro, color: C.faint, alignSelf: 'center' }}>
+                      {blocked}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -149,5 +215,3 @@ export function Worktrees({
     </div>
   )
 }
-
-

@@ -59,7 +59,8 @@ export function shouldOpenOutside(url: string, here: string | null): boolean {
   try {
     const to = new URL(url)
     const at = new URL(here)
-    if (to.protocol.startsWith('http') && at.protocol.startsWith('http') && to.origin === at.origin) return false
+    if (to.protocol.startsWith('http') && at.protocol.startsWith('http') && to.origin === at.origin)
+      return false
   } catch {
     return true
   }

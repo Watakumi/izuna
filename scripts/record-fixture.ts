@@ -74,7 +74,9 @@ async function record(mode: Mode, bin: string, env: NodeJS.ProcessEnv): Promise<
   // （native の claude は走るたびに自分を更新し、版の門が落ちる。§7）
   const cwd = mkdtempSync(join(tmpdir(), 'izuna-fixture-'))
   const child = spawn(bin, argsFor(mode), {
-    cwd, env: { ...env, DISABLE_AUTOUPDATER: '1' }, stdio: ['pipe', 'pipe', 'pipe']
+    cwd,
+    env: { ...env, DISABLE_AUTOUPDATER: '1' },
+    stdio: ['pipe', 'pipe', 'pipe']
   })
   child.stdout.setEncoding('utf8')
   child.stderr.setEncoding('utf8')

@@ -4,3 +4,5 @@ pnpm-lock.yaml
 LICENSE.md
 tsconfig.json
 tsconfig.*.json
+# 文書は prettier で整形しない。表の桁揃えや frontmatter の引用符が変わり、文書の門（test/docs.test.ts）と合わなくなる
+*.md

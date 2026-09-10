@@ -69,7 +69,10 @@ export function mergeConfig(raw: unknown): MergeResult {
   const input = raw as Record<string, unknown>
   const config: IzunaConfig = { ...DEFAULTS }
 
-  const take = <K extends keyof IzunaConfig>(key: K, read: (v: unknown) => IzunaConfig[K] | null): void => {
+  const take = <K extends keyof IzunaConfig>(
+    key: K,
+    read: (v: unknown) => IzunaConfig[K] | null
+  ): void => {
     if (!(key in input)) return
     const value = read(input[key])
     if (value === null) ignored.push(String(key))
@@ -79,14 +82,21 @@ export function mergeConfig(raw: unknown): MergeResult {
   take('forgejoWorkPaths', strings)
   take('repoRoots', strings)
   take('trustedRepos', (v) => (Array.isArray(v) && v.length === 0 ? [] : strings(v)))
-  take('forgejoUrl', (v) => (v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null))
-  take('claudePath', (v) => (v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null))
+  take('forgejoUrl', (v) =>
+    v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null
+  )
+  take('claudePath', (v) =>
+    v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null
+  )
   take('sandboxRemote', (v) => (typeof v === 'string' && /^[\w.-]+$/.test(v) ? v : null))
-  take('repoDepth', (v) => (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 6 ? v : null))
+  take('repoDepth', (v) =>
+    typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 6 ? v : null
+  )
   take('settingSources', (v) =>
     Array.isArray(v) && v.every((x) => (SOURCES as readonly string[]).includes(x as string))
       ? (v as IzunaConfig['settingSources'])
-      : null)
+      : null
+  )
 
   // null を許す項目は「明示的に消した」と「型が違う」が同じ形になる。
   // 前者は落としたことにしない

@@ -39,7 +39,8 @@ function subsequence(query: string, target: string): { score: number; matches: n
     if (at === -1) return null
     matches.push(at)
 
-    if (at === previous + 1) score += 8 // 連続している
+    if (at === previous + 1)
+      score += 8 // 連続している
     else score -= Math.min(at - previous - 1, 6) // 飛んだぶんだけ下げる
 
     // 語頭（先頭・区切りの直後）は強い手がかり
@@ -86,7 +87,13 @@ function best(query: string, command: SlashCommand): Scored | null {
     let scored: Scored | null = null
 
     if (lower === q) {
-      scored = { command, score: EXACT, matches: [...name].map((_, i) => i), viaDescription: false, viaAlias: alias }
+      scored = {
+        command,
+        score: EXACT,
+        matches: [...name].map((_, i) => i),
+        viaDescription: false,
+        viaAlias: alias
+      }
     } else if (q !== '' && lower.startsWith(q)) {
       scored = {
         command,
@@ -97,12 +104,20 @@ function best(query: string, command: SlashCommand): Scored | null {
       }
     } else {
       const sub = subsequence(query, name)
-      if (sub) scored = { command, score: sub.score, matches: sub.matches, viaDescription: false, viaAlias: alias }
+      if (sub)
+        scored = {
+          command,
+          score: sub.score,
+          matches: sub.matches,
+          viaDescription: false,
+          viaAlias: alias
+        }
     }
 
     // 別名で当たった場合は、正式名で当たったものより一段下げる
     if (scored && alias) scored = { ...scored, score: scored.score - 1 }
-    if (scored && isDeprioritized(command)) scored = { ...scored, score: scored.score - DEPRIORITIZED }
+    if (scored && isDeprioritized(command))
+      scored = { ...scored, score: scored.score - DEPRIORITIZED }
     if (scored && (!top || scored.score > top.score)) top = scored
   }
   if (top) return top
@@ -118,9 +133,7 @@ function best(query: string, command: SlashCommand): Scored | null {
 /** 当たったものを強い順に返す。同点は名前順で安定させる */
 export function filterCommands(query: string, commands: SlashCommand[], limit = 60): Scored[] {
   const q = query.trim()
-  const scored = commands
-    .map((c) => best(q, c))
-    .filter((s): s is Scored => s !== null)
+  const scored = commands.map((c) => best(q, c)).filter((s): s is Scored => s !== null)
 
   scored.sort((a, b) => b.score - a.score || a.command.name.localeCompare(b.command.name))
   return scored.slice(0, limit)
@@ -147,7 +160,10 @@ export function applyCompletion(command: SlashCommand, args: string): string {
 }
 
 /** 出どころ。`:` を含むものはプラグインまたは名前空間つき */
-export function originOf(command: SlashCommand): { kind: 'namespaced' | 'plain'; namespace: string | null } {
+export function originOf(command: SlashCommand): {
+  kind: 'namespaced' | 'plain'
+  namespace: string | null
+} {
   const at = command.name.indexOf(':')
   return at === -1
     ? { kind: 'plain', namespace: null }

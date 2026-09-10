@@ -14,7 +14,8 @@ vi.mock('../src/main/config', () => ({
   resolved: async () => config
 }))
 
-const load = async (): Promise<typeof import('../src/main/claude/trust')> => import('../src/main/claude/trust')
+const load = async (): Promise<typeof import('../src/main/claude/trust')> =>
+  import('../src/main/claude/trust')
 
 const hooks = (file: string, body: unknown): void => {
   mkdirSync(join(repo, '.claude'), { recursive: true })
@@ -35,7 +36,9 @@ describe('リポジトリの hook', () => {
   })
 
   it('**信頼していない場所に hook があれば止まる**', async () => {
-    hooks('settings.json', { hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'id' }] }] } })
+    hooks('settings.json', {
+      hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'id' }] }] }
+    })
     const { gateProjectHooks } = await load()
     await expect(gateProjectHooks(repo)).rejects.toThrow(/SessionStart/)
   })

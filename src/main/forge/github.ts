@@ -29,12 +29,19 @@ export interface GitHubPull {
 }
 
 // gh の言い分はそのまま見せる（`main/exec.ts`）。握りつぶすと原因が分からなくなる
-const gh = (cwd: string, args: string[]): Promise<string> => run('gh', args, { cwd, timeoutMs: 30_000 })
+const gh = (cwd: string, args: string[]): Promise<string> =>
+  run('gh', args, { cwd, timeoutMs: 30_000 })
 
 export async function listIssues(cwd: string, limit = 30): Promise<GitHubIssue[]> {
   const out = await gh(cwd, [
-    'issue', 'list', '--state', 'open', '--limit', String(limit),
-    '--json', 'number,title,url,state,labels,updatedAt'
+    'issue',
+    'list',
+    '--state',
+    'open',
+    '--limit',
+    String(limit),
+    '--json',
+    'number,title,url,state,labels,updatedAt'
   ])
   type RawIssue = Omit<GitHubIssue, 'labels'> & { labels: Array<{ name: string }> }
   const raw = JSON.parse(out) as RawIssue[]
@@ -43,8 +50,14 @@ export async function listIssues(cwd: string, limit = 30): Promise<GitHubIssue[]
 
 export async function listPulls(cwd: string, limit = 30): Promise<GitHubPull[]> {
   const out = await gh(cwd, [
-    'pr', 'list', '--state', 'open', '--limit', String(limit),
-    '--json', 'number,title,url,state,headRefName,isDraft'
+    'pr',
+    'list',
+    '--state',
+    'open',
+    '--limit',
+    String(limit),
+    '--json',
+    'number,title,url,state,headRefName,isDraft'
   ])
   return JSON.parse(out) as GitHubPull[]
 }
@@ -62,12 +75,7 @@ export interface CreatePrInput {
  * 作業ブランチも一段目の PR も、ここを通らずに GitHub へ行ってはいけない。
  */
 export async function createPull(cwd: string, input: CreatePrInput): Promise<string> {
-  const args = [
-    'pr', 'create',
-    '--title', input.title,
-    '--body', input.body,
-    '--head', input.head
-  ]
+  const args = ['pr', 'create', '--title', input.title, '--body', input.body, '--head', input.head]
   if (input.base) args.push('--base', input.base)
   if (input.draft) args.push('--draft')
   return (await gh(cwd, args)).trim()
@@ -79,6 +87,11 @@ export async function ghStatus(cwd: string): Promise<{ ok: boolean; detail: stri
     const out = await gh(cwd, ['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'])
     return { ok: true, detail: out.trim() }
   } catch (e) {
-    return { ok: false, detail: String(e).replace(/^Error:\s*/, '').split('\n')[0] }
+    return {
+      ok: false,
+      detail: String(e)
+        .replace(/^Error:\s*/, '')
+        .split('\n')[0]
+    }
   }
 }

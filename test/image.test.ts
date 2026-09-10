@@ -7,8 +7,14 @@ import { byteLength, fromDataUrl, isSupported, rejectReason, toDataUrl } from '.
  * **貼ったのに送られない**のが一番まずいので、断るときは理由を返すことを見る。
  */
 
-const a = (over: Partial<Parameters<typeof rejectReason>[0]> = {}): Parameters<typeof rejectReason>[0] =>
-  ({ mediaType: 'image/png', data: 'aGk=', name: '', ...over })
+const a = (
+  over: Partial<Parameters<typeof rejectReason>[0]> = {}
+): Parameters<typeof rejectReason>[0] => ({
+  mediaType: 'image/png',
+  data: 'aGk=',
+  name: '',
+  ...over
+})
 
 describe('送ってよい形か', () => {
   it('SDK が受ける 4 種だけ通す', () => {

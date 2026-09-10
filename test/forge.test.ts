@@ -45,8 +45,14 @@ MODE = file
 const facts = (over: Partial<ForgeFacts>): ForgeFacts => ({
   binary: '/opt/homebrew/bin/forgejo',
   version: '16.0.3',
-  config: { path: '/x/app.ini', rootUrl: 'http://localhost:4649/', httpPort: 4649,
-    httpAddr: '127.0.0.1', installLocked: true, actionsEnabled: false },
+  config: {
+    path: '/x/app.ini',
+    rootUrl: 'http://localhost:4649/',
+    httpPort: 4649,
+    httpAddr: '127.0.0.1',
+    installLocked: true,
+    actionsEnabled: false
+  },
   reachable: true,
   tokenScopes: ['write:user', 'write:repository'],
   tokenWorks: true,
@@ -176,8 +182,12 @@ describe('診断', () => {
 
   it('Actions が有効なら runner も見る', () => {
     const on = { ...facts({}).config!, actionsEnabled: true }
-    expect(diagnose(facts({ config: on, runners: 0 })).find((c) => c.id === 'runner')?.level).toBe('warn')
-    expect(diagnose(facts({ config: on, runners: 1 })).find((c) => c.id === 'runner')?.level).toBe('ok')
+    expect(diagnose(facts({ config: on, runners: 0 })).find((c) => c.id === 'runner')?.level).toBe(
+      'warn'
+    )
+    expect(diagnose(facts({ config: on, runners: 1 })).find((c) => c.id === 'runner')?.level).toBe(
+      'ok'
+    )
   })
 
   it('INSTALL_LOCK が false なら手でやってもらう（自動で押し切らない）', () => {
@@ -204,8 +214,18 @@ describe('トークンを載せてよい経路（§26）', () => {
   })
 
   it('診断に経路の行が出て、段5 に進めない', () => {
-    const checks = diagnose(facts({ config: { path: '/p/custom/conf/app.ini', rootUrl: 'http://192.168.1.10:4649/',
-      httpPort: 4649, httpAddr: '0.0.0.0', installLocked: true, actionsEnabled: false } }))
+    const checks = diagnose(
+      facts({
+        config: {
+          path: '/p/custom/conf/app.ini',
+          rootUrl: 'http://192.168.1.10:4649/',
+          httpPort: 4649,
+          httpAddr: '0.0.0.0',
+          installLocked: true,
+          actionsEnabled: false
+        }
+      })
+    )
     const c = checks.find((x) => x.id === 'transport')
     expect(c?.level).toBe('ng')
     expect(c?.detail).toBe(transportRefusal('http://192.168.1.10:4649/'))
@@ -280,8 +300,9 @@ describe('発行し直して直るときだけ、発行し直すと言う', () =
   })
 
   it('通っていれば、これまでどおり権限を見る', () => {
-    expect(find(facts({ tokenScopes: ['write:repository'] }), 'token').detail)
-      .toContain('write:user')
+    expect(find(facts({ tokenScopes: ['write:repository'] }), 'token').detail).toContain(
+      'write:user'
+    )
     expect(find(facts({}), 'token').level).toBe('ok')
   })
 
@@ -298,7 +319,8 @@ describe('発行し直して直るときだけ、発行し直すと言う', () =
 })
 
 describe('手元に forgejo が無い構成（Docker や別マシン。docs/SETUP.md）', () => {
-  const remote = (over: Partial<ForgeFacts> = {}): ForgeFacts => facts({ binary: null, version: null, remote: true, ...over })
+  const remote = (over: Partial<ForgeFacts> = {}): ForgeFacts =>
+    facts({ binary: null, version: null, remote: true, ...over })
 
   it('設定の forgejoUrl で見ているなら、インストールの行は ok で先へ進む', () => {
     const checks = diagnose(remote())
@@ -316,7 +338,14 @@ describe('手元に forgejo が無い構成（Docker や別マシン。docs/SETU
   })
 
   it('拒否されても「発行し直す」を出さない。増やせないものを増やすと言わない', () => {
-    const t = find(remote({ tokenWorks: false, tokenScopes: null, tokenRejection: { status: 401, detail: 'x' } }), 'token')
+    const t = find(
+      remote({
+        tokenWorks: false,
+        tokenScopes: null,
+        tokenRejection: { status: 401, detail: 'x' }
+      }),
+      'token'
+    )
     expect(t.fix).toBeNull()
     const s = find(remote({ tokenScopes: ['read:user'] }), 'token')
     expect(s.level).toBe('ng')

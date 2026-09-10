@@ -56,34 +56,67 @@ export function NewSession({
 
   const [past, setPast] = useState<SessionSummary[] | null>(null)
 
-  useEffect(() => { void window.izuna.findRepos().then(setFound).catch(() => setFound([])) }, [])
+  useEffect(() => {
+    void window.izuna
+      .findRepos()
+      .then(setFound)
+      .catch(() => setFound([]))
+  }, [])
 
   // 過去のセッション（§18）。**保存層は無い** —— claude が書いた記録を走査している
-  useEffect(() => { void window.izuna.listSessions().then(setPast).catch(() => setPast([])) }, [])
+  useEffect(() => {
+    void window.izuna
+      .listSessions()
+      .then(setPast)
+      .catch(() => setPast([]))
+  }, [])
+
+  /** 場所を変えたら、前の場所の結果は捨てる（effect の中で setState しない） */
+  const chooseCwd = (value: string): void => {
+    setCwd(value)
+    setRepo(null)
+    setIssues(null)
+    setRepoError(null)
+  }
 
   // リポジトリが決まったら、依頼の候補（Issue）を引く
   useEffect(() => {
     const path = cwd.trim()
-    if (!path) { setRepo(null); setIssues(null); return }
+    if (!path) return
     let alive = true
     const timer = setTimeout(() => {
-      window.izuna.repo(path)
-        .then((r) => { if (alive) { setRepo(r); setRepoError(null) } })
+      window.izuna
+        .repo(path)
+        .then((r) => {
+          if (alive) {
+            setRepo(r)
+            setRepoError(null)
+          }
+        })
         .catch((e) => {
           if (!alive) return
           setRepo(null)
           setRepoError(String(e).replace(/^Error:\s*/, ''))
         })
-      window.izuna.ghIssues(path).then((v) => { if (alive) setIssues(v) }).catch(() => { if (alive) setIssues(null) })
+      window.izuna
+        .ghIssues(path)
+        .then((v) => {
+          if (alive) setIssues(v)
+        })
+        .catch(() => {
+          if (alive) setIssues(null)
+        })
     }, 300)
-    return () => { alive = false; clearTimeout(timer) }
+    return () => {
+      alive = false
+      clearTimeout(timer)
+    }
   }, [cwd])
 
   const matches = (found ?? []).filter((r) => {
     const q = query.trim().toLowerCase()
     return q === '' || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q)
   })
-
 
   const prompt = issue
     ? `GitHub の Issue #${issue.number}「${issue.title}」に取り組んでください。\n${issue.url}`
@@ -92,8 +125,15 @@ export function NewSession({
   // この画面で選んだリポジトリのもの。**worktree のセッションも同じ束**にする
   // このリポジトリのものだけに絞ってから、字で絞る（§18）。
   // `filterSessions` は見出し・最初の依頼・slug・id を見て、新しい順に並べ替える
-  const here = (past ?? [])
-    .filter((p) => cwd.trim() !== '' && belongsTo(p, cwd.trim(), (repo?.worktrees ?? []).map((w) => w.path)))
+  const here = (past ?? []).filter(
+    (p) =>
+      cwd.trim() !== '' &&
+      belongsTo(
+        p,
+        cwd.trim(),
+        (repo?.worktrees ?? []).map((w) => w.path)
+      )
+  )
   const resumable = filterSessions(here, pastQuery)
 
   /**
@@ -113,9 +153,12 @@ export function NewSession({
       try {
         const at = resume.cwd ?? cwd.trim()
         await onStart({
-          cwd: at, label: labelOf(resume).slice(0, 40), branch: resume.branch ?? null,
+          cwd: at,
+          label: labelOf(resume).slice(0, 40),
+          branch: resume.branch ?? null,
           team: at.split('/').filter(Boolean).pop() ?? 'default',
-          initialPrompt: '', resume: resume.id
+          initialPrompt: '',
+          resume: resume.id
         })
       } catch (e) {
         setFailure(String(e).replace(/^Error:\s*/, ''))
@@ -138,70 +181,167 @@ export function NewSession({
   }
 
   return (
-    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.62)',
-      zIndex: 40, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 64 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: 660, maxHeight: '84vh',
-        background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
-        boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column' }}>
-
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(8,9,12,0.62)',
+        zIndex: 40,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        paddingTop: 64
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 660,
+          maxHeight: '84vh',
+          background: C.surface,
+          border: `1px solid ${C.line2}`,
+          borderRadius: 11,
+          boxShadow: '0 28px 80px rgba(0,0,0,0.62)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`, fontWeight: 600 }}>
           新しいセッション
         </div>
 
-        <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: 16,
-          display: 'flex', flexDirection: 'column', gap: 16 }}>
-
+        <div
+          style={{
+            flexGrow: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16
+          }}
+        >
           {/* 1. どこで */}
-          <Section label="リポジトリ" action={
-            <Button size="sm" onClick={() => void window.izuna.pickDirectory()
-              .then((p) => { if (p) { setCwd(p); setQuery(''); setIssue(null) } })}>
-              フォルダを選ぶ…
-            </Button>
-          }>
+          <Section
+            label="リポジトリ"
+            action={
+              <Button
+                size="sm"
+                onClick={() =>
+                  void window.izuna.pickDirectory().then((p) => {
+                    if (p) {
+                      chooseCwd(p)
+                      setQuery('')
+                      setIssue(null)
+                    }
+                  })
+                }
+              >
+                フォルダを選ぶ…
+              </Button>
+            }
+          >
             {found === null && <Faint>読んでいます…</Faint>}
             {found !== null && (
               <>
-                <Input value={query} placeholder={`${found.length} 本から絞り込む`}
-                  onChange={(e) => setQuery(e.target.value)} />
-                <div style={{ maxHeight: 132, overflowY: 'auto', border: `1px solid ${C.line}`,
-                  borderRadius: 7, display: 'flex', flexDirection: 'column' }}>
+                <Input
+                  value={query}
+                  placeholder={`${found.length} 本から絞り込む`}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <div
+                  style={{
+                    maxHeight: 132,
+                    overflowY: 'auto',
+                    border: `1px solid ${C.line}`,
+                    borderRadius: 7,
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
                   {matches.slice(0, 60).map((r) => (
-                    <div key={r.path} onClick={() => { setCwd(r.path); setIssue(null) }}
-                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
-                        cursor: 'pointer', borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
-                        background: r.path === cwd ? C.raised : 'transparent' }}>
-                      <span style={{ fontSize: F.body, color: r.path === cwd ? C.ink : C.ink2 }}>{r.name}</span>
-                      <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexGrow: 1,
-                        textAlign: 'right', ...ellipsis }}>{r.group}</span>
+                    <div
+                      key={r.path}
+                      onClick={() => {
+                        chooseCwd(r.path)
+                        setIssue(null)
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 8,
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        borderLeft: `2px solid ${r.path === cwd ? C.amber : 'transparent'}`,
+                        background: r.path === cwd ? C.raised : 'transparent'
+                      }}
+                    >
+                      <span style={{ fontSize: F.body, color: r.path === cwd ? C.ink : C.ink2 }}>
+                        {r.name}
+                      </span>
+                      <span
+                        style={{
+                          font: `${F.micro}px ${MONO}`,
+                          color: C.faint,
+                          flexGrow: 1,
+                          textAlign: 'right',
+                          ...ellipsis
+                        }}
+                      >
+                        {r.group}
+                      </span>
                     </div>
                   ))}
-                  {matches.length === 0 && <Faint style={{ padding: '12px 12px' }}>見つかりません</Faint>}
+                  {matches.length === 0 && (
+                    <Faint style={{ padding: '12px 12px' }}>見つかりません</Faint>
+                  )}
                 </div>
               </>
             )}
-            {repoError && <span style={{ fontSize: F.small, color: C.amber, lineHeight: 1.6 }}>{repoError}</span>}
+            {repoError && (
+              <span style={{ fontSize: F.small, color: C.amber, lineHeight: 1.6 }}>
+                {repoError}
+              </span>
+            )}
           </Section>
 
           {/* 2. 続きから —— 新しく始めるか、続きか。**同じ画面で選ぶ** */}
           {here.length > 0 && (
-            <Section label="続きから" action={
-              resumable.length > 4
-                ? <Button size="sm" onClick={() => setShowAllPast((v) => !v)}>
+            <Section
+              label="続きから"
+              action={
+                resumable.length > 4 ? (
+                  <Button size="sm" onClick={() => setShowAllPast((v) => !v)}>
                     {showAllPast ? '閉じる' : `ほか ${resumable.length - 4} 件`}
                   </Button>
-                : undefined
-            }>
+                ) : undefined
+              }
+            >
               <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
                 {here.length > 4 && (
-                  <Input value={pastQuery} placeholder={`${here.length} 件から絞り込む`}
-                    onChange={(e) => setPastQuery(e.target.value)} />
+                  <Input
+                    value={pastQuery}
+                    placeholder={`${here.length} 件から絞り込む`}
+                    onChange={(e) => setPastQuery(e.target.value)}
+                  />
                 )}
                 {resumable.length === 0 && <Faint>見つかりません</Faint>}
                 {(showAllPast ? resumable : resumable.slice(0, 4)).map((p) => (
-                  <div key={p.id} onClick={() => void start(p)}
-                    style={{ display: 'flex', alignItems: 'baseline', gap: S.md, padding: '8px 12px',
-                      borderRadius: R.md, cursor: busy ? 'default' : 'pointer',
-                      border: `1px solid ${C.line}`, opacity: busy ? 0.5 : 1 }}>
+                  <div
+                    key={p.id}
+                    onClick={() => void start(p)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: S.md,
+                      padding: '8px 12px',
+                      borderRadius: R.md,
+                      cursor: busy ? 'default' : 'pointer',
+                      border: `1px solid ${C.line}`,
+                      opacity: busy ? 0.5 : 1
+                    }}
+                  >
                     <span style={{ fontSize: F.body, color: C.ink2, flexGrow: 1, ...ellipsis }}>
                       {labelOf(p)}
                     </span>
@@ -220,46 +360,88 @@ export function NewSession({
               {issues && issues.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
-                    <div key={i.number} onClick={() => { setIssue(i); setText('') }}
-                      style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 12px',
-                        borderRadius: 7, cursor: 'pointer',
+                    <div
+                      key={i.number}
+                      onClick={() => {
+                        setIssue(i)
+                        setText('')
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 8,
+                        padding: '8px 12px',
+                        borderRadius: 7,
+                        cursor: 'pointer',
                         border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
-                        background: issue?.number === i.number ? C.amberBg : 'transparent' }}>
-                      <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
-                      <span style={{ fontSize: F.body, color: C.ink2, ...ellipsis }}>{i.title}</span>
+                        background: issue?.number === i.number ? C.amberBg : 'transparent'
+                      }}
+                    >
+                      <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>
+                        #{i.number}
+                      </span>
+                      <span style={{ fontSize: F.body, color: C.ink2, ...ellipsis }}>
+                        {i.title}
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
               {issues !== null && issues.length === 0 && <Faint>open な Issue はありません</Faint>}
-              {issues === null && cwd.trim() !== '' && <Faint>GitHub に繋がっていません。下に直接書けます</Faint>}
+              {issues === null && cwd.trim() !== '' && (
+                <Faint>GitHub に繋がっていません。下に直接書けます</Faint>
+              )}
 
               <TextArea
-                value={text} rows={2}
-                placeholder={issues && issues.length > 0
-                  ? 'または、依頼を直接書く（後で会話でもいい）'
-                  : '依頼を書く（後で会話でもいい）'}
-                onChange={(e) => { setText(e.target.value); setIssue(null) }}
+                value={text}
+                rows={2}
+                placeholder={
+                  issues && issues.length > 0
+                    ? 'または、依頼を直接書く（後で会話でもいい）'
+                    : '依頼を書く（後で会話でもいい）'
+                }
+                onChange={(e) => {
+                  setText(e.target.value)
+                  setIssue(null)
+                }}
               />
             </Section>
           )}
 
-
           {failure && (
-            <div style={{ border: `1px solid ${C.red}`, borderRadius: 7, padding: '8px 12px',
-              fontSize: F.small, color: C.red, whiteSpace: 'pre-wrap' }}>{failure}</div>
+            <div
+              style={{
+                border: `1px solid ${C.red}`,
+                borderRadius: 7,
+                padding: '8px 12px',
+                fontSize: F.small,
+                color: C.red,
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {failure}
+            </div>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
-          borderTop: `1px solid ${C.line}` }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '12px 16px',
+            borderTop: `1px solid ${C.line}`
+          }}
+        >
           <span style={{ fontSize: F.small, color: C.faint }}>
-            {!ready ? '' : prompt !== ''
-              ? '開くと、選んだ内容がそのまま最初の依頼になります'
-              : 'そのまま開きます。依頼は会話で伝えられます'}
+            {!ready
+              ? ''
+              : prompt !== ''
+                ? '開くと、選んだ内容がそのまま最初の依頼になります'
+                : 'そのまま開きます。依頼は会話で伝えられます'}
           </span>
           <div style={{ flexGrow: 1 }} />
-          <Button onClick={onCancel} >閉じる</Button>
+          <Button onClick={onCancel}>閉じる</Button>
           <Button kind="primary" onClick={() => void start()} disabled={!ready}>
             {busy ? '用意しています…' : '開く'}
           </Button>
@@ -277,13 +459,23 @@ function ago(at: number): string {
   return `${Math.round(m / 60 / 24)}日前`
 }
 
-function Section({ label, action, children }: {
-  label: string; action?: React.ReactNode; children: React.ReactNode
+function Section({
+  label,
+  action,
+  children
+}: {
+  label: string
+  action?: React.ReactNode
+  children: React.ReactNode
 }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{label}</span>
+        <span
+          style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+        >
+          {label}
+        </span>
         <div style={{ flexGrow: 1 }} />
         {action}
       </div>
@@ -291,4 +483,3 @@ function Section({ label, action, children }: {
     </div>
   )
 }
-

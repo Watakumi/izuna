@@ -59,7 +59,9 @@ export function Inspector({
       const { sandbox } = rolesIn(rs)
       let nextPushed: boolean | null = null
       if (sandbox && st?.branch) {
-        nextPushed = await window.izuna.isPushed(panel.cwd, sandbox.name, st.branch).catch(() => false)
+        nextPushed = await window.izuna
+          .isPushed(panel.cwd, sandbox.name, st.branch)
+          .catch(() => false)
       }
       if (!alive) return
       setPushed(nextPushed)
@@ -68,9 +70,17 @@ export function Inspector({
       if (!alive) return
       setIssues(list)
 
-      remembered.set(panel.cwd, { status: st, remotes: rs, issues: list, pushed: nextPushed, team: tp })
+      remembered.set(panel.cwd, {
+        status: st,
+        remotes: rs,
+        issues: list,
+        pushed: nextPushed,
+        team: tp
+      })
     })()
-    return () => { alive = false }
+    return () => {
+      alive = false
+    }
   }, [panel.cwd, panel.team, panel.transcript.state])
 
   const { sandbox, upstream } = rolesIn(remotes ?? [])
@@ -78,12 +88,13 @@ export function Inspector({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', height: '100%' }}>
-
       <Block title="WORKTREE">
         <span style={{ font: `${F.body}px ${MONO}`, color: C.ink }}>
           {status?.branch ?? panel.branch ?? '(不明)'}
         </span>
-        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, wordBreak: 'break-all' }}>{panel.cwd}</span>
+        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, wordBreak: 'break-all' }}>
+          {panel.cwd}
+        </span>
         {status && (
           <div style={{ display: 'flex', gap: 12, fontSize: F.small, alignItems: 'baseline' }}>
             <span style={{ color: C.teal }}>+{status.added}</span>
@@ -103,28 +114,49 @@ export function Inspector({
         ) : (
           issues.slice(0, 2).map((i) => (
             <div key={i.number} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-              <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>#{i.number}</span>
+              <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>
+                #{i.number}
+              </span>
               <span style={{ fontSize: F.small, color: C.ink2, ...ellipsis }}>{i.title}</span>
             </div>
           ))
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 2 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-            background: pushed ? C.teal : 'transparent',
-            border: pushed ? 'none' : `1.5px solid ${C.faint}` }} />
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              flexShrink: 0,
+              background: pushed ? C.teal : 'transparent',
+              border: pushed ? 'none' : `1.5px solid ${C.faint}`
+            }}
+          />
           <span style={{ fontSize: F.small, color: C.dim2 }}>
             {/* 読み終わるまで断定しない。`[]` を「無い」と読むと一瞬だけ嘘が出る */}
             {remotes === null
               ? '読んでいます…'
-              : !sandbox ? 'sandbox 未設定' : pushed ? 'sandbox に push 済み' : 'push していません'}
+              : !sandbox
+                ? 'sandbox 未設定'
+                : pushed
+                  ? 'sandbox に push 済み'
+                  : 'push していません'}
           </span>
         </div>
 
-        <button onClick={onOpenForge} style={{
-          padding: '8px 0', borderRadius: 7, border: `1px solid ${C.line2}`,
-          background: 'transparent', color: C.ink2, fontSize: F.body, cursor: 'pointer'
-        }}>
+        <button
+          onClick={onOpenForge}
+          style={{
+            padding: '8px 0',
+            borderRadius: 7,
+            border: `1px solid ${C.line2}`,
+            background: 'transparent',
+            color: C.ink2,
+            fontSize: F.body,
+            cursor: 'pointer'
+          }}
+        >
           {remotes === null ? '…' : upstream ? 'PR を作る' : 'remote を用意する'}
         </button>
       </Block>
@@ -142,10 +174,16 @@ export function Inspector({
 
       {/* 共有フォルダは畳んでおく。実行役を使わないセッションには無関係 */}
       <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.line}` }}>
-        <div onClick={() => setShowTeam((v) => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-          <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, width: 8 }}>{showTeam ? '▾' : '▸'}</span>
-          <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>
+        <div
+          onClick={() => setShowTeam((v) => !v)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+        >
+          <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, width: 8 }}>
+            {showTeam ? '▾' : '▸'}
+          </span>
+          <span
+            style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+          >
             共有フォルダ
           </span>
         </div>
@@ -164,13 +202,27 @@ export function Inspector({
   )
 }
 
-function Block({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function Block({
+  title,
+  children
+}: {
+  title: string
+  children: React.ReactNode
+}): React.JSX.Element {
   return (
-    <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
-      display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>{title}</span>
+    <div
+      style={{
+        padding: '16px 16px',
+        borderBottom: `1px solid ${C.line}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8
+      }}
+    >
+      <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>
+        {title}
+      </span>
       {children}
     </div>
   )
 }
-

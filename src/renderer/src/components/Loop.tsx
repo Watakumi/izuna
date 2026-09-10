@@ -42,11 +42,15 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
           </Faint>
           <label style={{ display: 'flex', alignItems: 'center', gap: S.md, fontSize: F.body }}>
             上限
-            <NumberInput value={max} min={1} max={100} onChange={setMax} disabled={busy} />
-            回
+            <NumberInput value={max} min={1} max={100} onChange={setMax} disabled={busy} />回
           </label>
-          <Button kind="primary" disabled={busy || panel.ended}
-            onClick={() => void act(() => window.izuna.startLoop({ id: panel.id, maxIterations: max }))}>
+          <Button
+            kind="primary"
+            disabled={busy || panel.ended}
+            onClick={() =>
+              void act(() => window.izuna.startLoop({ id: panel.id, maxIterations: max }))
+            }
+          >
             {busy ? '始めています…' : '回す'}
           </Button>
         </>
@@ -54,30 +58,52 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
 
       {loop && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: S.md }}>
-          <Meter label={`反復 ${loop.iteration} / ${max}`} value={Math.min(loop.iteration / max, 1)} />
+          <Meter
+            label={`反復 ${loop.iteration} / ${max}`}
+            value={Math.min(loop.iteration / max, 1)}
+          />
           <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>
             {loop.progress.phase === 'planning' ? '計画' : '実装'}
           </span>
           {loop.progress.learnings.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
-              <span style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}>
+              <span
+                style={{
+                  fontSize: F.small,
+                  color: C.dim2,
+                  letterSpacing: '0.08em',
+                  fontWeight: 600
+                }}
+              >
                 分かったこと
               </span>
               {loop.progress.learnings.slice(-4).map((l) => (
-                <span key={l.iteration} style={{ fontSize: F.small, color: C.dim, lineHeight: 1.6 }}>
+                <span
+                  key={l.iteration}
+                  style={{ fontSize: F.small, color: C.dim, lineHeight: 1.6 }}
+                >
                   {l.iteration}. {l.summary}
                 </span>
               ))}
             </div>
           )}
           {loop.progress.blockers.length > 0 && (
-            <div style={{
-              border: `1px solid ${C.amberLine}`, background: C.amberBg,
-              borderRadius: R.md, padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.xs
-            }}>
+            <div
+              style={{
+                border: `1px solid ${C.amberLine}`,
+                background: C.amberBg,
+                borderRadius: R.md,
+                padding: S.lg,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: S.xs
+              }}
+            >
               <span style={{ fontSize: F.small, color: C.amber }}>進めない理由</span>
               {loop.progress.blockers.map((b, i) => (
-                <span key={i} style={{ fontSize: F.body, color: C.ink2 }}>{b}</span>
+                <span key={i} style={{ fontSize: F.body, color: C.ink2 }}>
+                  {b}
+                </span>
               ))}
             </div>
           )}
@@ -88,8 +114,11 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
       )}
 
       {running && (
-        <Button kind="danger" disabled={busy}
-          onClick={() => void act(() => window.izuna.stopLoop(panel.id))}>
+        <Button
+          kind="danger"
+          disabled={busy}
+          onClick={() => void act(() => window.izuna.stopLoop(panel.id))}
+        >
           止める
         </Button>
       )}
@@ -119,8 +148,12 @@ function Wakeups({ panel }: { panel: Panel }): React.JSX.Element {
   const [now, setNow] = useState(0)
 
   const load = useCallback((): void => {
-    void window.izuna.listWakeups()
-      .then((all) => { setNow(Date.now()); setList(all.filter((w) => w.sessionId === panel.id)) })
+    void window.izuna
+      .listWakeups()
+      .then((all) => {
+        setNow(Date.now())
+        setList(all.filter((w) => w.sessionId === panel.id))
+      })
       .catch(() => setList([]))
   }, [panel.id])
   // 起きたら一覧も変わる。会話に知らせが足されたときに読み直す
@@ -140,45 +173,100 @@ function Wakeups({ panel }: { panel: Panel }): React.JSX.Element {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: S.md, borderTop: `1px solid ${C.line}`, paddingTop: S.lg }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: S.md,
+        borderTop: `1px solid ${C.line}`,
+        paddingTop: S.lg
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}>時刻を決めて送る</span>
+        <span
+          style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}
+        >
+          時刻を決めて送る
+        </span>
         <Reload onClick={load} busy={busy} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: S.sm, fontSize: F.body }}>
-        <NumberInput value={minutes} min={1} max={60 * 24 * 7} onChange={setMinutes} disabled={busy || panel.ended} />
+        <NumberInput
+          value={minutes}
+          min={1}
+          max={60 * 24 * 7}
+          onChange={setMinutes}
+          disabled={busy || panel.ended}
+        />
         分後に
       </div>
-      <Input placeholder="時刻が来たら送る依頼" value={prompt} disabled={busy || panel.ended}
-        onChange={(e) => setPrompt(e.target.value)} />
-      <Button kind="primary" disabled={busy || panel.ended || prompt.trim() === ''}
-        onClick={() => void act(async () => {
-          await window.izuna.addWakeup({ id: panel.id, minutes, prompt: prompt.trim() })
-          setPrompt('')
-        })}>
+      <Input
+        placeholder="時刻が来たら送る依頼"
+        value={prompt}
+        disabled={busy || panel.ended}
+        onChange={(e) => setPrompt(e.target.value)}
+      />
+      <Button
+        kind="primary"
+        disabled={busy || panel.ended || prompt.trim() === ''}
+        onClick={() =>
+          void act(async () => {
+            await window.izuna.addWakeup({ id: panel.id, minutes, prompt: prompt.trim() })
+            setPrompt('')
+          })
+        }
+      >
         予約する
       </Button>
 
       {list === null && <Faint>読んでいます…</Faint>}
       {list?.length === 0 && <Faint>予約はありません</Faint>}
       {(list ?? []).map((w) => (
-        <div key={w.id} style={{ display: 'flex', flexDirection: 'column', gap: S.xs,
-          padding: `${S.sm}px ${S.md}px`, border: `1px solid ${w.state === 'overdue' ? C.amberLine : C.line}`,
-          borderRadius: R.md }}>
+        <div
+          key={w.id}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: S.xs,
+            padding: `${S.sm}px ${S.md}px`,
+            border: `1px solid ${w.state === 'overdue' ? C.amberLine : C.line}`,
+            borderRadius: R.md
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'baseline', gap: S.md }}>
-            <span style={{ font: `${F.micro}px ${MONO}`, color: w.state === 'overdue' ? C.amber : C.dim2, flexShrink: 0 }}>
-              {WAKEUP_STATE_LABEL[w.state]}{w.state === 'pending' ? ` · ${until(w.fireAt, now)}` : ''}
+            <span
+              style={{
+                font: `${F.micro}px ${MONO}`,
+                color: w.state === 'overdue' ? C.amber : C.dim2,
+                flexShrink: 0
+              }}
+            >
+              {WAKEUP_STATE_LABEL[w.state]}
+              {w.state === 'pending' ? ` · ${until(w.fireAt, now)}` : ''}
             </span>
-            <span style={{ fontSize: F.small, color: C.ink2, flexGrow: 1, ...ellipsis }}>{w.prompt}</span>
+            <span style={{ fontSize: F.small, color: C.ink2, flexGrow: 1, ...ellipsis }}>
+              {w.prompt}
+            </span>
           </div>
           {(w.state === 'pending' || w.state === 'overdue') && (
             <div style={{ display: 'flex', gap: S.sm }}>
               {w.state === 'overdue' && !panel.ended && (
-                <Button size="sm" kind="primary" disabled={busy}
-                  onClick={() => void act(() => window.izuna.fireWakeup(w.id))}>いま送る</Button>
+                <Button
+                  size="sm"
+                  kind="primary"
+                  disabled={busy}
+                  onClick={() => void act(() => window.izuna.fireWakeup(w.id))}
+                >
+                  いま送る
+                </Button>
               )}
-              <Button size="sm" disabled={busy}
-                onClick={() => void act(() => window.izuna.removeWakeup(w.id))}>消す</Button>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => void act(() => window.izuna.removeWakeup(w.id))}
+              >
+                消す
+              </Button>
             </div>
           )}
         </div>

@@ -82,7 +82,11 @@ describe('人間の発話の判定', () => {
 
   it('ツール結果は発話ではない', () => {
     const head = [
-      j({ type: 'user', cwd: '/w', message: { content: [{ type: 'tool_result', content: 'ok' }] } }),
+      j({
+        type: 'user',
+        cwd: '/w',
+        message: { content: [{ type: 'tool_result', content: 'ok' }] }
+      }),
       j({ type: 'user', cwd: '/w', message: { content: '本当の発話' } })
     ]
     expect(summarize(head, [], meta).firstPrompt).toBe('本当の発話')
@@ -90,7 +94,12 @@ describe('人間の発話の判定', () => {
 
   it('CLI が差し込んだ本文を見出しにしない', () => {
     const head = [
-      j({ type: 'user', isMeta: true, cwd: '/w', message: { content: '<local-command-caveat>Caveat…' } }),
+      j({
+        type: 'user',
+        isMeta: true,
+        cwd: '/w',
+        message: { content: '<local-command-caveat>Caveat…' }
+      }),
       j({ type: 'user', cwd: '/w', message: { content: '<command-name>/agents</command-name>' } }),
       j({ type: 'user', cwd: '/w', message: { content: '人の発話' } })
     ]
@@ -101,8 +110,14 @@ describe('人間の発話の判定', () => {
 describe('見出しの落とし方', () => {
   const base: SessionSummary = {
     id: 'abcdef12-0000-0000-0000-000000000000',
-    cwd: '/w', title: null, slug: null, firstPrompt: null,
-    branch: null, cliVersion: null, updatedAt: 0, bytes: 0
+    cwd: '/w',
+    title: null,
+    slug: null,
+    firstPrompt: null,
+    branch: null,
+    cliVersion: null,
+    updatedAt: 0,
+    bytes: 0
   }
 
   it('題名 → 最初の発話 → コードネーム → id の順に落ちる', () => {
@@ -119,8 +134,15 @@ describe('見出しの落とし方', () => {
 
 describe('どのリポジトリのものか', () => {
   const s = (cwd: string): SessionSummary => ({
-    id: 'i', cwd, title: null, slug: null, firstPrompt: null,
-    branch: null, cliVersion: null, updatedAt: 0, bytes: 0
+    id: 'i',
+    cwd,
+    title: null,
+    slug: null,
+    firstPrompt: null,
+    branch: null,
+    cliVersion: null,
+    updatedAt: 0,
+    bytes: 0
   })
 
   it('worktree のセッションも同じリポジトリとして拾う', () => {
@@ -140,8 +162,15 @@ describe('どのリポジトリのものか', () => {
 
 describe('並びと絞り込み', () => {
   const mk = (id: string, updatedAt: number, title: string): SessionSummary => ({
-    id, cwd: '/w', title, slug: null, firstPrompt: null,
-    branch: null, cliVersion: null, updatedAt, bytes: 0
+    id,
+    cwd: '/w',
+    title,
+    slug: null,
+    firstPrompt: null,
+    branch: null,
+    cliVersion: null,
+    updatedAt,
+    bytes: 0
   })
   const list = [mk('b', 1, '設計の見直し'), mk('a', 1, 'padding の検査'), mk('c', 9, '最新')]
 
@@ -172,7 +201,10 @@ describe('会話の復元', () => {
         ]
       }
     }),
-    j({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'ok' }] } })
+    j({
+      type: 'user',
+      message: { content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: 'ok' }] }
+    })
   ]
 
   it('発話と応答が並ぶ', () => {
@@ -194,20 +226,39 @@ describe('会話の復元', () => {
   })
 
   it('実行役の発話をブレインの会話に混ぜない', () => {
-    const withSide = [...lines, j({ type: 'assistant', isSidechain: true, message: { id: 'm2', content: [{ type: 'text', text: '実行役' }] } })]
+    const withSide = [
+      ...lines,
+      j({
+        type: 'assistant',
+        isSidechain: true,
+        message: { id: 'm2', content: [{ type: 'text', text: '実行役' }] }
+      })
+    ]
     expect(replay(withSide).items).toHaveLength(2)
   })
 
   it('**貼った画像は復元でも残る**（何を見せたのかが分からないと返事の意味も分からない）', () => {
     const withImage = [
-      j({ type: 'user', origin: { kind: 'human' }, message: { content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' } },
-        { type: 'text', text: 'この画面のここ' }
-      ] } })
+      j({
+        type: 'user',
+        origin: { kind: 'human' },
+        message: {
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: 'image/png', data: 'iVBORw0KGgo=' }
+            },
+            { type: 'text', text: 'この画面のここ' }
+          ]
+        }
+      })
     ]
     const item = replay(withImage).items[0]
-    expect(item).toMatchObject({ kind: 'user', text: 'この画面のここ',
-      images: [{ mediaType: 'image/png', data: 'iVBORw0KGgo=' }] })
+    expect(item).toMatchObject({
+      kind: 'user',
+      text: 'この画面のここ',
+      images: [{ mediaType: 'image/png', data: 'iVBORw0KGgo=' }]
+    })
   })
 
   it('画像の無い発話には images を付けない（形を増やさない）', () => {
@@ -255,7 +306,11 @@ describe('実行役の記録', () => {
    */
   const lines = [
     j({ type: 'user', isSidechain: true, message: { content: 'この関数を調べて' } }),
-    j({ type: 'assistant', isSidechain: true, message: { id: 'm1', content: [{ type: 'text', text: '調べました' }] } })
+    j({
+      type: 'assistant',
+      isSidechain: true,
+      message: { id: 'm1', content: [{ type: 'text', text: '調べました' }] }
+    })
   ]
 
   it('ファイルそのものを 1 件の実行役として組み立てる', () => {

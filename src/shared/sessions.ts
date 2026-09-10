@@ -1,7 +1,10 @@
 import type { Attachment } from './image'
 import {
-  emptyTranscript, appendUserText, applyMessage,
-  type TaskRun, type Transcript
+  emptyTranscript,
+  appendUserText,
+  applyMessage,
+  type TaskRun,
+  type Transcript
 } from './transcript'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
@@ -76,7 +79,9 @@ const isHuman = (e: RawEntry): boolean => {
   if (e.type !== 'user' || e.isMeta) return false
   const c = e.message?.content
   if (!Array.isArray(c)) return true // 文字列そのままは常に発話
-  return !c.some((b) => typeof b === 'object' && b !== null && (b as { type?: string }).type === 'tool_result')
+  return !c.some(
+    (b) => typeof b === 'object' && b !== null && (b as { type?: string }).type === 'tool_result'
+  )
 }
 
 /** 貼った画像。**復元でも残す** —— 何を見せたのかが分からないと、返事の意味も分からない */
@@ -84,7 +89,10 @@ const imagesOf = (content: unknown): Attachment[] => {
   if (!Array.isArray(content)) return []
   const out: Attachment[] = []
   for (const b of content) {
-    const src = (b as { type?: string; source?: { type?: string; media_type?: string; data?: string } })
+    const src = b as {
+      type?: string
+      source?: { type?: string; media_type?: string; data?: string }
+    }
     if (src?.type !== 'image' || src.source?.type !== 'base64') continue
     if (typeof src.source.media_type !== 'string' || typeof src.source.data !== 'string') continue
     out.push({ mediaType: src.source.media_type, data: src.source.data, name: '' })
@@ -96,8 +104,10 @@ const textOf = (content: unknown): string | null => {
   if (typeof content === 'string') return content
   if (!Array.isArray(content)) return null
   const parts = content
-    .filter((b): b is { type: string; text: string } =>
-      typeof b === 'object' && b !== null && (b as { type?: string }).type === 'text')
+    .filter(
+      (b): b is { type: string; text: string } =>
+        typeof b === 'object' && b !== null && (b as { type?: string }).type === 'text'
+    )
     .map((b) => b.text)
   return parts.length > 0 ? parts.join('\n') : null
 }
@@ -162,7 +172,9 @@ const isInjected = (text: string): boolean => /^\s*<(local-command-|command-name
 /** 一覧の見出し。題名 → 最初の発話 → コードネーム → id の順に落ちる */
 export function labelOf(s: SessionSummary): string {
   const first = s.firstPrompt?.replace(/\s+/g, ' ').trim()
-  return s.title ?? (first && first.length > 0 ? first.slice(0, 60) : null) ?? s.slug ?? s.id.slice(0, 8)
+  return (
+    s.title ?? (first && first.length > 0 ? first.slice(0, 60) : null) ?? s.slug ?? s.id.slice(0, 8)
+  )
 }
 
 /**
@@ -187,9 +199,7 @@ export function filterSessions(list: SessionSummary[], query: string): SessionSu
   const q = query.trim().toLowerCase()
   if (!q) return [...list].sort(byNewest)
   return list
-    .filter((s) =>
-      [s.title, s.firstPrompt, s.slug, s.id].some((v) => v?.toLowerCase().includes(q))
-    )
+    .filter((s) => [s.title, s.firstPrompt, s.slug, s.id].some((v) => v?.toLowerCase().includes(q)))
     .sort(byNewest)
 }
 
@@ -282,7 +292,12 @@ export function replay(lines: string[], includeSidechain = false): Transcript {
     // **実行役の記録は全行が sidechain。** そのファイルを読むときは飛ばさない
     if (!e || (e.isSidechain && !includeSidechain)) continue
     if (isHuman(e)) {
-      t = appendUserText(t, textOf(e.message?.content) ?? '', `replay-${n++}`, imagesOf(e.message?.content))
+      t = appendUserText(
+        t,
+        textOf(e.message?.content) ?? '',
+        `replay-${n++}`,
+        imagesOf(e.message?.content)
+      )
       continue
     }
     if (e.type === 'user' || e.type === 'assistant') {

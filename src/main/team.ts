@@ -3,9 +3,21 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { slugifyBranch } from '../shared/worktree'
 import {
-  formatLogEntry, parseBrief, parseDecisions, parseLog, parseSummary, parseTask,
-  pathCollisions, readyTasks, serializeTask,
-  type Brief, type Decision, type LogEntry, type Summary, type Task, type TaskStatus
+  formatLogEntry,
+  parseBrief,
+  parseDecisions,
+  parseLog,
+  parseSummary,
+  parseTask,
+  pathCollisions,
+  readyTasks,
+  serializeTask,
+  type Brief,
+  type Decision,
+  type LogEntry,
+  type Summary,
+  type Task,
+  type TaskStatus
 } from '../shared/team'
 
 /**
@@ -47,15 +59,21 @@ export async function ensureTeam(name: string, brief?: string): Promise<string> 
     if (!(await exists(path))) await writeFile(path, body, 'utf8')
   }
 
-  await seed('brief.md',
+  await seed(
+    'brief.md',
     `---\ncreated: ${new Date().toISOString()}\n---\n\n# ${name}\n\n` +
-    `## 狙い\n\n${brief?.trim() || '（ブレインが埋める）'}\n\n` +
-    '## 制約\n\n## 受け入れ条件\n\n## 触らない範囲\n')
-  await seed('decisions.md',
-    '# 決めたこと\n\n追記のみ。書き換えない。見出しの形は変えない（Izuna が読む）。\n')
-  await seed('log.md',
+      `## 狙い\n\n${brief?.trim() || '（ブレインが埋める）'}\n\n` +
+      '## 制約\n\n## 受け入れ条件\n\n## 触らない範囲\n'
+  )
+  await seed(
+    'decisions.md',
+    '# 決めたこと\n\n追記のみ。書き換えない。見出しの形は変えない（Izuna が読む）。\n'
+  )
+  await seed(
+    'log.md',
     '# 記録\n\nIzuna が書く。エージェントは書かない。追記のみ。1 行 1 件。\n' +
-    '`<ISO8601>\\t<from>→<to>\\t<種別>\\t<対象>\\t<一言>`\n')
+      '`<ISO8601>\\t<from>→<to>\\t<種別>\\t<対象>\\t<一言>`\n'
+  )
 
   return dir
 }

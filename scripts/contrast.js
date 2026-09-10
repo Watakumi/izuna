@@ -1,11 +1,20 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type -- 型の無い .js/.mjs */
 // 画面に出ている全部の字の、実際のコントラスト比を返す（薄い順）。
 // **面ごとに地の色が違う**ので、トークンの値を見るだけでは分からない。
 // `scripts/shots.ts` から `page.evaluate` に文字列として渡す。
-(() => {
-  const parse = (c) => c.slice(c.indexOf('(') + 1).split(')')[0].split(',').map((v) => parseFloat(v))
+;(() => {
+  const parse = (c) =>
+    c
+      .slice(c.indexOf('(') + 1)
+      .split(')')[0]
+      .split(',')
+      .map((v) => parseFloat(v))
   const lum = (c) => {
     const p = parse(c)
-    const f = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4) }
+    const f = (v) => {
+      const s = v / 255
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+    }
     return 0.2126 * f(p[0]) + 0.7152 * f(p[1]) + 0.0722 * f(p[2])
   }
   const bgOf = (el) => {

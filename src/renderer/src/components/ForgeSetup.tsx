@@ -39,7 +39,12 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   const [message, setMessage] = useState<{ text: string; bad: boolean } | null>(null)
   const [cfg, setCfg] = useState<{ path: string; ignored: string[]; exists: boolean } | null>(null)
 
-  useEffect(() => { void window.izuna.configInfo().then(setCfg).catch(() => undefined) }, [])
+  useEffect(() => {
+    void window.izuna
+      .configInfo()
+      .then(setCfg)
+      .catch(() => undefined)
+  }, [])
 
   const refresh = useCallback(async () => {
     const [facts, cl] = await Promise.all([
@@ -51,7 +56,11 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
     setClaude(cl ? diagnoseClaude(cl) : null)
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    // 取ってきてから setState する（await の後）。同期の setState ではない
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh()
+  }, [refresh])
 
   const fix = async (check: Check): Promise<void> => {
     const id = FIX_OF[check.id]
@@ -68,7 +77,8 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
     }
   }
 
-  const ready = (checks ? readyForForge(checks) : false) && (claude ? readyForClaude(claude) : false)
+  const ready =
+    (checks ? readyForForge(checks) : false) && (claude ? readyForClaude(claude) : false)
 
   const paste = async (): Promise<void> => {
     setBusy('token')
@@ -88,12 +98,25 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   const row = (c: Check): React.JSX.Element => {
     const m = MARK[c.level]
     return (
-      <div key={c.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12,
-        padding: '12px 12px', borderRadius: 7, border: `1px solid ${C.line}` }}>
-        <span style={{ color: m.color, font: `${F.base}px ${MONO}`, width: 12, flexShrink: 0 }}>{m.icon}</span>
+      <div
+        key={c.id}
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+          padding: '12px 12px',
+          borderRadius: 7,
+          border: `1px solid ${C.line}`
+        }}
+      >
+        <span style={{ color: m.color, font: `${F.base}px ${MONO}`, width: 12, flexShrink: 0 }}>
+          {m.icon}
+        </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
           <span style={{ fontSize: F.body }}>{c.label}</span>
-          <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>{c.detail}</span>
+          <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, wordBreak: 'break-all' }}>
+            {c.detail}
+          </span>
           {c.fix?.warning && (
             <span style={{ fontSize: F.small, color: C.faint }}>{c.fix.warning}</span>
           )}
@@ -108,39 +131,92 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
   }
 
   return (
-    <div onClick={onClose} style={{
-      position: 'fixed', inset: 0, background: 'rgba(8,9,12,0.62)', zIndex: 40,
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: 64
-    }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
-        width: 660, background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 11,
-        boxShadow: '0 28px 80px rgba(0,0,0,0.62)', display: 'flex', flexDirection: 'column'
-      }}>
-        <div style={{ padding: '16px 16px', borderBottom: `1px solid ${C.line}`,
-          display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(8,9,12,0.62)',
+        zIndex: 40,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        paddingTop: 64
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 660,
+          background: C.surface,
+          border: `1px solid ${C.line2}`,
+          borderRadius: 11,
+          boxShadow: '0 28px 80px rgba(0,0,0,0.62)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div
+          style={{
+            padding: '16px 16px',
+            borderBottom: `1px solid ${C.line}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
+          }}
+        >
           <span style={{ fontWeight: 600 }}>準備</span>
-          <span style={{ fontSize: F.small, color: C.dim2 }}>調べるだけ。変えるのは押したときだけ</span>
+          <span style={{ fontSize: F.small, color: C.dim2 }}>
+            調べるだけ。変えるのは押したときだけ
+          </span>
           <div style={{ flexGrow: 1 }} />
           <Reload onClick={() => void refresh()} />
         </div>
 
         <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {!checks && <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>}
+          {!checks && (
+            <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>
+          )}
           {claude && (
             <>
-              <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>Claude Code</span>
+              <span
+                style={{
+                  fontSize: F.small,
+                  letterSpacing: '0.08em',
+                  color: C.dim2,
+                  fontWeight: 600
+                }}
+              >
+                Claude Code
+              </span>
               {claude.map(row)}
             </>
           )}
-          {checks && <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>Forgejo</span>}
+          {checks && (
+            <span
+              style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+            >
+              Forgejo
+            </span>
+          )}
           {checks?.map(row)}
 
           {/* 手元に forgejo が無ければ発行できない。人が Forgejo で作ったボットのトークンを貼る（docs/SETUP.md） */}
           {remote && checks?.some((c) => c.id === 'token' && c.level !== 'ok') && (
             <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
-              <Input value={pasted} placeholder="izuna のトークンを貼る" type="password"
-                onChange={(e) => setPasted(e.target.value)} style={{ flexGrow: 1 }} />
-              <Button kind="primary" size="sm" disabled={busy !== null || !pasted.trim()} onClick={() => void paste()}>
+              <Input
+                value={pasted}
+                placeholder="izuna のトークンを貼る"
+                type="password"
+                onChange={(e) => setPasted(e.target.value)}
+                style={{ flexGrow: 1 }}
+              />
+              <Button
+                kind="primary"
+                size="sm"
+                disabled={busy !== null || !pasted.trim()}
+                onClick={() => void paste()}
+              >
                 {busy === 'token' ? '確かめています…' : '保管する'}
               </Button>
             </div>
@@ -149,23 +225,53 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           <Tokens />
 
           {message && (
-            <div style={{ border: `1px solid ${message.bad ? C.red : C.line2}`, borderRadius: 7,
-              padding: '12px 12px', fontSize: F.body, color: message.bad ? C.red : C.ink2,
-              whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{message.text}</div>
+            <div
+              style={{
+                border: `1px solid ${message.bad ? C.red : C.line2}`,
+                borderRadius: 7,
+                padding: '12px 12px',
+                fontSize: F.body,
+                color: message.bad ? C.red : C.ink2,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all'
+              }}
+            >
+              {message.text}
+            </div>
           )}
         </div>
 
         {cfg && (
-          <div style={{ padding: '12px 16px', borderTop: `1px solid ${C.line}`,
-            display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div
+            style={{
+              padding: '12px 16px',
+              borderTop: `1px solid ${C.line}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}>設定</span>
+              <span
+                style={{
+                  fontSize: F.small,
+                  letterSpacing: '0.08em',
+                  color: C.dim2,
+                  fontWeight: 600
+                }}
+              >
+                設定
+              </span>
               <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{cfg.path}</span>
-              {!cfg.exists && <span style={{ fontSize: F.micro, color: C.faint }}>（未作成・既定で動いています）</span>}
+              {!cfg.exists && (
+                <span style={{ fontSize: F.micro, color: C.faint }}>
+                  （未作成・既定で動いています）
+                </span>
+              )}
             </div>
             <span style={{ fontSize: F.small, color: C.faint, lineHeight: 1.6 }}>
-              Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。
-              Docker で動かしているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
+              Forgejo の場所・リポジトリの探索先・remote 名をここで変えられます。 Docker
+              で動かしているなら forgejoWorkPaths を空にして forgejoUrl を書きます。
             </span>
             {cfg.ignored.length > 0 && (
               <span style={{ fontSize: F.small, color: C.amber }}>
@@ -175,13 +281,20 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px',
-          borderTop: `1px solid ${C.line}` }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '12px 16px',
+            borderTop: `1px solid ${C.line}`
+          }}
+        >
           <span style={{ fontSize: F.body, color: ready ? C.teal : C.dim2 }}>
             {ready ? '準備できています' : '必須の項目が残っています（任意の項目は数えません）'}
           </span>
           <div style={{ flexGrow: 1 }} />
-          <Button onClick={onClose} >閉じる</Button>
+          <Button onClick={onClose}>閉じる</Button>
         </div>
       </div>
     </div>
@@ -200,36 +313,63 @@ export function ForgeSetup({ onClose }: { onClose: () => void }): React.JSX.Elem
  */
 function Tokens(): React.JSX.Element | null {
   const [data, setData] = useState<{
-    tokens: ForgejoToken[]; mineLast8: string | null; settingsUrl: string
+    tokens: ForgejoToken[]
+    mineLast8: string | null
+    settingsUrl: string
   } | null>(null)
   const [open, setOpen] = useState(false)
 
-  useEffect(() => { void window.izuna.forgeTokens().then(setData).catch(() => setData(null)) }, [])
+  useEffect(() => {
+    void window.izuna
+      .forgeTokens()
+      .then(setData)
+      .catch(() => setData(null))
+  }, [])
   if (!data || data.tokens.length === 0) return null
 
   const stale = data.tokens.filter((t) => !t.last8 || !data.mineLast8 || t.last8 !== data.mineLast8)
 
   return (
     <div style={{ border: `1px solid ${C.line}`, borderRadius: R.md, overflow: 'hidden' }}>
-      <div onClick={() => setOpen((v) => !v)}
-        style={{ display: 'flex', alignItems: 'center', gap: S.md, padding: `${S.lg}px ${S.lg}px`,
-          cursor: 'pointer' }}>
-        <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>{open ? '▾' : '▸'}</span>
+      <div
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: S.md,
+          padding: `${S.lg}px ${S.lg}px`,
+          cursor: 'pointer'
+        }}
+      >
+        <span style={{ font: `${F.small}px ${MONO}`, color: C.faint, width: 9 }}>
+          {open ? '▾' : '▸'}
+        </span>
         <span style={{ fontSize: F.body }}>トークン {data.tokens.length} 件</span>
         {stale.length > 0 && (
-          <span style={{ fontSize: F.small, color: C.dim2 }}>使っていないもの {stale.length} 件</span>
+          <span style={{ fontSize: F.small, color: C.dim2 }}>
+            使っていないもの {stale.length} 件
+          </span>
         )}
       </div>
 
       {open && (
-        <div style={{ borderTop: `1px solid ${C.line}`, padding: S.lg,
-          display: 'flex', flexDirection: 'column', gap: S.md }}>
+        <div
+          style={{
+            borderTop: `1px solid ${C.line}`,
+            padding: S.lg,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: S.md
+          }}
+        >
           {data.tokens.map((t) => {
             const mine = data.mineLast8 !== null && t.last8 === data.mineLast8
             return (
               // **記号に説明を付けない。** 読めば分かる札を行に置く
               <div key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: S.md }}>
-                <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>{t.name}</span>
+                <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2, ...ellipsis }}>
+                  {t.name}
+                </span>
                 {mine && <Tag>使用中</Tag>}
                 <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
                   …{t.last8}
@@ -241,8 +381,12 @@ function Tokens(): React.JSX.Element | null {
               </div>
             )
           })}
-          <a href={data.settingsUrl} target="_blank" rel="noreferrer"
-            style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}>
+          <a
+            href={data.settingsUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: F.small, color: C.teal, textDecoration: 'none' }}
+          >
             Forgejo で消す
           </a>
         </div>

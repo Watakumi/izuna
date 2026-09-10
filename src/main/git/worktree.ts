@@ -13,7 +13,6 @@ import { run } from '../exec'
 // git の言い分はそのまま人に見せる（`main/exec.ts`）。握りつぶすと原因が分からなくなる
 const git = (cwd: string, args: string[]): Promise<string> => run('git', args, { cwd })
 
-
 /** cwd を含むリポジトリの本体。worktree の中から呼んでも本体を返す */
 export async function repoRoot(cwd: string): Promise<string> {
   let common: string
@@ -22,7 +21,9 @@ export async function repoRoot(cwd: string): Promise<string> {
   } catch (err) {
     // git の生の文言（fatal: not a git repository...）は何をすべきか言わない
     if (/not a git repository/i.test(String(err))) {
-      throw new Error(`${cwd} は git リポジトリではありません。リポジトリのパスを入れるか、worktree を使わずに起こしてください`)
+      throw new Error(
+        `${cwd} は git リポジトリではありません。リポジトリのパスを入れるか、worktree を使わずに起こしてください`
+      )
     }
     throw err
   }
@@ -90,7 +91,8 @@ export async function removeWorktree(cwd: string, path: string, force = false): 
   if (problem) throw new Error(problem)
 
   // 主のいないロックは外してから消す。git は locked のままでは remove を拒む
-  if (target.locked !== null && target.lockStale) await git(root, ['worktree', 'unlock', target.path])
+  if (target.locked !== null && target.lockStale)
+    await git(root, ['worktree', 'unlock', target.path])
   await git(root, ['worktree', 'remove', ...(force ? ['--force'] : []), target.path])
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { mkdtempSync, writeFileSync, chmodSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, chmodSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -19,7 +19,10 @@ let dir: string
 vi.mock('../src/main/config', () => ({ resolved: async () => ({ claudePath: configured }) }))
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
-    const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
+    const cb = all[all.length - 1] as (
+      e: Error | null,
+      r?: { stdout: string; stderr: string }
+    ) => void
     runs.push([all[0] as string, ...((all[1] as string[]) ?? [])])
     const next = out.shift()
     if (next instanceof Error) cb(next)
@@ -89,7 +92,9 @@ describe('claude を探す', () => {
     out = [new Error('無い')]
     vi.doMock('node:fs/promises', async (orig) => ({
       ...(await orig<typeof import('node:fs/promises')>()),
-      access: async () => { throw new Error('無い') }
+      access: async () => {
+        throw new Error('無い')
+      }
     }))
     vi.resetModules()
     const { locateClaude } = await import('../src/main/claude/locate')

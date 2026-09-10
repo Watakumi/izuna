@@ -23,12 +23,12 @@ const run = (o: Partial<ForgejoRun>): ForgejoRun => ({
 /** sandbox の PR に付ける CI の札。読むだけ */
 describe('CI の札', () => {
   it('読み終わるまでは断定しない', () => {
-    render(<CiBadge runs={null} ref="feat/x" />)
+    render(<CiBadge runs={null} branch="feat/x" />)
     expect(screen.getByText('CI …')).toBeTruthy()
   })
 
   it('1 本も無ければ「CI 無し」で、リンクにしない', () => {
-    const { container } = render(<CiBadge runs={[]} ref="feat/x" />)
+    const { container } = render(<CiBadge runs={[]} branch="feat/x" />)
     expect(screen.getByText('CI 無し')).toBeTruthy()
     expect(container.querySelector('a')).toBeNull()
   })
@@ -40,7 +40,7 @@ describe('CI の札', () => {
           run({ id: 1, status: 'failure' }),
           run({ id: 2, status: 'success', htmlUrl: 'http://forge/r/actions/runs/2' })
         ]}
-        ref="feat/x"
+        branch="feat/x"
       />
     )
     expect(screen.getByText('CI 緑')).toBeTruthy()
@@ -51,7 +51,7 @@ describe('CI の札', () => {
   })
 
   it('別のブランチの実行は見ない', () => {
-    render(<CiBadge runs={[run({ ref: 'refs/heads/main', status: 'failure' })]} ref="feat/x" />)
+    render(<CiBadge runs={[run({ ref: 'refs/heads/main', status: 'failure' })]} branch="feat/x" />)
     expect(screen.getByText('CI 無し')).toBeTruthy()
   })
 })

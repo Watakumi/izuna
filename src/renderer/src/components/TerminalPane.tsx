@@ -19,7 +19,13 @@ import { F, C, MONO, ellipsis, resolve, resolveMono } from '../theme'
 let ready: Promise<void> | null = null
 const ensureReady = (): Promise<void> => (ready ??= init())
 
-export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => void }): React.JSX.Element {
+export function TerminalPane({
+  cwd,
+  onClose
+}: {
+  cwd: string
+  onClose: () => void
+}): React.JSX.Element {
   const host = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [exited, setExited] = useState<number | null>(null)
@@ -73,7 +79,9 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
         })
 
         // 画面 → PTY
-        term.onData((data) => { if (ptyId) void window.izuna.writeTerminal(ptyId, data) })
+        term.onData((data) => {
+          if (ptyId) void window.izuna.writeTerminal(ptyId, data)
+        })
 
         observer = new ResizeObserver(() => {
           if (!term || !fit || !ptyId) return
@@ -99,26 +107,55 @@ export function TerminalPane({ cwd, onClose }: { cwd: string; onClose: () => voi
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: C.code }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-        borderBottom: `1px solid ${C.line}`, background: C.panel, flexShrink: 0 }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.dim2}
-          strokeWidth="2" strokeLinecap="round"><path d="M4 17l6-6-6-6M12 19h8" /></svg>
-        <span style={{ fontSize: F.small, letterSpacing: '0.06em', color: C.dim2, fontWeight: 600 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 16px',
+          borderBottom: `1px solid ${C.line}`,
+          background: C.panel,
+          flexShrink: 0
+        }}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={C.dim2}
+          strokeWidth="2"
+          strokeLinecap="round"
+        >
+          <path d="M4 17l6-6-6-6M12 19h8" />
+        </svg>
+        <span
+          style={{ fontSize: F.small, letterSpacing: '0.06em', color: C.dim2, fontWeight: 600 }}
+        >
           ターミナル
         </span>
-        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexGrow: 1, ...ellipsis }}>{cwd}</span>
+        <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexGrow: 1, ...ellipsis }}>
+          {cwd}
+        </span>
         {exited !== null && (
           <span style={{ fontSize: F.micro, color: exited === 0 ? C.dim2 : C.red }}>
             終了 ({exited})
           </span>
         )}
         <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>ghostty-web</span>
-        <span onClick={onClose} title="閉じる"
-          style={{ color: C.faint, fontSize: F.title, lineHeight: 1, cursor: 'pointer' }}>×</span>
+        <span
+          onClick={onClose}
+          title="閉じる"
+          style={{ color: C.faint, fontSize: F.title, lineHeight: 1, cursor: 'pointer' }}
+        >
+          ×
+        </span>
       </div>
 
       {error ? (
-        <div style={{ padding: '16px 16px', fontSize: F.body, color: C.red, lineHeight: 1.7 }}>{error}</div>
+        <div style={{ padding: '16px 16px', fontSize: F.body, color: C.red, lineHeight: 1.7 }}>
+          {error}
+        </div>
       ) : (
         <div ref={host} style={{ flexGrow: 1, minHeight: 0, padding: 6 }} />
       )}
