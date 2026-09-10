@@ -19,6 +19,7 @@ export default defineConfig({
       include: ['src/shared/**/*.ts', 'src/main/**/*.ts', 'src/renderer/src/components/**/*.tsx'],
       exclude: [
         'src/main/index.ts', // Electron の起動そのもの
+        'src/renderer/src/components/TerminalPane.tsx', // ghostty-web の WASM。jsdom では起こせない。pnpm shots が見る（§28）
         'src/main/ipc/register.ts', // 口を関数に繋ぐ表だけ。判断は main/hub.ts にあり、そちらを数える
         'src/main/**/*.d.ts'
       ],
@@ -38,9 +39,28 @@ export default defineConfig({
        * 画面全体を持つ部品も描いたので床を上げた（行 88.5、分岐 85.4 を測って、
        * 行 86、分岐 83）。残る 0 は TerminalPane（WASM を jsdom で起こせない。§28）。
        */
+      /**
+       * **ファイルごとの床（`perFile`）も引く。** 範囲の合計だけだと、1 ファイルが落ちても
+       * 合計が上回っていれば通る —— `main/forge/setup.ts` の分岐が 78% でも門は緑だった
+       * （2026-09-11、利用者の指摘）。合計の線は範囲の平均で、床は**一番低いファイルの実測**から。
+       * 床を下回ったファイルが名指しで出る。
+       */
       thresholds: {
-        'src/{shared,main}/**': { statements: 95, functions: 97, lines: 97, branches: 84 },
-        'src/renderer/src/components/**': { statements: 84, functions: 82, lines: 86, branches: 83 }
+        'src/{shared,main}/**': {
+          statements: 95,
+          functions: 97,
+          lines: 97,
+          branches: 84,
+          perFile: { lines: 85, functions: 70, branches: 70 }
+        },
+        'src/renderer/src/components/**': {
+          // TerminalPane を数えなくなった分だけ上がった（2026-09-11 に測って 行 94.1 / 分岐 88.8）
+          statements: 90,
+          functions: 85,
+          lines: 92,
+          branches: 86,
+          perFile: { lines: 70, functions: 60, branches: 60 }
+        }
       }
     }
   }

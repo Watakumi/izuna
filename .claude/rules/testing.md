@@ -29,7 +29,21 @@ ANSI の制御列を探す正規表現、型の無い `.js` / `.mjs` の 3 種�
 | | |
 | --- | --- |
 | `shared/` + `main/` | **行 98.0%、分岐 88.0%**（2026-09-08）。線は行 97、分岐 84 |
-| `renderer/src/components/` | **行 88.5%、分岐 85.4%**（2026-09-10）。線は行 86、分岐 83。0 なのは `TerminalPane` だけ（§28） |
+| `renderer/src/components/` | **行 94.1%、分岐 88.8%**（2026-09-11。`TerminalPane` を数えなくなった分だけ上がった）。線は行 92、分岐 86 |
+| **ファイルごとの床** | shared + main は 行 85 / 関数 70 / 分岐 70、renderer は 行 70 / 関数 60 / 分岐 60（2026-09-11） |
+
+### 合計の線だけでは検知できない（2026-09-11）
+
+範囲の合計が上回っていても、1 ファイルが落ちていることがある。`main/forge/setup.ts` の分岐が 78% でも
+門は緑だった（利用者の指摘）。`vitest.config.ts` の `perFile` で**ファイルごとの床**も引いた。
+床は一番低いファイルの実測から決めてあり、下回ったファイルが名指しで出る
+（「Coverage for lines (89.4%) does not meet per-file threshold for src/main/git/remote.ts」の形。
+床を 99 にして落ちることを確かめた）。合計の線は範囲の平均、床は最低。両方守る。
+
+床を引くために 2 つ直した。`shared/wait.ts` の `if (timer)` は executor が同期に走るので到達しない枝で、
+消した。`main/claude/status.ts` は `--version` が落ちる・`auth status` が空の枝を検査していなかった。
+`TerminalPane` は ghostty-web の WASM を jsdom で起こせないので `include` から外した（`pnpm shots` が見る）。
+0 のまま数えると renderer の床が引けない。
 
 **数えるのは検査できるものだけ**（`vitest.config.ts` の `include`）。
 Electron の起動（`index.ts`）と口の表（`ipc/register.ts`）は外す —— 判断は

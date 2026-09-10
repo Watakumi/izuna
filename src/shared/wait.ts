@@ -17,7 +17,8 @@ export async function withTimeout<T>(work: Promise<T>, ms: number, onTimeout: ()
       })
     ])
   } finally {
-    if (timer) clearTimeout(timer)
+    // executor は同期に走るので timer は必ず入っている。分岐にしない（到達しない枝を数えない）
+    clearTimeout(timer)
   }
 }
 
