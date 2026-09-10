@@ -326,3 +326,28 @@ export async function listRuns(
     throw e
   }
 }
+
+/**
+ * PR を閉じる（walk で見つけた穴。2026-09-10）。
+ *
+ * ブランチを消しても Forgejo は PR を閉じないので、古い PR が sandbox の一覧に残り続ける。
+ * `PATCH /repos/{owner}/{repo}/pulls/{index}` に `state: closed`。マージはしない ——
+ * 判断は人が Forgejo でする（§29）。閉じるのは片付けである。
+ */
+export async function closePull(
+  rootUrl: string,
+  owner: string,
+  repo: string,
+  index: number
+): Promise<ForgejoPull> {
+  return toPull(
+    await call<RawPull>(
+      rootUrl,
+      `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls/${index}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ state: 'closed' })
+      }
+    )
+  )
+}

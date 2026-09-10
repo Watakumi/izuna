@@ -739,6 +739,12 @@ Electron の `WebContentsView` を 1 枚、renderer の上に重ねる（`main/p
 （2026-09-09 に実機で見た）。枠に一言出し、その中で一度ログインすれば `persist:preview` に残る。
 トークンを Cookie に流し込むことはしない —— 人の鍵をアプリが持たない（§26）。
 
+### walk で見つけた穴を塞いだ（2026-09-10）
+
+- **sandbox の PR を閉じる。** ブランチを消しても Forgejo は PR を閉じないので、古い PR が一覧に残っていた
+  （walk の走行ごとに 1 本増えた）。PR の札に「閉じる」（`forgeClosePull`。マージはしない。判断は人が Forgejo で）
+- **PR タブの取り直し。** 同じタブを押し直しても読み直さない（mount で読む）ので、Sandbox の見出しに `Reload`
+
 ### やっていない
 
 - 開発中のアプリ（dev サーバ）を映す。行き先を `localhost` の任意の port に広げる判断が要る

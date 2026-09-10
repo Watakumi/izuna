@@ -5,7 +5,7 @@ import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, upstreamLeaks, type RemoteRef } from '../../../shared/remote'
 import { makeCache } from '../remember'
 import { C, F, MONO, S, ellipsis } from '../theme'
-import { Button, Card, Faint, Result } from './ui'
+import { Button, Card, Faint, Reload, Result } from './ui'
 import { PullDiff } from './PullDiff'
 import { CiBadge } from './CiBadge'
 
@@ -222,6 +222,7 @@ export function Forge({
         title="Sandbox"
         sub={sandbox?.host ?? '未設定'}
         note={pulls === null ? '' : `PR ${pulls.length} 件`}
+        action={<Reload onClick={() => void load()} />}
       />
       <div style={{ padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.md }}>
         {!sandbox ? (
@@ -286,6 +287,19 @@ export function Forge({
                       頁
                     </Button>
                   )}
+                  {/* 片付け。ブランチを消しても Forgejo は PR を閉じないので、ここから閉じる。マージはしない */}
+                  <Button
+                    size="sm"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void act(`close:${p.number}`, async () => {
+                        await window.izuna.forgeClosePull(sandbox.owner!, sandbox.repo!, p.number)
+                        return `sandbox の PR !${p.number} を閉じました`
+                      })
+                    }
+                  >
+                    {busy === `close:${p.number}` ? '閉じています…' : '閉じる'}
+                  </Button>
                 </div>
                 {openPull === p.number && sandbox.owner && sandbox.repo && (
                   <div style={{ marginTop: S.md }}>
@@ -519,12 +533,15 @@ function Head({
   dot,
   title,
   sub,
-  note
+  note,
+  action
 }: {
   dot: string
   title: string
   sub: string
   note: string
+  /** 右端に置くもの（取り直しの釦など） */
+  action?: React.ReactNode
 }): React.JSX.Element {
   return (
     <div
@@ -543,6 +560,7 @@ function Head({
       <span style={{ font: `${F.micro}px ${MONO}`, color: C.dim2, ...ellipsis }}>{sub}</span>
       <div style={{ flexGrow: 1 }} />
       <span style={{ fontSize: F.micro, color: C.faint, flexShrink: 0 }}>{note}</span>
+      {action}
     </div>
   )
 }
