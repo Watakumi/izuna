@@ -124,10 +124,15 @@ Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこ
 
 2026-09-09 の走査結果: gitleaks は 135 コミットで 0 件、osv-scanner は extract-zip の 2 件（既知・直せない）だけ。
 
-### Forgejo を LAN に開いた（2026-09-10）
+### Forgejo を LAN に開き、測って閉じた（2026-09-10）
 
-runner を回すため、作者の Mac の `app.ini` で `HTTP_ADDR` を `0.0.0.0` にした（控えは `app.ini.izuna-backup`）。
-同じネットワークの端末から `:4649` に届く。ROOT_URL は `localhost` のままなので、Izuna がトークンを載せる
-経路（`tokenMayTravel`）は変わらない。runner のコンテナには `docker.sock` を渡している ——
-ホストの Docker を操作できる権限なので、sandbox に置くのは信用できるリポジトリだけ。
+runner を回すために `app.ini` の `HTTP_ADDR` を `0.0.0.0` にした。根拠は `shared/forge.ts` に書いてあった
+「コンテナはホストの 127.0.0.1 に届かない」だが、**それは測っていない前提だった**。同日の夜に測ると、
+macOS の Docker Desktop / OrbStack では `host.docker.internal` がホスト側で中継され、127.0.0.1 に束ねた
+Forgejo に runner からもジョブのコンテナからも届く（docs/ACTIONS.md § 壁 2 の表）。`127.0.0.1` に戻し、
+push したジョブが `success` になるのを見た。開いていた約 1 時間、登録は閉じていて公開リポジトリは無く、
+ファイアウォールは無効だった（ログイン画面と API が LAN に見えていた）。
 
+いまは開いていれば準備画面が警告する（`openToLan`）。開く釦（`openAddr`）は消した。
+runner のコンテナには `docker.sock` を渡している —— ホストの Docker を操作できる権限なので、
+sandbox に置くのは信用できるリポジトリだけ。

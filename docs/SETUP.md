@@ -98,4 +98,4 @@ pnpm verify               # 手元の claude の版が実測と違うと落ち�
 
 ## CI を自宅で回す（任意）
 
-docs/ACTIONS.md。runner は Docker で動かし、`HTTP_ADDR` を LAN に開く判断が要るので、人がやる。
+docs/ACTIONS.md。runner は Docker で動かし、`docker.sock` を渡す判断が要るので、人がやる。`HTTP_ADDR` は 127.0.0.1 のままでよい。

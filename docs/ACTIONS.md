@@ -2,7 +2,8 @@
 
 > 2026-09-10 に作者の Mac で回した。push から 30 秒で `success` になり、Izuna の `forgeRuns` が
 > `running` → `success` を読んだ（`shared/ci.ts` → PR の札の `CiBadge`）。
-> **回すかどうかは人が決める** —— `HTTP_ADDR` を LAN に開き、`docker.sock` を渡す判断をアプリが押し切らない。
+> **回すかどうかは人が決める** —— `docker.sock` を渡す判断をアプリが押し切らない。
+> `HTTP_ADDR` は **127.0.0.1 のままでよい**（同日の夜に測り直した。§ 壁 2）。
 > 手順 4 は最初の版が間違っていた（下）。いまの手順は実測で通る。
 
 ---
@@ -41,23 +42,25 @@ forgejo-runner-13.1.0-linux-arm64
 （`brew install forgejo-runner` は失敗する）。
 したがって macOS では **Docker で動かすしかない**。
 
-### 2. Forgejo が loopback でしか待ち受けていない
+### 2. 「loopback だとコンテナから届かない」は macOS では間違い
 
 ```ini
 # /opt/homebrew/var/forgejo/custom/conf/app.ini
 HTTP_ADDR = 127.0.0.1
 ```
 
-**Docker のコンテナはホストの 127.0.0.1 に届かない。**
-このままだと runner は Forgejo に登録すらできない。
+最初の版は「Docker のコンテナはホストの 127.0.0.1 に届かない」と書き、`0.0.0.0` に開かせていた。
+**それは Linux の Docker の話で、macOS では違う。** 2026-09-10 の夜に測り直した:
 
-`HTTP_ADDR = 0.0.0.0` に開く必要があるが、**同じネットワークの他の端末からも
-見えるようになる**。自宅の LAN に他人がいないか、macOS のファイアウォールで
-絞れているかを確かめてからにすること。
+| 待ち受け | LAN のアドレス（192.168.1.x:4649） | runner のコンテナ → `host.docker.internal:4649` | ジョブの `node:24` → 同左 |
+| --- | --- | --- | --- |
+| `0.0.0.0` | 届く | 200 | 200 |
+| **`127.0.0.1`** | **届かない** | **200** | **200** |
 
-Izuna の Forgejo 画面はこれを検査していて、押す前に「他の端末からも見える
-ようになります」と出す。`shared/forge.ts` の `reachableFromContainer()` が
-判定を持ち、`test/forge.test.ts` が門になっている。
+Docker Desktop / OrbStack は `host.docker.internal` をホスト側のプロセスが中継するので、
+127.0.0.1 に束ねたサービスにも届く。127.0.0.1 のまま push したジョブも `success` になった。
+**開く理由が無いので開かない。** 開いていれば Izuna の「Forgejo」画面が警告する
+（`shared/forge.ts` の `openToLan()`。`test/forge.test.ts` が門）。押して開く釦は消した。
 
 ---
 
@@ -76,10 +79,10 @@ ENABLED = true
 brew services restart forgejo
 ```
 
-### 2. 待ち受けを開く
+### 2. 待ち受けは開かない
 
-Izuna の「0.0.0.0 で待ち受ける」。**§ 壁 2 の警告を読んでから押すこと。**
-どちらの書き換えも `app.ini.izuna-backup` に控えを残す。
+`HTTP_ADDR = 127.0.0.1` のままでよい（§ 壁 2）。以前ここにあった「0.0.0.0 で待ち受ける」は消した。
+`actions` の書き換えは `app.ini.izuna-backup` に控えを残す。
 
 ### 3. 登録トークンを出す
 
@@ -114,7 +117,7 @@ docker run -d --name forgejo-runner --restart unless-stopped --user root \
   **これはホストの Docker を完全に操作できる権限**なので、信用できるリポジトリだけを回すこと
 - `--user root` が要る。イメージの既定の利用者（uid 1000）は `docker.sock` に触れず
   「permission denied while trying to connect to the docker API」で落ちる（OrbStack で実測）
-- `host.docker.internal` で OrbStack / Docker Desktop からホストに届く（§ 壁 2 が前提）
+- `host.docker.internal` で OrbStack / Docker Desktop からホストに届く。**127.0.0.1 のままで届く**（§ 壁 2）
 - ラベル `docker` がワークフローの `runs-on: docker` に対応する
 
 ### 5. 確かめる

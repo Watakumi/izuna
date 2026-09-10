@@ -16,7 +16,7 @@ export type CheckId =
   | 'running'
   | 'token'
   | 'actions'
-  | 'reachableFromRunner'
+  | 'lanOpen'
   | 'runner'
   /** Claude Code の関所（`shared/prereq.ts`） */
   | 'claude'
@@ -77,13 +77,15 @@ export interface ForgeConfig {
 }
 
 /**
- * Docker のコンテナから届くアドレスか。
+ * 同じネットワークの他の端末から届く待ち受けか。
  *
- * macOS では runner を Docker で回すしかない（リリースに darwin の
- * バイナリが無く linux-amd64 / linux-arm64 だけ）。コンテナはホストの
- * 127.0.0.1 に届かないので、ここが loopback だと Actions は必ず失敗する。
+ * **runner のために開く必要は無い**（2026-09-10 実測）。以前は「Docker のコンテナはホストの
+ * 127.0.0.1 に届かない」と書いて 0.0.0.0 に開かせていたが、それは Linux の Docker の話で、
+ * macOS の Docker Desktop / OrbStack は `host.docker.internal` をホスト側のプロセスが中継するので、
+ * 127.0.0.1 に束ねた Forgejo にも届く（runner のコンテナからも、ジョブの node:24 からも 200）。
+ * 未設定は Forgejo の既定（0.0.0.0）なので「開いている」と読む。
  */
-export function reachableFromContainer(addr: string | null): boolean {
+export function openToLan(addr: string | null): boolean {
   if (!addr) return true // 未設定なら Forgejo の既定（0.0.0.0）
   return !['127.0.0.1', 'localhost', '::1'].includes(addr.trim())
 }
@@ -130,7 +132,7 @@ export function parseAppIni(text: string): Omit<ForgeConfig, 'path'> {
 /**
  * トークンを載せてよい経路か。**ループバックか、https のときだけ。**
  *
- * `openAddr` で 0.0.0.0 に開いたあと ROOT_URL を LAN のアドレスにすると、
+ * HTTP_ADDR を 0.0.0.0 に開いたうえで ROOT_URL を LAN のアドレスにすると、
  * `fetch` も `git push` もトークンを平文で LAN に流す（§26）。
  * Izuna はその経路にトークンを送らない。
  */
@@ -363,33 +365,31 @@ export function diagnose(facts: ForgeFacts): Check[] {
         }
   )
 
-  if (cfg?.actionsEnabled) {
-    // macOS では runner を Docker で回すしかないので、loopback だと必ず失敗する。
-    // Actions を有効にした人にだけ見せる（無効なら関係ない）
+  // 待ち受けが LAN に開いていないか。runner のために開く必要は無い（`openToLan` の註）ので、
+  // 開いていれば理由を問わず言う。直すのは人（app.ini の HTTP_ADDR を 127.0.0.1 に戻して再起動）。
+  // app.ini が読めない構成（remote）では待ち受けも分からないので出さない
+  if (cfg)
     checks.push(
-      reachableFromContainer(cfg.httpAddr)
+      openToLan(cfg.httpAddr)
         ? {
-            id: 'reachableFromRunner',
-            label: 'runner から Forgejo に届く（任意）',
-            level: 'ok',
-            detail: `HTTP_ADDR = ${cfg.httpAddr ?? '(既定)'}`,
+            id: 'lanOpen',
+            label: '待ち受け（任意）',
+            level: 'warn',
+            detail:
+              `HTTP_ADDR = ${cfg.httpAddr ?? '(既定 = 0.0.0.0)'}。同じネットワークの他の端末から届きます。` +
+              'runner のためなら要りません —— 127.0.0.1 のままでも host.docker.internal で届きます',
             fix: null
           }
         : {
-            id: 'reachableFromRunner',
-            label: 'runner から Forgejo に届く（任意）',
-            level: 'warn',
-            detail:
-              `HTTP_ADDR = ${cfg.httpAddr} は Docker のコンテナから届きません。` +
-              'macOS では runner を Docker で回すため、Actions を使うなら開く必要があります',
-            fix: {
-              label: '0.0.0.0 で待ち受ける',
-              warning:
-                'app.ini を書き換えて再起動します。**同じネットワークの他の端末からも見えるようになります**'
-            }
+            id: 'lanOpen',
+            label: '待ち受け（任意）',
+            level: 'ok',
+            detail: `HTTP_ADDR = ${cfg.httpAddr}。この Mac の中だけ。runner は host.docker.internal で届く`,
+            fix: null
           }
     )
 
+  if (cfg?.actionsEnabled) {
     checks.push(
       (facts.runners ?? 0) > 0
         ? {
