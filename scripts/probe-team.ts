@@ -11,14 +11,7 @@
  *
  * 結果は標準出力と `scripts/probe-team.result.json`（gitignore）に残す。
  */
-import {
-  mkdtempSync,
-  writeFileSync,
-  mkdirSync,
-  existsSync,
-  readFileSync,
-  readdirSync
-} from 'node:fs'
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'

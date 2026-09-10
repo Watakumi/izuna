@@ -84,7 +84,10 @@ export function diffFromToolInput(name: string, rawInput: unknown): FileDiff | n
   if (name === 'Write') {
     const content = str(input.content) ?? ''
     const lines: DiffLine[] = splitLines(content).map((text, i) => ({
-      kind: 'add', text, before: null, after: i + 1
+      kind: 'add',
+      text,
+      before: null,
+      after: i + 1
     }))
     return { path, lines, ...count(lines), whole: true }
   }
@@ -99,9 +102,13 @@ export function diffFromToolInput(name: string, rawInput: unknown): FileDiff | n
   if (name === 'MultiEdit' && Array.isArray(input.edits)) {
     const lines: DiffLine[] = []
     for (const raw of input.edits as Input[]) {
-      const chunk = lcs(splitLines(str(raw.old_string) ?? ''), splitLines(str(raw.new_string) ?? ''))
+      const chunk = lcs(
+        splitLines(str(raw.old_string) ?? ''),
+        splitLines(str(raw.new_string) ?? '')
+      )
       // 塊のあいだに区切りを入れる。連続した 1 つの差分に見せない
-      if (lines.length && chunk.length) lines.push({ kind: 'same', text: '⋯', before: null, after: null })
+      if (lines.length && chunk.length)
+        lines.push({ kind: 'same', text: '⋯', before: null, after: null })
       lines.push(...chunk)
     }
     return { path, lines, ...count(lines), whole: false }
@@ -116,7 +123,12 @@ export function describeToolInput(name: string, rawInput: unknown): string {
   if (d) return `${d.path}  +${d.added} −${d.removed}`
   if (rawInput && typeof rawInput === 'object') {
     const input = rawInput as Input
-    const first = str(input.command) ?? str(input.pattern) ?? str(input.path) ?? str(input.file_path) ?? str(input.url)
+    const first =
+      str(input.command) ??
+      str(input.pattern) ??
+      str(input.path) ??
+      str(input.file_path) ??
+      str(input.url)
     if (first) return first.length > 160 ? first.slice(0, 160) + '…' : first
   }
   return name

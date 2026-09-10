@@ -3,8 +3,13 @@ import { join } from 'node:path'
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import {
-  decide, EMPTY_PROGRESS, iterationPrompt, parseProgress, trimLearnings,
-  type Progress, type Stop
+  decide,
+  EMPTY_PROGRESS,
+  iterationPrompt,
+  parseProgress,
+  trimLearnings,
+  type Progress,
+  type Stop
 } from '../shared/loop'
 import { settle } from '../shared/wait'
 
@@ -33,7 +38,11 @@ export async function writeProgress(teamDir: string, progress: Progress): Promis
   await mkdir(teamDir, { recursive: true })
   const at = join(teamDir, PROGRESS_FILE)
   const tmp = `${at}.tmp`
-  await writeFile(tmp, JSON.stringify({ ...progress, learnings: trimLearnings(progress.learnings) }, null, 2), 'utf8')
+  await writeFile(
+    tmp,
+    JSON.stringify({ ...progress, learnings: trimLearnings(progress.learnings) }, null, 2),
+    'utf8'
+  )
   await rename(tmp, at)
 }
 
@@ -57,13 +66,19 @@ export function progressServer(
         '反復の終わりに、進んだところと分かったことを申告する。次の反復に引き継がれるのはここに書いたものだけ。',
         {
           phase: z.enum(['planning', 'building']).describe('次の反復でやること'),
-          status: z.enum(['running', 'completed', 'blocked']).describe('進めているか、終わったか、詰まったか'),
+          status: z
+            .enum(['running', 'completed', 'blocked'])
+            .describe('進めているか、終わったか、詰まったか'),
           completionSignal: z.boolean().describe('受け入れ条件を全部満たしたときだけ true'),
-          learnings: z.array(z.object({
-            iteration: z.number(),
-            summary: z.string().describe('次の反復が知っておくべきこと'),
-            filesChanged: z.array(z.string())
-          })).describe('これまでの分に今回の分を足したもの。上書きしない'),
+          learnings: z
+            .array(
+              z.object({
+                iteration: z.number(),
+                summary: z.string().describe('次の反復が知っておくべきこと'),
+                filesChanged: z.array(z.string())
+              })
+            )
+            .describe('これまでの分に今回の分を足したもの。上書きしない'),
           blockers: z.array(z.string()).describe('進めない理由。status が blocked のときだけ'),
           currentIteration: z.number()
         },
@@ -81,10 +96,12 @@ export function progressServer(
           await writeProgress(teamDir, next)
           onUpdate?.(next)
           return {
-            content: [{
-              type: 'text',
-              text: `受け取りました（反復 ${next.currentIteration} / ${next.status}）`
-            }]
+            content: [
+              {
+                type: 'text',
+                text: `受け取りました（反復 ${next.currentIteration} / ${next.status}）`
+              }
+            ]
           }
         }
       )
@@ -162,5 +179,10 @@ export function runLoop(options: LoopOptions): RunningLoop {
     }
   })()
 
-  return { stop: () => { stopped = true }, done }
+  return {
+    stop: () => {
+      stopped = true
+    },
+    done
+  }
 }

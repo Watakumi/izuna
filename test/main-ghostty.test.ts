@@ -67,9 +67,9 @@ describe('読み取り', () => {
     write('ghostty/config', 'theme = t\nbackground = #000000\n')
     write('ghostty/themes/t', 'background = #191919\nforeground = #cfcecc\npalette = 9=#ff7369\n')
     const g = await loadGhosttySkin()
-    expect(g?.skin.bg).toBe('#000000')       // 本体が勝つ
-    expect(g?.skin.ink).toBe('#cfcecc')      // テーマが残る
-    expect(g?.skin.red).toMatch(/^#/)        // palette もテーマから
+    expect(g?.skin.bg).toBe('#000000') // 本体が勝つ
+    expect(g?.skin.ink).toBe('#cfcecc') // テーマが残る
+    expect(g?.skin.red).toMatch(/^#/) // palette もテーマから
   })
 
   it('テーマ名が解けなければ、設定ファイルだけで進む', async () => {
@@ -82,11 +82,17 @@ describe('読み取り', () => {
 
 describe('書体と端末', () => {
   it('等幅は利用者の指定が先頭、本文には 2 番目以降だけを借りる', async () => {
-    write('ghostty/config', [
-      'background = #191919', 'foreground = #cfcecc',
-      'font-family = "JetBrainsMono Nerd Font"', 'font-family = "BIZ UDGothic"',
-      'font-size = 15', 'adjust-cell-height = 22%'
-    ].join('\n'))
+    write(
+      'ghostty/config',
+      [
+        'background = #191919',
+        'foreground = #cfcecc',
+        'font-family = "JetBrainsMono Nerd Font"',
+        'font-family = "BIZ UDGothic"',
+        'font-size = 15',
+        'adjust-cell-height = 22%'
+      ].join('\n')
+    )
     const g = await loadGhosttySkin()
     expect(g?.mono[0]).toBe("'JetBrainsMono Nerd Font'")
     expect(g?.reading.fallbacks).toEqual(["'BIZ UDGothic'"])
@@ -95,16 +101,25 @@ describe('書体と端末', () => {
   })
 
   it('端末には 16 色をそのまま渡す（アプリのように混ぜない）', async () => {
-    write('ghostty/config', [
-      'background = #191919', 'foreground = #cfcecc',
-      'cursor-color = #cfcecc', 'selection-background = #2c4763',
-      'palette = 1=#c4554d', 'palette = 15=#ffffff'
-    ].join('\n'))
+    write(
+      'ghostty/config',
+      [
+        'background = #191919',
+        'foreground = #cfcecc',
+        'cursor-color = #cfcecc',
+        'selection-background = #2c4763',
+        'palette = 1=#c4554d',
+        'palette = 15=#ffffff'
+      ].join('\n')
+    )
     const g = await loadGhosttySkin()
     expect(g?.terminal).toMatchObject({
-      background: '#191919', foreground: '#cfcecc',
-      cursor: '#cfcecc', selectionBackground: '#2c4763',
-      red: '#c4554d', brightWhite: '#ffffff'
+      background: '#191919',
+      foreground: '#cfcecc',
+      cursor: '#cfcecc',
+      selectionBackground: '#2c4763',
+      red: '#c4554d',
+      brightWhite: '#ffffff'
     })
   })
 })

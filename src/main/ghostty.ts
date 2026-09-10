@@ -2,8 +2,15 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
-  mergeColors, monoFrom, parseGhosttyConfig, readingFrom, skinFrom, terminalTheme,
-  type GhosttyConfig, type Reading, type Skin
+  mergeColors,
+  monoFrom,
+  parseGhosttyConfig,
+  readingFrom,
+  skinFrom,
+  terminalTheme,
+  type GhosttyConfig,
+  type Reading,
+  type Skin
 } from '../shared/ghostty'
 
 /**

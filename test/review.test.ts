@@ -8,8 +8,12 @@ import { canReview, reviewPrompt, type ReviewContext } from '../src/shared/revie
  * 入れると大きな差分で窓が本文に埋まり、読む余地が無くなる。
  */
 
-const ctx = (over: Partial<ReviewContext> = {}): ReviewContext =>
-  ({ head: 'feat/a', base: 'main', pull: null, ...over })
+const ctx = (over: Partial<ReviewContext> = {}): ReviewContext => ({
+  head: 'feat/a',
+  base: 'main',
+  pull: null,
+  ...over
+})
 
 describe('頼めるかどうか', () => {
   it('比べる先が揃っていれば頼める', () => {

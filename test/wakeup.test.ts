@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { due, next, parseWakeups, reconcile, split, until, WAKEUP_STATE_LABEL, type Wakeup } from '../src/shared/wakeup'
+import {
+  due,
+  next,
+  parseWakeups,
+  reconcile,
+  split,
+  until,
+  WAKEUP_STATE_LABEL,
+  type Wakeup
+} from '../src/shared/wakeup'
 
 const w = (over: Partial<Wakeup> = {}): Wakeup => ({
-  id: 'a', sessionId: 's', cwd: '/w', prompt: '続きを',
-  fireAt: 1_000, state: 'pending', createdAt: 0, ...over
+  id: 'a',
+  sessionId: 's',
+  cwd: '/w',
+  prompt: '続きを',
+  fireAt: 1_000,
+  state: 'pending',
+  createdAt: 0,
+  ...over
 })
 
 describe('過ぎたものの扱い', () => {
@@ -27,7 +42,10 @@ describe('次に起こすもの', () => {
   })
 
   it('**同着は先に作ったほう**（呼ぶたびに順が変わらない）', () => {
-    const list = [w({ id: 'b', fireAt: 2_000, createdAt: 5 }), w({ id: 'a', fireAt: 2_000, createdAt: 1 })]
+    const list = [
+      w({ id: 'b', fireAt: 2_000, createdAt: 5 }),
+      w({ id: 'a', fireAt: 2_000, createdAt: 1 })
+    ]
     expect(next(list, 1_000)?.id).toBe('a')
   })
 
@@ -57,7 +75,15 @@ describe('記録の読み取り', () => {
 })
 
 describe('覚えの有無で分ける', () => {
-  const w = (id: string): Wakeup => ({ id, sessionId: 's', cwd: '/', prompt: 'p', fireAt: 0, state: 'pending', createdAt: 0 })
+  const w = (id: string): Wakeup => ({
+    id,
+    sessionId: 's',
+    cwd: '/',
+    prompt: 'p',
+    fireAt: 0,
+    state: 'pending',
+    createdAt: 0
+  })
   it('知っている id だけ起こす', () => {
     const r = split([w('a'), w('b')], new Set(['a']))
     expect(r.fire.map((x) => x.id)).toEqual(['a'])
@@ -80,6 +106,11 @@ describe('人に見せる待ち時間', () => {
   })
 
   it('4 つの状態に言葉がある', () => {
-    expect(Object.keys(WAKEUP_STATE_LABEL).sort()).toEqual(['fired', 'overdue', 'pending', 'rejected'])
+    expect(Object.keys(WAKEUP_STATE_LABEL).sort()).toEqual([
+      'fired',
+      'overdue',
+      'pending',
+      'rejected'
+    ])
   })
 })

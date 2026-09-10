@@ -1,4 +1,9 @@
-import type { PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
+import type {
+  PermissionMode,
+  PermissionResult,
+  SDKMessage,
+  SlashCommand
+} from '@anthropic-ai/claude-agent-sdk'
 import type { PermissionRequest } from '../main/claude/session'
 import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
@@ -69,7 +74,11 @@ export interface IzunaApi {
   forgePulls(owner: string, repo: string): Promise<ForgejoPull[]>
   /** PR の差分。読むのは main（`shared/patch.ts`）で、renderer には形にしてから渡す */
   forgePullDiff(owner: string, repo: string, index: number): Promise<FileDiff[]>
-  forgeCreatePull(owner: string, repo: string, input: { title: string; head: string; base: string; body?: string }): Promise<ForgejoPull>
+  forgeCreatePull(
+    owner: string,
+    repo: string,
+    input: { title: string; head: string; base: string; body?: string }
+  ): Promise<ForgejoPull>
   /**
    * Actions の実行（GOAL.md 測り方「Izuna がその状態を読める」）。`ref` を渡せばそのブランチだけ。
    * Actions が無効なら空。畳むのは `shared/ci.ts`
@@ -87,7 +96,10 @@ export interface IzunaApi {
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
   ghPulls(cwd: string): Promise<GitHubPull[]>
-  ghCreatePull(cwd: string, input: { title: string; body: string; head: string; base?: string; draft?: boolean }): Promise<string>
+  ghCreatePull(
+    cwd: string,
+    input: { title: string; body: string; head: string; base?: string; draft?: boolean }
+  ): Promise<string>
   /** remote と push */
   remotes(cwd: string): Promise<RemoteRef[]>
   ensureSandboxRemote(cwd: string, owner: string, repo: string): Promise<string>
@@ -183,7 +195,10 @@ export interface IzunaApi {
    * 頁を窓の中に埋めて見る（§32）。Forgejo と GitHub の頁だけ。
    * 置く場所は renderer が測って送る。閉じるまで renderer の上に重なる
    */
-  previewOpen(url: string, bounds: { x: number; y: number; width: number; height: number }): Promise<void>
+  previewOpen(
+    url: string,
+    bounds: { x: number; y: number; width: number; height: number }
+  ): Promise<void>
   previewBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<void>
   previewClose(): Promise<void>
 
@@ -209,9 +224,7 @@ export type SessionEvent =
   | { kind: 'exit'; id: SessionId }
 
 export type TerminalEvent =
-  | { id: string; kind: 'data'; data: string }
-  | { id: string; kind: 'exit'; code: number }
-
+  { id: string; kind: 'data'; data: string } | { id: string; kind: 'exit'; code: number }
 
 /** チャネル名は 1 箇所で決める。文字列を各所に散らさない */
 export const CH = {

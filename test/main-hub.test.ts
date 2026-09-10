@@ -26,15 +26,28 @@ class FakeSession extends EventEmitter {
     super()
     FakeSession.created.push(this)
   }
-  async start(): Promise<void> { if (FakeSession.startFails) throw new Error('起動できません') }
+  async start(): Promise<void> {
+    if (FakeSession.startFails) throw new Error('起動できません')
+  }
   send(text: string, images: unknown[] = [], origin: unknown = { kind: 'human' }): void {
     this.sent.push({ text, images, origin })
   }
-  async slashCommands(): Promise<unknown[]> { this.calls.push('slash'); return [] }
-  async interrupt(): Promise<void> { this.calls.push('interrupt') }
-  async setPermissionMode(m: string): Promise<void> { this.calls.push(`mode:${m}`) }
-  async setModel(m?: string): Promise<void> { this.calls.push(`model:${m}`) }
-  respondToPermission(id: string, result: unknown): void { this.answered.push([id, result]) }
+  async slashCommands(): Promise<unknown[]> {
+    this.calls.push('slash')
+    return []
+  }
+  async interrupt(): Promise<void> {
+    this.calls.push('interrupt')
+  }
+  async setPermissionMode(m: string): Promise<void> {
+    this.calls.push(`mode:${m}`)
+  }
+  async setModel(m?: string): Promise<void> {
+    this.calls.push(`model:${m}`)
+  }
+  respondToPermission(id: string, result: unknown): void {
+    this.answered.push([id, result])
+  }
   stop(): Promise<void> {
     this.calls.push('stop')
     return FakeSession.stopHangs ? new Promise(() => {}) : Promise.resolve()
@@ -61,7 +74,9 @@ vi.mock('../src/main/team', () => ({
     return dir
   },
   teamInstructions: (dir: string) => `共有: ${dir}`,
-  appendLog: async (dir: string, e: { kind: string; note: string }) => { logs.push({ dir, kind: e.kind, note: e.note }) },
+  appendLog: async (dir: string, e: { kind: string; note: string }) => {
+    logs.push({ dir, kind: e.kind, note: e.note })
+  },
   readBoard: async (dir: string) => ({ dir, tasks: [] }),
   setTaskStatus: async (_dir: string, id: string) => id === 'A-01'
 }))
@@ -101,7 +116,13 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true })
 })
 
-const started = async (): Promise<{ hub: import('../src/main/hub').SessionHub; id: string; s: FakeSession; events: SessionEvent[]; wakeups: import('../src/main/wakeup').Wakeups }> => {
+const started = async (): Promise<{
+  hub: import('../src/main/hub').SessionHub
+  id: string
+  s: FakeSession
+  events: SessionEvent[]
+  wakeups: import('../src/main/wakeup').Wakeups
+}> => {
   const { hub, events, wakeups } = await load()
   const id = await hub.start({ cwd: '/w/repo', team: 't1' })
   return { hub, id, s: FakeSession.created[0], events, wakeups }
@@ -144,7 +165,12 @@ describe('起動', () => {
     s.emit('permission', { id: 'p1' })
     s.emit('permissionExpired', 'p1')
     s.emit('error', new Error('壊れた'))
-    expect(events.map((e) => e.kind)).toEqual(['message', 'permission', 'permissionExpired', 'error'])
+    expect(events.map((e) => e.kind)).toEqual([
+      'message',
+      'permission',
+      'permissionExpired',
+      'error'
+    ])
     expect(events.every((e) => e.id === id)).toBe(true)
   })
 
@@ -269,7 +295,9 @@ describe('自律ループ（§23）', () => {
     hub.stopLoop(id)
     s.emit('message', { type: 'result' })
     await tick()
-    expect(events.find((e) => e.kind === 'loopStopped')).toMatchObject({ stop: { reason: 'stopped' } })
+    expect(events.find((e) => e.kind === 'loopStopped')).toMatchObject({
+      stop: { reason: 'stopped' }
+    })
     expect(s.sent).toHaveLength(1)
   })
 
@@ -287,8 +315,10 @@ describe('自律ループ（§23）', () => {
   it('進捗はセッションの共有フォルダから読む。無ければ既定', async () => {
     const { hub, id } = await started()
     expect(await hub.loopProgress(id)).toEqual(EMPTY_PROGRESS)
-    writeFileSync(join(home, 'teams', 't1', 'progress.json'),
-      JSON.stringify({ ...EMPTY_PROGRESS, currentIteration: 3 }))
+    writeFileSync(
+      join(home, 'teams', 't1', 'progress.json'),
+      JSON.stringify({ ...EMPTY_PROGRESS, currentIteration: 3 })
+    )
     expect((await hub.loopProgress(id)).currentIteration).toBe(3)
     expect(await hub.loopProgress('nope')).toEqual(EMPTY_PROGRESS)
   })
@@ -313,7 +343,10 @@ describe('起床の予約', () => {
     const { hub, id, s, events } = await started()
     const w = await hub.addWakeup(id, 30, '続きを')
     await hub.fireWakeup(w.id)
-    expect(s.sent[0]).toMatchObject({ text: '続きを', origin: { kind: 'task-notification', subkind: 'scheduled-trigger' } })
+    expect(s.sent[0]).toMatchObject({
+      text: '続きを',
+      origin: { kind: 'task-notification', subkind: 'scheduled-trigger' }
+    })
     expect(events.at(-1)).toEqual({ kind: 'wokeUp', id, prompt: '続きを' })
   })
 
@@ -358,22 +391,38 @@ describe('実行役の節目（§12）', () => {
   it('SubagentStart / SubagentStop / TeammateIdle / Task の hook を張る。**Worktree は張らない**', async () => {
     const { hub } = await load()
     await hub.start({ cwd: '/w' })
-    expect(Object.keys(hooksOf(FakeSession.created[0])).sort()).toEqual(
-      ['SubagentStart', 'SubagentStop', 'TaskCompleted', 'TaskCreated', 'TeammateIdle']
-    )
+    expect(Object.keys(hooksOf(FakeSession.created[0])).sort()).toEqual([
+      'SubagentStart',
+      'SubagentStop',
+      'TaskCompleted',
+      'TaskCreated',
+      'TeammateIdle'
+    ])
   })
 
   it('鳴ったら log.md に書き、画面に流し、**止めない**（空を返す）', async () => {
     const { hub, events } = await load()
     const id = await hub.start({ cwd: '/w' })
     const stop = hooksOf(FakeSession.created[0]).SubagentStop[0].hooks[0]
-    const out = await stop({ session_id: 's', transcript_path: '/t', cwd: '/w', hook_event_name: 'SubagentStop',
-      stop_hook_active: false, agent_id: 'a9d98cdcaa1a7c6e6', agent_type: 'general-purpose',
-      agent_transcript_path: '/x', last_assistant_message: 'Done.' })
+    const out = await stop({
+      session_id: 's',
+      transcript_path: '/t',
+      cwd: '/w',
+      hook_event_name: 'SubagentStop',
+      stop_hook_active: false,
+      agent_id: 'a9d98cdcaa1a7c6e6',
+      agent_type: 'general-purpose',
+      agent_transcript_path: '/x',
+      last_assistant_message: 'Done.'
+    })
     expect(out).toEqual({})
     expect(logs.at(-1)).toMatchObject({ kind: 'stop', note: 'Done.' })
     const ev = events.find((e) => e.kind === 'teammate')
-    expect(ev).toMatchObject({ kind: 'teammate', id, event: { kind: 'stop', agent: 'a9d98cdcaa1a7c6e6', note: 'Done.' } })
+    expect(ev).toMatchObject({
+      kind: 'teammate',
+      id,
+      event: { kind: 'stop', agent: 'a9d98cdcaa1a7c6e6', note: 'Done.' }
+    })
   })
 
   it('読めない入力は書かず流さず、それでも空を返す', async () => {
@@ -381,7 +430,15 @@ describe('実行役の節目（§12）', () => {
     await hub.start({ cwd: '/w' })
     const before = logs.length
     const h = hooksOf(FakeSession.created[0]).TeammateIdle[0].hooks[0]
-    expect(await h({ session_id: 's', transcript_path: '/t', cwd: '/w', hook_event_name: 'Stop', stop_hook_active: false })).toEqual({})
+    expect(
+      await h({
+        session_id: 's',
+        transcript_path: '/t',
+        cwd: '/w',
+        hook_event_name: 'Stop',
+        stop_hook_active: false
+      })
+    ).toEqual({})
     expect(logs.length).toBe(before)
     expect(events.some((e) => e.kind === 'teammate')).toBe(false)
   })

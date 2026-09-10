@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { basename } from 'node:path'
-import type { HookInput, HookJSONOutput, PermissionMode, PermissionResult, SDKMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
+import type {
+  HookInput,
+  HookJSONOutput,
+  PermissionMode,
+  PermissionResult,
+  SDKMessage,
+  SlashCommand
+} from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../shared/wait'
 import { canDraft, draftPrompt } from '../shared/commit'
 import { canReview, reviewPrompt } from '../shared/review'
@@ -12,7 +19,14 @@ import { TEAMMATE_HOOKS, logEntryOf, teammateEventOf, type TeammateHooks } from 
 import type { SessionEvent, SessionId, StartSessionInput } from '../shared/ipc'
 import { ClaudeSession } from './claude/session'
 import { gateProjectHooks } from './claude/trust'
-import { appendLog, ensureTeam, readBoard, setTaskStatus, teamInstructions, type TeamBoard } from './team'
+import {
+  appendLog,
+  ensureTeam,
+  readBoard,
+  setTaskStatus,
+  teamInstructions,
+  type TeamBoard
+} from './team'
 import { progressServer, readProgress, runLoop, type RunningLoop } from './loop'
 import { Wakeups } from './wakeup'
 import { commitContext, currentBranch } from './git/remote'
@@ -104,11 +118,19 @@ export class SessionHub {
 
     session.on('message', (message) => this.#emit({ kind: 'message', id, message }))
     session.on('permission', (request) => this.#emit({ kind: 'permission', id, request }))
-    session.on('permissionExpired', (requestId) => this.#emit({ kind: 'permissionExpired', id, requestId }))
+    session.on('permissionExpired', (requestId) =>
+      this.#emit({ kind: 'permissionExpired', id, requestId })
+    )
     session.on('error', (err) => this.#emit({ kind: 'error', id, message: err.message }))
     session.on('done', () => {
-      void appendLog(team, { at: new Date().toISOString(), from: 'izuna', to: 'brain',
-        kind: 'end', target: input.cwd, note: '終了' })
+      void appendLog(team, {
+        at: new Date().toISOString(),
+        from: 'izuna',
+        to: 'brain',
+        kind: 'end',
+        target: input.cwd,
+        note: '終了'
+      })
       // ループはセッションと運命を共にする。取り残すと、無いセッションに送り続ける
       this.#records.get(id)?.loop?.stop()
       this.#records.delete(id)
@@ -116,8 +138,14 @@ export class SessionHub {
     })
 
     // log.md は Izuna が書く（§16）。追記のみ。**エージェントには書かせない**
-    void appendLog(team, { at: new Date().toISOString(), from: 'izuna', to: 'brain',
-      kind: 'start', target: input.cwd, note: input.resume ? '続きから' : '新規' })
+    void appendLog(team, {
+      at: new Date().toISOString(),
+      from: 'izuna',
+      to: 'brain',
+      kind: 'start',
+      target: input.cwd,
+      note: input.resume ? '続きから' : '新規'
+    })
 
     this.#records.set(id, { session, team, cwd: input.cwd, loop: null })
     this.#labels.set(id, basename(input.cwd) || input.cwd)
@@ -209,8 +237,15 @@ export class SessionHub {
     const r = this.#records.get(id)
     if (!r) return false
     const ok = await setTaskStatus(r.team, taskId, status)
-    if (ok) await appendLog(r.team, { at: new Date().toISOString(), from: 'izuna', to: 'board',
-      kind: 'status', target: taskId, note: status })
+    if (ok)
+      await appendLog(r.team, {
+        at: new Date().toISOString(),
+        from: 'izuna',
+        to: 'board',
+        kind: 'status',
+        target: taskId,
+        note: status
+      })
     return ok
   }
 
@@ -244,7 +279,10 @@ export class SessionHub {
           cleanup()
           resolve()
         }
-        const onError = (err: Error): void => { cleanup(); reject(err) }
+        const onError = (err: Error): void => {
+          cleanup()
+          reject(err)
+        }
         const cleanup = (): void => {
           r.session.off('message', onMessage)
           r.session.off('error', onError)
@@ -259,7 +297,8 @@ export class SessionHub {
       teamDir: r.team,
       maxIterations,
       runIteration,
-      onProgress: (progress, iteration) => this.#emit({ kind: 'loopProgress', id, progress, iteration })
+      onProgress: (progress, iteration) =>
+        this.#emit({ kind: 'loopProgress', id, progress, iteration })
     })
     r.loop = loop
     void loop.done.then((stop) => {

@@ -57,7 +57,10 @@ export function due(wakeups: Wakeup[], now: number): Wakeup[] {
  * 自分の起床を書き足せば、人が知らない指示が「人の入力」として届く。
  * **このプロセスが作ったか読んだものだけ**を起こす。
  */
-export function split(ready: Wakeup[], known: ReadonlySet<string>): { fire: Wakeup[]; reject: Wakeup[] } {
+export function split(
+  ready: Wakeup[],
+  known: ReadonlySet<string>
+): { fire: Wakeup[]; reject: Wakeup[] } {
   return {
     fire: ready.filter((w) => known.has(w.id)),
     reject: ready.filter((w) => !known.has(w.id))
@@ -79,10 +82,15 @@ export function parseWakeups(text: string): Wakeup[] {
 const isWakeup = (v: unknown): v is Wakeup => {
   if (typeof v !== 'object' || v === null) return false
   const w = v as Wakeup
-  return typeof w.id === 'string' && typeof w.sessionId === 'string' &&
-    typeof w.prompt === 'string' && typeof w.fireAt === 'number' &&
-    typeof w.cwd === 'string' && typeof w.createdAt === 'number' &&
+  return (
+    typeof w.id === 'string' &&
+    typeof w.sessionId === 'string' &&
+    typeof w.prompt === 'string' &&
+    typeof w.fireAt === 'number' &&
+    typeof w.cwd === 'string' &&
+    typeof w.createdAt === 'number' &&
     ['pending', 'overdue', 'fired', 'rejected'].includes(w.state)
+  )
 }
 
 /** 人に見せる待ち時間。画面の予約一覧が使う（2026-09-09 に戻した。§7 のとき使い手が無くて消していた） */

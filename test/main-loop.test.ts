@@ -2,7 +2,13 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { MAX_CONSECUTIVE_FAILURES, PROGRESS_FILE, readProgress, runLoop, writeProgress } from '../src/main/loop'
+import {
+  MAX_CONSECUTIVE_FAILURES,
+  PROGRESS_FILE,
+  readProgress,
+  runLoop,
+  writeProgress
+} from '../src/main/loop'
 import { EMPTY_PROGRESS, type Progress } from '../src/shared/loop'
 
 /**
@@ -13,10 +19,13 @@ import { EMPTY_PROGRESS, type Progress } from '../src/shared/loop'
  */
 
 let dir: string
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'izuna-loop-')) })
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), 'izuna-loop-'))
+})
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
-const progressAt = (): Progress => JSON.parse(readFileSync(join(dir, PROGRESS_FILE), 'utf8')) as Progress
+const progressAt = (): Progress =>
+  JSON.parse(readFileSync(join(dir, PROGRESS_FILE), 'utf8')) as Progress
 
 describe('進捗の読み書き', () => {
   it('無ければ既定', async () => {
@@ -41,7 +50,11 @@ describe('進捗の読み書き', () => {
   it('引き継ぎが増え続けないよう、書くときに切る', async () => {
     await writeProgress(dir, {
       ...EMPTY_PROGRESS,
-      learnings: Array.from({ length: 40 }, (_, i) => ({ iteration: i, summary: `${i}`, filesChanged: [] }))
+      learnings: Array.from({ length: 40 }, (_, i) => ({
+        iteration: i,
+        summary: `${i}`,
+        filesChanged: []
+      }))
     })
     expect(progressAt().learnings.length).toBeLessThanOrEqual(20)
   })
@@ -82,7 +95,12 @@ describe('回す', () => {
       teamDir: dir,
       maxIterations: 10,
       runIteration: async () => {
-        await writeProgress(dir, { ...EMPTY_PROGRESS, currentIteration: 1, status: 'blocked', blockers: ['鍵が無い'] })
+        await writeProgress(dir, {
+          ...EMPTY_PROGRESS,
+          currentIteration: 1,
+          status: 'blocked',
+          blockers: ['鍵が無い']
+        })
       }
     })
     expect(await loop.done).toMatchObject({ reason: 'blocked', detail: '鍵が無い' })
@@ -106,7 +124,9 @@ describe('回す', () => {
       teamDir: dir,
       maxIterations: 3,
       // ツールを呼ばない（＝ progress.json を書かない）反復
-      runIteration: async () => { runs++ }
+      runIteration: async () => {
+        runs++
+      }
     })
     expect(await loop.done).toMatchObject({ reason: 'maxIterations' })
     expect(runs).toBe(3)
@@ -120,7 +140,11 @@ describe('回す', () => {
       runIteration: async (_p, iteration) => {
         runs++
         if (runs === 1) throw new Error('一時的な失敗')
-        await writeProgress(dir, { ...EMPTY_PROGRESS, currentIteration: iteration, completionSignal: true })
+        await writeProgress(dir, {
+          ...EMPTY_PROGRESS,
+          currentIteration: iteration,
+          completionSignal: true
+        })
       }
     })
     expect(await loop.done).toMatchObject({ reason: 'completed' })
@@ -131,7 +155,9 @@ describe('回す', () => {
     const loop = runLoop({
       teamDir: dir,
       maxIterations: 100,
-      runIteration: async () => { throw new Error('いつも失敗する') }
+      runIteration: async () => {
+        throw new Error('いつも失敗する')
+      }
     })
     const stop = await loop.done
     expect(stop.reason).toBe('failed')
@@ -149,7 +175,11 @@ describe('回す', () => {
       maxIterations: 2,
       runIteration: async (prompt, iteration) => {
         prompts.push(prompt)
-        await writeProgress(dir, { ...EMPTY_PROGRESS, currentIteration: iteration, completionSignal: true })
+        await writeProgress(dir, {
+          ...EMPTY_PROGRESS,
+          currentIteration: iteration,
+          completionSignal: true
+        })
       }
     })
     await loop.done

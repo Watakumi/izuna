@@ -9,12 +9,28 @@
 
 /** Izuna の色トークン。`theme.ts` と同じ顔ぶれでなければならない */
 export type TokenName =
-  | 'bg' | 'panel' | 'surface' | 'raised' | 'code'
-  | 'ink' | 'ink2' | 'dim' | 'dim2' | 'faint'
-  | 'line' | 'line2'
-  | 'amber' | 'amberInk' | 'amberLine' | 'amberBg'
-  | 'teal' | 'red'
-  | 'addBg' | 'addInk' | 'delBg' | 'delInk'
+  | 'bg'
+  | 'panel'
+  | 'surface'
+  | 'raised'
+  | 'code'
+  | 'ink'
+  | 'ink2'
+  | 'dim'
+  | 'dim2'
+  | 'faint'
+  | 'line'
+  | 'line2'
+  | 'amber'
+  | 'amberInk'
+  | 'amberLine'
+  | 'amberBg'
+  | 'teal'
+  | 'red'
+  | 'addBg'
+  | 'addInk'
+  | 'delBg'
+  | 'delInk'
 
 export type Skin = Record<TokenName, string>
 
@@ -45,8 +61,13 @@ export interface GhosttyConfig {
 }
 
 const empty = (): GhosttyColors => ({
-  background: null, foreground: null, cursor: null, cursorText: null,
-  selectionBg: null, selectionFg: null, palette: Array(16).fill(null)
+  background: null,
+  foreground: null,
+  cursor: null,
+  cursorText: null,
+  selectionBg: null,
+  selectionFg: null,
+  palette: Array(16).fill(null)
 })
 
 /** `#rgb` `#rrggbb` `rrggbb` を受ける。Ghostty は `#` 無しも許す */
@@ -76,20 +97,41 @@ export function parseGhosttyConfig(text: string): GhosttyConfig {
     const at = body.indexOf('=')
     if (at === -1) continue
     const key = body.slice(0, at).trim()
-    const value = body.slice(at + 1).trim().replace(/^["']|["']$/g, '')
+    const value = body
+      .slice(at + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '')
 
     switch (key) {
       case 'theme':
         // `theme = dark:X,light:Y` の形もある。**先頭だけ採る**（Izuna は 1 つしか持てない）
-        theme = value.split(',')[0].replace(/^(dark|light):/, '').trim() || null
+        theme =
+          value
+            .split(',')[0]
+            .replace(/^(dark|light):/, '')
+            .trim() || null
         break
-      case 'background': colors.background = normalizeHex(value); break
-      case 'foreground': colors.foreground = normalizeHex(value); break
-      case 'cursor-color': colors.cursor = normalizeHex(value); break
-      case 'cursor-text': colors.cursorText = normalizeHex(value); break
-      case 'selection-background': colors.selectionBg = normalizeHex(value); break
-      case 'selection-foreground': colors.selectionFg = normalizeHex(value); break
-      case 'font-family': if (value) fontFamily.push(value); break
+      case 'background':
+        colors.background = normalizeHex(value)
+        break
+      case 'foreground':
+        colors.foreground = normalizeHex(value)
+        break
+      case 'cursor-color':
+        colors.cursor = normalizeHex(value)
+        break
+      case 'cursor-text':
+        colors.cursorText = normalizeHex(value)
+        break
+      case 'selection-background':
+        colors.selectionBg = normalizeHex(value)
+        break
+      case 'selection-foreground':
+        colors.selectionFg = normalizeHex(value)
+        break
+      case 'font-family':
+        if (value) fontFamily.push(value)
+        break
       case 'font-size': {
         const n = Number(value)
         if (Number.isFinite(n) && n > 0) fontSize = n
@@ -137,7 +179,8 @@ export interface Reading {
   lineHeight: number
 }
 
-const quote = (name: string): string => (/^[\w-]+$/.test(name) ? name : `'${name.replace(/'/g, '')}'`)
+const quote = (name: string): string =>
+  /^[\w-]+$/.test(name) ? name : `'${name.replace(/'/g, '')}'`
 
 export function readingFrom(config: GhosttyConfig): Reading {
   return {
@@ -179,7 +222,14 @@ const toRgb = (hex: string): RGB => [
 ]
 
 const toHex = (c: RGB): string =>
-  '#' + c.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')
+  '#' +
+  c
+    .map((v) =>
+      Math.round(Math.min(255, Math.max(0, v)))
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')
 
 /** `t` が 0 なら a、1 なら b */
 export function mix(a: string, b: string, t: number): string {
@@ -349,14 +399,29 @@ export function skinFrom(colors: GhosttyColors): Skin | null {
  * 中間色を作る必要が無い。持っている色をそのまま渡す。
  */
 const ANSI = [
-  'black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white',
-  'brightBlack', 'brightRed', 'brightGreen', 'brightYellow',
-  'brightBlue', 'brightMagenta', 'brightCyan', 'brightWhite'
+  'black',
+  'red',
+  'green',
+  'yellow',
+  'blue',
+  'magenta',
+  'cyan',
+  'white',
+  'brightBlack',
+  'brightRed',
+  'brightGreen',
+  'brightYellow',
+  'brightBlue',
+  'brightMagenta',
+  'brightCyan',
+  'brightWhite'
 ] as const
 
 export function terminalTheme(c: GhosttyColors): Record<string, string> {
   const out: Record<string, string> = {}
-  const put = (k: string, v: string | null): void => { if (v) out[k] = v }
+  const put = (k: string, v: string | null): void => {
+    if (v) out[k] = v
+  }
   put('background', c.background)
   put('foreground', c.foreground)
   put('cursor', c.cursor)

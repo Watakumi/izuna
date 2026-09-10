@@ -18,16 +18,17 @@ const DOT: Record<CiLevel, string> = {
 
 export function CiBadge({
   runs,
-  ref
+  branch
 }: {
   runs: ForgejoRun[] | null
-  ref: string | null
+  /** `ref` という名前にしない —— React が予約している */
+  branch: string | null
 }): React.JSX.Element {
   // 読み終わるまでは何も断定しない
   if (runs === null) {
     return <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>CI …</span>
   }
-  const s = summarizeRuns(runs, ref)
+  const s = summarizeRuns(runs, branch)
   const body = (
     <span
       style={{

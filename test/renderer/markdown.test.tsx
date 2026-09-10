@@ -24,7 +24,9 @@ vi.mock('mermaid', () => ({
 describe('本文', () => {
   it('見出しは本文より小さくしない。段は色と余白で分ける', () => {
     const { container } = render(<Markdown text={'# 大\n\n## 中\n\n### 小\n\n本文'} />)
-    const divs = [...container.querySelectorAll('div')].filter((d) => /^(大|中|小)$/.test(d.textContent ?? ''))
+    const divs = [...container.querySelectorAll('div')].filter((d) =>
+      /^(大|中|小)$/.test(d.textContent ?? '')
+    )
     const size = (d: Element): number => parseFloat((d as HTMLElement).style.fontSize)
     expect(size(divs[0])).toBeGreaterThan(size(divs[1]))
     expect(size(divs[1])).toBe(size(divs[2]))
@@ -46,14 +48,18 @@ describe('本文', () => {
   })
 
   it('**外の画像は出さない**（会話を開いただけで取りに行く）。手元と data: は出す', () => {
-    const { container } = render(<Markdown text={'![遠](https://evil.example/t.png)\n\n![近](data:image/png;base64,AAAA)'} />)
+    const { container } = render(
+      <Markdown text={'![遠](https://evil.example/t.png)\n\n![近](data:image/png;base64,AAAA)'} />
+    )
     const imgs = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'))
     expect(imgs).toEqual(['data:image/png;base64,AAAA'])
     expect(container.textContent).toContain('遠')
   })
 
   it('表・箇条書き・引用・区切りを描く', () => {
-    const { container } = render(<Markdown text={'| a | b |\n| --- | ---: |\n| 1 | 2 |\n\n- x\n  - y\n\n> 引用\n\n---'} />)
+    const { container } = render(
+      <Markdown text={'| a | b |\n| --- | ---: |\n| 1 | 2 |\n\n- x\n  - y\n\n> 引用\n\n---'} />
+    )
     expect(container.querySelectorAll('th')).toHaveLength(2)
     expect(container.querySelectorAll('td')[1].getAttribute('style')).toContain('text-align: right')
     expect(container.textContent).toContain('y')
@@ -71,7 +77,9 @@ describe('mermaid', () => {
 
   it('**図にできなくても字は失わない**。理由を添える', async () => {
     const { container } = render(<Markdown text={'```mermaid\nこれは mermaid ではない\n```'} />)
-    await waitFor(() => expect(container.textContent).toContain('図にできません'), { timeout: 2000 })
+    await waitFor(() => expect(container.textContent).toContain('図にできません'), {
+      timeout: 2000
+    })
     expect(container.textContent).toContain('これは mermaid ではない')
     expect(container.querySelector('svg')).toBeNull()
   })

@@ -25,12 +25,16 @@ for (const [name, channel] of Object.entries(CH)) {
 api.onEvent = (handler: (event: SessionEvent) => void) => {
   const listener = (_e: unknown, event: SessionEvent): void => handler(event)
   ipcRenderer.on(CH.event, listener)
-  return () => { ipcRenderer.off(CH.event, listener) }
+  return () => {
+    ipcRenderer.off(CH.event, listener)
+  }
 }
 api.onTerminal = (handler: (event: TerminalEvent) => void) => {
   const listener = (_e: unknown, event: TerminalEvent): void => handler(event)
   ipcRenderer.on(CH.terminalEvent, listener)
-  return () => { ipcRenderer.off(CH.terminalEvent, listener) }
+  return () => {
+    ipcRenderer.off(CH.terminalEvent, listener)
+  }
 }
 
 /** `IzunaApi` にあって `CH` に無い名前。あれば never にならず、ここで型検査が落ちる */
@@ -39,5 +43,6 @@ const missing: Missing extends never ? true : Missing = true
 void missing
 
 // contextIsolation を切った構成は作らない。切れていたら露出せずに落とす
-if (!process.contextIsolated) throw new Error('contextIsolation が無効です。Izuna はこの構成では動かしません')
+if (!process.contextIsolated)
+  throw new Error('contextIsolation が無効です。Izuna はこの構成では動かしません')
 contextBridge.exposeInMainWorld('izuna', api as unknown as IzunaApi)

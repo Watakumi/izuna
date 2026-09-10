@@ -21,19 +21,28 @@ const ZERO = /^0+$/
 
 /** git が stdin にくれる「<localRef> <localSha> <remoteRef> <remoteSha>」から、届ける sha を取る */
 export function localShas(stdin) {
-  return stdin.split('\n').map((l) => l.trim()).filter(Boolean)
-    .map((l) => l.split(/\s+/)[1]).filter((sha) => sha && !ZERO.test(sha))
+  return stdin
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => l.split(/\s+/)[1])
+    .filter((sha) => sha && !ZERO.test(sha))
 }
 
 const FORBIDDEN_NAMES = new Set(['t', 'Test', 'Test User', 'Your Name'])
-const FORBIDDEN_EMAIL = /(^test@|^t@|^fixture[-@]|@example\.(com|net|org)$|\.(test|invalid|example)$)/i
+const FORBIDDEN_EMAIL =
+  /(^test@|^t@|^fixture[-@]|@example\.(com|net|org)$|\.(test|invalid|example)$)/i
 
 /** `git log --format=%H%x09%an%x09%ae` の出力から、検査用の作者のものを返す */
 export function forbiddenAuthors(logOutput) {
-  return logOutput.split('\n').filter(Boolean).map((l) => {
-    const [sha, name, email] = l.split('\t')
-    return { sha, name: name ?? '', email: email ?? '' }
-  }).filter(({ name, email }) => FORBIDDEN_NAMES.has(name) || FORBIDDEN_EMAIL.test(email))
+  return logOutput
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [sha, name, email] = l.split('\t')
+      return { sha, name: name ?? '', email: email ?? '' }
+    })
+    .filter(({ name, email }) => FORBIDDEN_NAMES.has(name) || FORBIDDEN_EMAIL.test(email))
 }
 
 /**
@@ -41,7 +50,10 @@ export function forbiddenAuthors(logOutput) {
  * `git log` の範囲指定をそのまま渡す。
  */
 export function secretScanArgs(shas, remote) {
-  const range = shas.length > 0 ? `${shas.join(' ')} --not --remotes=${remote}` : `HEAD --not --remotes=${remote}`
+  const range =
+    shas.length > 0
+      ? `${shas.join(' ')} --not --remotes=${remote}`
+      : `HEAD --not --remotes=${remote}`
   return ['git', '--no-banner', '--redact', '--exit-code', '1', `--log-opts=${range}`, '.']
 }
 
@@ -61,7 +73,10 @@ function main() {
     console.log('[pre-push] 削除だけの push。門は無い')
     return 0
   }
-  const range = shas.length > 0 ? [...shas, '--not', `--remotes=${remote}`] : ['HEAD', '--not', `--remotes=${remote}`]
+  const range =
+    shas.length > 0
+      ? [...shas, '--not', `--remotes=${remote}`]
+      : ['HEAD', '--not', `--remotes=${remote}`]
   const count = Number.parseInt(git('rev-list', '--count', ...range).trim(), 10)
   if (count === 0) {
     console.log(`[pre-push] ${remote} に届ける新しいコミットが無い。門を飛ばす`)
@@ -75,12 +90,20 @@ function main() {
     return 1
   }
 
-  const changed = git('diff', '--name-only', ...range).split('\n').filter(Boolean)
+  const changed = git('diff', '--name-only', ...range)
+    .split('\n')
+    .filter(Boolean)
   if (manifestChanged(changed)) {
     console.log('[pre-push] manifest が変わっている。lockfile の同期を見る')
-    const r = spawnSync('pnpm', ['install', '--frozen-lockfile', '--lockfile-only', '--ignore-scripts'], { stdio: 'inherit' })
+    const r = spawnSync(
+      'pnpm',
+      ['install', '--frozen-lockfile', '--lockfile-only', '--ignore-scripts'],
+      { stdio: 'inherit' }
+    )
     if (r.status !== 0) {
-      console.error('[pre-push] pnpm-lock.yaml が package.json と合っていない。pnpm install して lockfile をコミットすること')
+      console.error(
+        '[pre-push] pnpm-lock.yaml が package.json と合っていない。pnpm install して lockfile をコミットすること'
+      )
       return 1
     }
   }
@@ -89,7 +112,9 @@ function main() {
   // gitleaks が無ければ止める —— 無いことを緑で通すと門にならない（brew install gitleaks）
   const leaks = spawnSync('gitleaks', secretScanArgs(shas, remote), { stdio: 'inherit' })
   if (leaks.error) {
-    console.error('[pre-push] gitleaks が無い。brew install gitleaks で入れること（秘密の走査は門である）')
+    console.error(
+      '[pre-push] gitleaks が無い。brew install gitleaks で入れること（秘密の走査は門である）'
+    )
     return 1
   }
   if (leaks.status !== 0) {

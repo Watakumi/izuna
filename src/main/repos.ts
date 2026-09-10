@@ -30,7 +30,16 @@ const exists = async (p: string): Promise<boolean> => {
   }
 }
 
-const SKIP = new Set(['node_modules', '.git', 'dist', 'out', 'build', 'target', 'vendor', 'Library'])
+const SKIP = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'out',
+  'build',
+  'target',
+  'vendor',
+  'Library'
+])
 
 /**
  * `.git` を持つディレクトリを探す。見つけたらそこで降りるのをやめる
@@ -79,7 +88,10 @@ export async function findRepos(roots?: string[], depth?: number): Promise<Found
 /** ネイティブのフォルダ選択。探索に出てこない場所のため */
 export async function pickDirectory(window: BrowserWindow | null): Promise<string | null> {
   const result = window
-    ? await dialog.showOpenDialog(window, { properties: ['openDirectory'], message: 'リポジトリを選ぶ' })
+    ? await dialog.showOpenDialog(window, {
+        properties: ['openDirectory'],
+        message: 'リポジトリを選ぶ'
+      })
     : await dialog.showOpenDialog({ properties: ['openDirectory'] })
   return result.canceled ? null : (result.filePaths[0] ?? null)
 }

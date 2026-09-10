@@ -47,22 +47,23 @@ interface Askpass {
  * `mkdtemp` で毎回別の場所に、`wx`（既にあれば失敗）で書く。
  */
 async function askpassEnv(root: string): Promise<Askpass | null> {
-  const [token, user] = await Promise.all([
-    loadToken(),
-    whoami(root).catch(() => null)
-  ])
+  const [token, user] = await Promise.all([loadToken(), whoami(root).catch(() => null)])
   if (!token || !user) return null
 
   const dir = await mkdtemp(join(tmpdir(), 'izuna-askpass-'))
   const path = join(dir, 'askpass.sh')
-  await writeFile(path, [
-    '#!/bin/sh',
-    '# Izuna が git に資格情報を渡すための仲介。値は環境変数から取る',
-    'case "$1" in',
-    '  *[Uu]sername*) printf %s "$IZUNA_GIT_USER" ;;',
-    '  *) printf %s "$IZUNA_GIT_TOKEN" ;;',
-    'esac'
-  ].join('\n') + '\n', { mode: 0o700, flag: 'wx' })
+  await writeFile(
+    path,
+    [
+      '#!/bin/sh',
+      '# Izuna が git に資格情報を渡すための仲介。値は環境変数から取る',
+      'case "$1" in',
+      '  *[Uu]sername*) printf %s "$IZUNA_GIT_USER" ;;',
+      '  *) printf %s "$IZUNA_GIT_TOKEN" ;;',
+      'esac'
+    ].join('\n') + '\n',
+    { mode: 0o700, flag: 'wx' }
+  )
 
   return {
     env: {
@@ -81,7 +82,9 @@ async function askpassEnv(root: string): Promise<Askpass | null> {
  * **GitHub は ssh なので要らない**（付けると余計な失敗を増やす）。
  */
 async function credentials(
-  cwd: string, remote: string, forgeRootUrl: string | null
+  cwd: string,
+  remote: string,
+  forgeRootUrl: string | null
 ): Promise<{ env: NodeJS.ProcessEnv; args: string[]; dispose: () => Promise<void> }> {
   const none = { env: {}, args: [], dispose: async (): Promise<void> => {} }
   if (!forgeRootUrl) return none
@@ -145,7 +148,9 @@ export async function defaultBranch(cwd: string, remoteName: string): Promise<st
   if (!isSafeRef(remoteName)) return null
   // 手元に記録があればそれ。ネットワークに出ない
   try {
-    const ref = (await git(cwd, ['symbolic-ref', '--short', `refs/remotes/${remoteName}/HEAD`])).trim()
+    const ref = (
+      await git(cwd, ['symbolic-ref', '--short', `refs/remotes/${remoteName}/HEAD`])
+    ).trim()
     const branch = ref.replace(new RegExp(`^${remoteName}/`), '')
     if (branch) return branch
   } catch {
@@ -166,7 +171,10 @@ export async function currentBranch(cwd: string): Promise<string | null> {
 
 /** 指定の remote に push する。上流も張る */
 export async function push(
-  cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
+  cwd: string,
+  remote: string,
+  branch: string,
+  forgeRootUrl: string | null = null
 ): Promise<string> {
   refOrThrow(remote, 'remote')
   refOrThrow(branch, 'ブランチ')
@@ -181,13 +189,20 @@ export async function push(
 
 /** その remote に、そのブランチが既にあるか */
 export async function isPushed(
-  cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
+  cwd: string,
+  remote: string,
+  branch: string,
+  forgeRootUrl: string | null = null
 ): Promise<boolean> {
   if (!isSafeRef(remote) || !isSafeRef(branch)) return false
   let cred: Awaited<ReturnType<typeof credentials>> | null = null
   try {
     cred = await credentials(cwd, remote, forgeRootUrl)
-    const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', '--', remote, branch], cred.env)
+    const out = await git(
+      cwd,
+      [...cred.args, 'ls-remote', '--heads', '--', remote, branch],
+      cred.env
+    )
     return out.trim() !== ''
   } catch {
     return false
@@ -201,14 +216,17 @@ export async function isPushed(
  * 届かなければ空 —— 「見えない」は「漏れていない」ではないので、呼ぶ側は空を断定に使わない。
  */
 export async function remoteHeads(
-  cwd: string, remote: string, forgeRootUrl: string | null = null
+  cwd: string,
+  remote: string,
+  forgeRootUrl: string | null = null
 ): Promise<string[]> {
   if (!isSafeRef(remote)) return []
   let cred: Awaited<ReturnType<typeof credentials>> | null = null
   try {
     cred = await credentials(cwd, remote, forgeRootUrl)
     const out = await git(cwd, [...cred.args, 'ls-remote', '--heads', '--', remote], cred.env)
-    return out.split('\n')
+    return out
+      .split('\n')
       .map((l) => /refs\/heads\/(\S+)$/.exec(l.trim())?.[1] ?? '')
       .filter(Boolean)
   } catch {
@@ -224,7 +242,10 @@ export async function remoteHeads(
  * ここでも `main` / `master` は拒む —— 事故で消すと戻すのが一番痛いところ。
  */
 export async function deleteRemoteBranch(
-  cwd: string, remote: string, branch: string, forgeRootUrl: string | null = null
+  cwd: string,
+  remote: string,
+  branch: string,
+  forgeRootUrl: string | null = null
 ): Promise<string> {
   if (/^(main|master)$/.test(branch)) throw new Error(`${branch} は消しません`)
   refOrThrow(remote, 'remote')
@@ -242,7 +263,10 @@ export async function deleteRemoteBranch(
 export async function commitsSince(cwd: string, base: string, limit = 30): Promise<string[]> {
   try {
     const out = await git(cwd, ['log', `${base}..HEAD`, `--max-count=${limit}`, '--pretty=%s'])
-    return out.split('\n').map((l) => l.trim()).filter(Boolean)
+    return out
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
   } catch {
     return []
   }
@@ -261,8 +285,14 @@ export async function commitContext(cwd: string): Promise<CommitContext> {
     git(cwd, ['log', '-5', '--format=%s']).catch(() => '')
   ])
   return {
-    changed: status.split('\n').map((l) => l.trim()).filter(Boolean),
+    changed: status
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean),
     branch,
-    recent: recent.split('\n').map((l) => l.trim()).filter(Boolean)
+    recent: recent
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
   }
 }

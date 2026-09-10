@@ -30,7 +30,6 @@ const messages: SDKMessage[] = readFileSync(FIXTURE, 'utf8')
   .filter((l) => l.trim())
   .map((l) => JSON.parse(l) as SDKMessage)
 
-
 /**
  * 検査だけが要る組み立て。**製品コードには置かない** ——
  * `src/` に置くと「アプリが使っている」ように見え、`test/docs.test.ts` が
@@ -47,8 +46,12 @@ function plainText(t: Transcript): string {
 }
 
 const t = build(messages)
-const assistants = t.items.filter((i): i is Extract<Item, { kind: 'assistant' }> => i.kind === 'assistant')
-const tools = assistants.flatMap((a) => a.blocks).filter((b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool')
+const assistants = t.items.filter(
+  (i): i is Extract<Item, { kind: 'assistant' }> => i.kind === 'assistant'
+)
+const tools = assistants
+  .flatMap((a) => a.blocks)
+  .filter((b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool')
 
 describe('録画を通すと期待どおりの形になる', () => {
   it('init からセッションとモデルとコマンド一覧を拾う', () => {
@@ -105,14 +108,18 @@ describe('録画を通すと期待どおりの形になる', () => {
 describe('途中経過は状態を汚さない', () => {
   it('流れている最中は draft に出る', () => {
     // content_block_stop の直前まで積むと、draft に文字が乗っている
-    const upto = messages.findIndex((m) => m.type === 'stream_event' && m.event.type === 'content_block_stop')
+    const upto = messages.findIndex(
+      (m) => m.type === 'stream_event' && m.event.type === 'content_block_stop'
+    )
     const mid = messages.slice(0, upto).reduce(applyMessage, emptyTranscript())
     expect(mid.draft).not.toBeNull()
     expect(mid.draft?.kind).toBe('thinking')
   })
 
   it('ブロックが閉じたら draft を捨てる', () => {
-    const upto = messages.findIndex((m) => m.type === 'stream_event' && m.event.type === 'content_block_stop')
+    const upto = messages.findIndex(
+      (m) => m.type === 'stream_event' && m.event.type === 'content_block_stop'
+    )
     const closed = messages.slice(0, upto + 1).reduce(applyMessage, emptyTranscript())
     expect(closed.draft).toBeNull()
   })
@@ -138,7 +145,9 @@ describe('途中経過は状態を汚さない', () => {
 
 describe('人間の発話', () => {
   it('SDK のストリームには戻ってこないので、送った側で足す', () => {
-    expect(messages.some((m) => m.type === 'user' && typeof m.message.content === 'string')).toBe(false)
+    expect(messages.some((m) => m.type === 'user' && typeof m.message.content === 'string')).toBe(
+      false
+    )
     const withUser = appendUserText(emptyTranscript(), 'やって', 'u1')
     expect(withUser.items).toEqual([{ kind: 'user', id: 'u1', text: 'やって' }])
     expect(withUser.running).toBe(true)
@@ -147,16 +156,30 @@ describe('人間の発話', () => {
 
 describe('拒否の判定', () => {
   const toolId = 'toolu_x'
-  const userMsg = (isError: boolean, text: string): SDKMessage => ({
-    type: 'user',
-    message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolId, content: text, is_error: isError }] },
-    parent_tool_use_id: null, session_id: 's', uuid: 'u'
-  } as unknown as SDKMessage)
+  const userMsg = (isError: boolean, text: string): SDKMessage =>
+    ({
+      type: 'user',
+      message: {
+        role: 'user',
+        content: [{ type: 'tool_result', tool_use_id: toolId, content: text, is_error: isError }]
+      },
+      parent_tool_use_id: null,
+      session_id: 's',
+      uuid: 'u'
+    }) as unknown as SDKMessage
   const withTool = (): ReturnType<typeof emptyTranscript> =>
     applyMessage(emptyTranscript(), {
-      type: 'assistant', parent_tool_use_id: null, session_id: 's', uuid: 'u',
-      message: { id: 'm1', model: 'x', role: 'assistant', stop_reason: null,
-        content: [{ type: 'tool_use', id: toolId, name: 'Write', input: {} }] }
+      type: 'assistant',
+      parent_tool_use_id: null,
+      session_id: 's',
+      uuid: 'u',
+      message: {
+        id: 'm1',
+        model: 'x',
+        role: 'assistant',
+        stop_reason: null,
+        content: [{ type: 'tool_use', id: toolId, name: 'Write', input: {} }]
+      }
     } as unknown as SDKMessage)
 
   const stateOf = (t: ReturnType<typeof emptyTranscript>): string => {
@@ -167,7 +190,10 @@ describe('拒否の判定', () => {
 
   it('EACCES はファイルシステムの失敗であって、人間の拒否ではない', () => {
     // 文面の /permission/i で当てていたときはここが denied になっていた
-    const t2 = applyMessage(withTool(), userMsg(true, "EACCES: permission denied, mkdir '/Users/x'"))
+    const t2 = applyMessage(
+      withTool(),
+      userMsg(true, "EACCES: permission denied, mkdir '/Users/x'")
+    )
     expect(stateOf(t2)).toBe('error')
   })
 
@@ -215,7 +241,9 @@ describe('権限モードと稼働状態', () => {
   it('モード変更の通知イベントは無いので、状態は持つしかない', () => {
     // 上流が通知を出すようになったらこの検査は落ちる。そのとき設計を見直す
     const hasNotice = messages.some(
-      (m) => m.type === 'system' && String((m as { subtype?: string }).subtype).includes('permission_mode')
+      (m) =>
+        m.type === 'system' &&
+        String((m as { subtype?: string }).subtype).includes('permission_mode')
     )
     expect(hasNotice).toBe(false)
     expect(setPermissionMode(t, 'plan').permissionMode).toBe('plan')
@@ -225,14 +253,22 @@ describe('権限モードと稼働状態', () => {
 
   it('session_state_changed で稼働状態を取る', () => {
     const running = applyMessage(emptyTranscript(), {
-      type: 'system', subtype: 'session_state_changed', state: 'running',
-      uuid: 'u', session_id: 's'
+      type: 'system',
+      subtype: 'session_state_changed',
+      state: 'running',
+      uuid: 'u',
+      session_id: 's'
     } as unknown as SDKMessage)
     expect(running.state).toBe('running')
-    expect(applyMessage(running, {
-      type: 'system', subtype: 'session_state_changed', state: 'requires_action',
-      uuid: 'u', session_id: 's'
-    } as unknown as SDKMessage).state).toBe('requires_action')
+    expect(
+      applyMessage(running, {
+        type: 'system',
+        subtype: 'session_state_changed',
+        state: 'requires_action',
+        uuid: 'u',
+        session_id: 's'
+      } as unknown as SDKMessage).state
+    ).toBe('requires_action')
   })
 })
 

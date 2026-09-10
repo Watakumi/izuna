@@ -14,13 +14,19 @@ import { C, F, MONO, R, READ, S } from '../theme'
  */
 export function Markdown({ text }: { text: string }): React.JSX.Element {
   // **読む面の組みはここで決める。** UI の詰まりを持ち込まない
-  return <div style={{ font: READ }}><Blocks nodes={parseMarkdown(text)} /></div>
+  return (
+    <div style={{ font: READ }}>
+      <Blocks nodes={parseMarkdown(text)} />
+    </div>
+  )
 }
 
 function Blocks({ nodes }: { nodes: Node[] }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.lg }}>
-      {nodes.map((n, i) => <Block key={i} node={n} />)}
+      {nodes.map((n, i) => (
+        <Block key={i} node={n} />
+      ))}
     </div>
   )
 }
@@ -28,7 +34,11 @@ function Blocks({ nodes }: { nodes: Node[] }): React.JSX.Element {
 function Block({ node }: { node: Node }): React.JSX.Element {
   switch (node.kind) {
     case 'p':
-      return <div><Spans nodes={node.children} /></div>
+      return (
+        <div>
+          <Spans nodes={node.children} />
+        </div>
+      )
 
     case 'heading': {
       /**
@@ -42,11 +52,15 @@ function Block({ node }: { node: Node }): React.JSX.Element {
       const size = node.level <= 1 ? F.title : F.base
       const top = node.level <= 1 ? S.lg : node.level === 2 ? S.md : S.sm
       return (
-        <div style={{
-          fontSize: size, fontWeight: 600,
-          color: node.level >= 3 ? C.dim2 : C.ink,
-          marginTop: top, lineHeight: 1.5
-        }}>
+        <div
+          style={{
+            fontSize: size,
+            fontWeight: 600,
+            color: node.level >= 3 ? C.dim2 : C.ink,
+            marginTop: top,
+            lineHeight: 1.5
+          }}
+        >
           <Spans nodes={node.children} />
         </div>
       )
@@ -65,10 +79,18 @@ function Block({ node }: { node: Node }): React.JSX.Element {
               {node.lang}
             </span>
           )}
-          <pre style={{
-            margin: 0, padding: S.lg, background: C.bg, border: `1px solid ${C.line}`,
-            borderRadius: R.md, overflowX: 'auto', font: `${F.small}px/1.7 ${MONO}`, color: C.ink2
-          }}>
+          <pre
+            style={{
+              margin: 0,
+              padding: S.lg,
+              background: C.bg,
+              border: `1px solid ${C.line}`,
+              borderRadius: R.md,
+              overflowX: 'auto',
+              font: `${F.small}px/1.7 ${MONO}`,
+              color: C.ink2
+            }}
+          >
             <code>{node.text}</code>
           </pre>
         </div>
@@ -95,7 +117,9 @@ function Block({ node }: { node: Node }): React.JSX.Element {
 function List({ node }: { node: Extract<Node, { kind: 'list' }> }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
-      {node.items.map((item, i) => <Row key={i} item={item} marker={node.ordered ? `${node.start + i}.` : '·'} />)}
+      {node.items.map((item, i) => (
+        <Row key={i} item={item} marker={node.ordered ? `${node.start + i}.` : '·'} />
+      ))}
     </div>
   )
 }
@@ -103,10 +127,16 @@ function List({ node }: { node: Extract<Node, { kind: 'list' }> }): React.JSX.El
 function Row({ item, marker }: { item: ListItem; marker: string }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', gap: S.md, lineHeight: 1.8 }}>
-      <span style={{ color: C.faint, flexShrink: 0, font: `${F.small}px ${MONO}`, paddingTop: 2 }}>{marker}</span>
+      <span style={{ color: C.faint, flexShrink: 0, font: `${F.small}px ${MONO}`, paddingTop: 2 }}>
+        {marker}
+      </span>
       <div style={{ minWidth: 0, flexGrow: 1 }}>
         <Spans nodes={item.children} />
-        {item.sub && <div style={{ marginTop: S.sm }}><Block node={item.sub} /></div>}
+        {item.sub && (
+          <div style={{ marginTop: S.sm }}>
+            <Block node={item.sub} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -126,7 +156,10 @@ function Table({ node }: { node: Extract<Node, { kind: 'table' }> }): React.JSX.
         <thead>
           <tr>
             {node.header.map((h, i) => (
-              <th key={i} style={{ ...cell(i), color: C.dim2, fontWeight: 600, whiteSpace: 'nowrap' }}>
+              <th
+                key={i}
+                style={{ ...cell(i), color: C.dim2, fontWeight: 600, whiteSpace: 'nowrap' }}
+              >
                 <Spans nodes={h} />
               </th>
             ))}
@@ -135,7 +168,11 @@ function Table({ node }: { node: Extract<Node, { kind: 'table' }> }): React.JSX.
         <tbody>
           {node.rows.map((row, r) => (
             <tr key={r}>
-              {row.map((c, i) => <td key={i} style={cell(i)}><Spans nodes={c} /></td>)}
+              {row.map((c, i) => (
+                <td key={i} style={cell(i)}>
+                  <Spans nodes={c} />
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -151,40 +188,81 @@ function Spans({ nodes }: { nodes: Inline[] }): React.JSX.Element {
         switch (n.kind) {
           case 'text':
             // 改行は残す。段落の中の折り返しは書き手の意図であることが多い
-            return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{n.text}</span>
+            return (
+              <span key={i} style={{ whiteSpace: 'pre-wrap' }}>
+                {n.text}
+              </span>
+            )
           case 'code':
             return (
-              <code key={i} style={{
-                font: `${F.small}px ${MONO}`, background: C.raised, color: C.ink,
-                padding: `1px ${S.xs}px`, borderRadius: R.sm, wordBreak: 'break-all'
-              }}>{n.text}</code>
+              <code
+                key={i}
+                style={{
+                  font: `${F.small}px ${MONO}`,
+                  background: C.raised,
+                  color: C.ink,
+                  padding: `1px ${S.xs}px`,
+                  borderRadius: R.sm,
+                  wordBreak: 'break-all'
+                }}
+              >
+                {n.text}
+              </code>
             )
           case 'strong':
-            return <strong key={i} style={{ fontWeight: 600, color: C.ink }}><Spans nodes={n.children} /></strong>
+            return (
+              <strong key={i} style={{ fontWeight: 600, color: C.ink }}>
+                <Spans nodes={n.children} />
+              </strong>
+            )
           case 'em':
-            return <em key={i}><Spans nodes={n.children} /></em>
+            return (
+              <em key={i}>
+                <Spans nodes={n.children} />
+              </em>
+            )
           case 'strike':
-            return <s key={i} style={{ color: C.dim2 }}><Spans nodes={n.children} /></s>
+            return (
+              <s key={i} style={{ color: C.dim2 }}>
+                <Spans nodes={n.children} />
+              </s>
+            )
           case 'link':
             return (
-              <a key={i} href={n.href} target="_blank" rel="noreferrer"
-                style={{ color: C.teal, textDecoration: 'none', borderBottom: `1px solid ${C.line2}` }}>
+              <a
+                key={i}
+                href={n.href}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: C.teal,
+                  textDecoration: 'none',
+                  borderBottom: `1px solid ${C.line2}`
+                }}
+              >
                 <Spans nodes={n.children} />
               </a>
             )
           case 'image':
             // **手元のファイルと data URL だけ出す。** 外の URL を出すと、
             // 会話を開いただけで外に取りに行くことになる
-            return local(n.src)
-              ? <img key={i} src={n.src} alt={n.alt}
-                  style={{ maxWidth: '100%', borderRadius: R.md, display: 'block', margin: '6px 0' }} />
-              : <span key={i} style={{ color: C.dim2 }}>{n.alt || n.src}</span>
+            return local(n.src) ? (
+              <img
+                key={i}
+                src={n.src}
+                alt={n.alt}
+                style={{ maxWidth: '100%', borderRadius: R.md, display: 'block', margin: '6px 0' }}
+              />
+            ) : (
+              <span key={i} style={{ color: C.dim2 }}>
+                {n.alt || n.src}
+              </span>
+            )
         }
       })}
     </>
   )
 }
-
 
 /** 画面に出してよい画像の出どころ。**外の URL は出さない**（開いただけで取りに行く） */
 function local(src: string): boolean {

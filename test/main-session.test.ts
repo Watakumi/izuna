@@ -31,11 +31,18 @@ vi.mock('../src/main/claude/locate', () => ({
   loginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh' }),
   // 起動時は取り直す（人が rc を直すのは新しいセッションを起こす前）。
   // 鍵が混じっている環境を模す —— 渡さないことを見る
-  refreshLoginShellEnv: async () => ({ PATH: '/usr/bin', SHELL: '/bin/zsh', ANTHROPIC_API_KEY: 'sk-ant-leak' })
+  refreshLoginShellEnv: async () => ({
+    PATH: '/usr/bin',
+    SHELL: '/bin/zsh',
+    ANTHROPIC_API_KEY: 'sk-ant-leak'
+  })
 }))
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  query: (arg: { prompt: AsyncIterable<Record<string, unknown>>; options: Record<string, unknown> }) => {
+  query: (arg: {
+    prompt: AsyncIterable<Record<string, unknown>>
+    options: Record<string, unknown>
+  }) => {
     passed = arg.options
     prompt = arg.prompt
     askTool = arg.options.canUseTool as typeof askTool
@@ -43,22 +50,42 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
     let wake: (() => void) | null = null
     let done = false
     let error: Error | null = null
-    feed = (m) => { queue.push(m); wake?.() }
-    finish = () => { done = true; wake?.() }
-    failWith = (e) => { error = e; wake?.() }
+    feed = (m) => {
+      queue.push(m)
+      wake?.()
+    }
+    finish = () => {
+      done = true
+      wake?.()
+    }
+    failWith = (e) => {
+      error = e
+      wake?.()
+    }
 
     return {
       async *[Symbol.asyncIterator]() {
         for (;;) {
           if (error) throw error
-          if (queue.length > 0) { yield queue.shift()!; continue }
+          if (queue.length > 0) {
+            yield queue.shift()!
+            continue
+          }
           if (done) return
-          await new Promise<void>((r) => { wake = r })
+          await new Promise<void>((r) => {
+            wake = r
+          })
         }
       },
-      interrupt: async () => { calls.push('interrupt') },
-      setPermissionMode: async (m: string) => { calls.push(`mode:${m}`) },
-      setModel: async (m?: string) => { calls.push(`model:${m ?? '既定'}`) },
+      interrupt: async () => {
+        calls.push('interrupt')
+      },
+      setPermissionMode: async (m: string) => {
+        calls.push(`mode:${m}`)
+      },
+      setModel: async (m?: string) => {
+        calls.push(`model:${m ?? '既定'}`)
+      },
       supportedCommands: async () => [{ name: 'verify', description: '', argumentHint: '' }],
       return: async () => {
         calls.push('return')
@@ -90,7 +117,10 @@ describe('起動時に渡すもの', () => {
   it('追記があれば preset に足す（差し替えない）', async () => {
     const { ClaudeSession } = await load()
     await new ClaudeSession({ cwd: '/w', appendSystemPrompt: '共有フォルダは …' }).start()
-    expect(passed?.systemPrompt).toMatchObject({ preset: 'claude_code', append: '共有フォルダは …' })
+    expect(passed?.systemPrompt).toMatchObject({
+      preset: 'claude_code',
+      append: '共有フォルダは …'
+    })
   })
 
   it('読み込む設定の範囲をそのまま渡す（§13）', async () => {
@@ -132,10 +162,16 @@ describe('起動時に渡すもの', () => {
   it('cwd・model・resume・共有フォルダを渡す', async () => {
     const { ClaudeSession } = await load()
     await new ClaudeSession({
-      cwd: '/w', model: 'haiku', resume: 's1', additionalDirectories: ['/teams/t']
+      cwd: '/w',
+      model: 'haiku',
+      resume: 's1',
+      additionalDirectories: ['/teams/t']
     }).start()
     expect(passed).toMatchObject({
-      cwd: '/w', model: 'haiku', resume: 's1', additionalDirectories: ['/teams/t']
+      cwd: '/w',
+      model: 'haiku',
+      resume: 's1',
+      additionalDirectories: ['/teams/t']
     })
   })
 
@@ -197,8 +233,8 @@ describe('入力の待ち行列', () => {
     const s = new ClaudeSession({ cwd: '/w' })
     await s.start()
     const it = prompt![Symbol.asyncIterator]()
-    const waiting = it.next()          // 先に読みに来る
-    s.send('あとから来た')              // そのあと送る
+    const waiting = it.next() // 先に読みに来る
+    s.send('あとから来た') // そのあと送る
     expect(JSON.stringify((await waiting).value)).toContain('あとから来た')
   })
 
@@ -206,7 +242,8 @@ describe('入力の待ち行列', () => {
     const { ClaudeSession } = await load()
     const s = new ClaudeSession({ cwd: '/w' })
     await s.start()
-    s.send('一'); s.send('二')
+    s.send('一')
+    s.send('二')
     const it = prompt![Symbol.asyncIterator]()
     expect(JSON.stringify((await it.next()).value)).toContain('一')
     expect(JSON.stringify((await it.next()).value)).toContain('二')
@@ -250,7 +287,11 @@ describe('いまの状態', () => {
 describe('受け取る', () => {
   it('messages をそのまま流し、init で session_id を覚える', async () => {
     const { ClaudeSession } = await load()
-    const s = await (async () => { const x = new ClaudeSession({ cwd: '/w' }); await x.start(); return x })()
+    const s = await (async () => {
+      const x = new ClaudeSession({ cwd: '/w' })
+      await x.start()
+      return x
+    })()
     const seen: string[] = []
     s.on('message', (m) => seen.push(m.type))
     feed({ type: 'system', subtype: 'init', session_id: 'abc' } as unknown as SDKMessage)
@@ -283,7 +324,9 @@ describe('承認（§6）', () => {
     const { ClaudeSession } = await load()
     const s = new ClaudeSession({ cwd: '/w' })
     await s.start()
-    const asked = new Promise<{ id: string; toolName: string; agentId?: string }>((r) => s.on('permission', r))
+    const asked = new Promise<{ id: string; toolName: string; agentId?: string }>((r) =>
+      s.on('permission', r)
+    )
     const answer = askTool!('Write', { file_path: '/a' }, { toolUseID: 't1', agentID: 'a1' })
     const req = await asked
     expect(req).toMatchObject({ toolName: 'Write', agentId: 'a1' })
@@ -318,7 +361,9 @@ describe('承認（§6）', () => {
       await s.start()
       const answer = askTool!('Bash', { command: 'ls' }, {})
       let settled = false
-      void answer.then(() => { settled = true })
+      void answer.then(() => {
+        settled = true
+      })
 
       await vi.advanceTimersByTimeAsync(ClaudeSession.PERMISSION_TIMEOUT_MS - 1000)
       expect(settled, '期限前に勝手に答えない').toBe(false)

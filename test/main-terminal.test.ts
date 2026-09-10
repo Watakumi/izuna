@@ -31,31 +31,46 @@ vi.mock('node-pty', () => {
       let onData = (_: string): void => {}
       let onExit = (_: { exitCode: number }): void => {}
       const rec: Spawned = {
-        shell, args, opts, written: [], resized: [], killed: false,
+        shell,
+        args,
+        opts,
+        written: [],
+        resized: [],
+        killed: false,
         emitData: (s) => onData(s),
         emitExit: (code) => onExit({ exitCode: code })
       }
       spawned.push(rec)
       return {
-        onData: (f: (s: string) => void) => { onData = f },
-        onExit: (f: (e: { exitCode: number }) => void) => { onExit = f },
+        onData: (f: (s: string) => void) => {
+          onData = f
+        },
+        onExit: (f: (e: { exitCode: number }) => void) => {
+          onExit = f
+        },
         write: (s: string) => rec.written.push(s),
         resize: (c: number, r: number) => rec.resized.push([c, r]),
-        kill: () => { rec.killed = true }
+        kill: () => {
+          rec.killed = true
+        }
       }
     }
   }
 })
 
 /** 画面。閉じたあとに書き込まれていないかを見る */
-let sent: Array<{ channel: string; payload: { id: string; kind: string; data?: string; code?: number } }> = []
+let sent: Array<{
+  channel: string
+  payload: { id: string; kind: string; data?: string; code?: number }
+}> = []
 let destroyed = false
 const win = {
   isDestroyed: () => destroyed,
   webContents: { send: (channel: string, payload: never) => sent.push({ channel, payload }) }
 } as never
 
-const load = async (): Promise<typeof import('../src/main/terminal')> => import('../src/main/terminal')
+const load = async (): Promise<typeof import('../src/main/terminal')> =>
+  import('../src/main/terminal')
 
 beforeEach(() => {
   spawned = []
@@ -70,7 +85,12 @@ describe('開く', () => {
     await openTerminal(() => win, 'ch', { cwd: '/w', cols: 100, rows: 30 })
     expect(spawned[0].shell).toBe('/bin/fish')
     expect(spawned[0].args).toEqual(['-l'])
-    expect(spawned[0].opts).toMatchObject({ cols: 100, rows: 30, cwd: '/w', name: 'xterm-256color' })
+    expect(spawned[0].opts).toMatchObject({
+      cols: 100,
+      rows: 30,
+      cwd: '/w',
+      name: 'xterm-256color'
+    })
     expect(spawned[0].opts.env.PATH).toBe('/usr/bin')
   })
 
@@ -106,7 +126,10 @@ describe('やりとり', () => {
     const { openTerminal } = await load()
     const id = await openTerminal(() => win, 'ch', { cwd: '/w', cols: 80, rows: 24 })
     spawned[0].emitData('こんにちは')
-    expect(sent[0]).toMatchObject({ channel: 'ch', payload: { id, kind: 'data', data: 'こんにちは' } })
+    expect(sent[0]).toMatchObject({
+      channel: 'ch',
+      payload: { id, kind: 'data', data: 'こんにちは' }
+    })
   })
 
   it('打鍵を渡し、大きさを合わせる', async () => {
@@ -171,9 +194,12 @@ describe('PTY が読めないとき', () => {
   it('**アプリは落とさず、直し方を言う**', async () => {
     // 模造の工場は一度しか走らないので、この検査だけ差し替え直す
     vi.resetModules()
-    vi.doMock('node-pty', () => { throw new Error('ネイティブモジュールが無い') })
+    vi.doMock('node-pty', () => {
+      throw new Error('ネイティブモジュールが無い')
+    })
     const { openTerminal } = await import('../src/main/terminal')
-    await expect(openTerminal(() => win, 'ch', { cwd: '/w', cols: 80, rows: 24 }))
-      .rejects.toThrow(/pnpm install/)
+    await expect(openTerminal(() => win, 'ch', { cwd: '/w', cols: 80, rows: 24 })).rejects.toThrow(
+      /pnpm install/
+    )
   })
 })

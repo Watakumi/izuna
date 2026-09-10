@@ -39,7 +39,12 @@ export type Node =
   | { kind: 'list'; ordered: boolean; start: number; items: ListItem[] }
   | { kind: 'quote'; children: Node[] }
   | { kind: 'hr' }
-  | { kind: 'table'; header: Inline[][]; rows: Inline[][][]; align: Array<'left' | 'center' | 'right'> }
+  | {
+      kind: 'table'
+      header: Inline[][]
+      rows: Inline[][][]
+      align: Array<'left' | 'center' | 'right'>
+    }
 
 // ── 行内 ──────────────────────────────────────────────
 
@@ -78,7 +83,11 @@ function matchAt(src: string, i: number): { node: Inline; next: number } | null 
       const paren = closing(src, close + 2, ')')
       if (paren !== -1) {
         return {
-          node: { kind: 'image', src: src.slice(close + 2, paren).trim(), alt: src.slice(i + 2, close) },
+          node: {
+            kind: 'image',
+            src: src.slice(close + 2, paren).trim(),
+            alt: src.slice(i + 2, close)
+          },
           next: paren + 1
         }
       }
@@ -91,7 +100,11 @@ function matchAt(src: string, i: number): { node: Inline; next: number } | null 
       const paren = closing(src, close + 2, ')')
       if (paren !== -1) {
         return {
-          node: { kind: 'link', href: src.slice(close + 2, paren).trim(), children: parseInline(src.slice(i + 1, close)) },
+          node: {
+            kind: 'link',
+            href: src.slice(close + 2, paren).trim(),
+            children: parseInline(src.slice(i + 1, close))
+          },
           next: paren + 1
         }
       }
@@ -103,7 +116,10 @@ function matchAt(src: string, i: number): { node: Inline; next: number } | null 
     const end = closing(src, i + mark.length, mark)
     // 閉じていない、または中身が空（`****`）なら印のまま文字として出す
     if (end === -1 || end === i + mark.length) continue
-    return { node: { kind, children: parseInline(src.slice(i + mark.length, end)) }, next: end + mark.length }
+    return {
+      node: { kind, children: parseInline(src.slice(i + mark.length, end)) },
+      next: end + mark.length
+    }
   }
   return null
 }
@@ -144,7 +160,11 @@ const ROW = /^\s*\|(.+)\|\s*$/
 const SEP = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/
 
 const cells = (line: string): string[] =>
-  line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim())
+  line
+    .replace(/^\s*\|/, '')
+    .replace(/\|\s*$/, '')
+    .split('|')
+    .map((c) => c.trim())
 
 const alignOf = (c: string): 'left' | 'center' | 'right' =>
   c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : 'left'
@@ -157,7 +177,10 @@ export function parseMarkdown(src: string): Node[] {
   while (i < lines.length) {
     const line = lines[i]
 
-    if (line.trim() === '') { i++; continue }
+    if (line.trim() === '') {
+      i++
+      continue
+    }
 
     // ``` で囲まれたコード。**閉じていなくても、そこまでを出す**（逐次描画の途中）
     const fence = FENCE.exec(line)
@@ -170,7 +193,11 @@ export function parseMarkdown(src: string): Node[] {
       continue
     }
 
-    if (HR.test(line)) { out.push({ kind: 'hr' }); i++; continue }
+    if (HR.test(line)) {
+      out.push({ kind: 'hr' })
+      i++
+      continue
+    }
 
     const h = HEADING.exec(line)
     if (h) {
@@ -212,15 +239,20 @@ export function parseMarkdown(src: string): Node[] {
 
     // 段落。空行か、別の塊が始まるまで
     const body: string[] = []
-    while (i < lines.length && lines[i].trim() !== '' && !startsBlock(lines[i])) body.push(lines[i++])
+    while (i < lines.length && lines[i].trim() !== '' && !startsBlock(lines[i]))
+      body.push(lines[i++])
     out.push({ kind: 'p', children: parseInline(body.join('\n')) })
   }
   return out
 }
 
 const startsBlock = (line: string): boolean =>
-  FENCE.test(line) || HEADING.test(line) || HR.test(line) ||
-  QUOTE.test(line) || BULLET.test(line) || NUMBER.test(line)
+  FENCE.test(line) ||
+  HEADING.test(line) ||
+  HR.test(line) ||
+  QUOTE.test(line) ||
+  BULLET.test(line) ||
+  NUMBER.test(line)
 
 function parseList(lines: string[], from: number): [Node, number] {
   const first = BULLET.exec(lines[from]) ?? NUMBER.exec(lines[from])!

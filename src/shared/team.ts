@@ -76,7 +76,7 @@ export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string
 
 /** `---` で挟んだ frontmatter を切り出す。無ければ frontmatter 空で本文だけ返す */
 export function splitFrontmatter(src: string): { data: Record<string, unknown>; body: string } {
-  const text = src.replace(/^﻿/, '')
+  const text = src.replace(/^\uFEFF/, '')
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text)
   if (!m) return { data: {}, body: text.trim() }
   const data = (parseYaml(m[1]) ?? {}) as Record<string, unknown>
@@ -98,7 +98,10 @@ export function parseTask(src: string): ParseResult<Task> {
   if (!title) return { ok: false, error: `task ${id} に title がない` }
   const status = str(data.status) ?? 'todo'
   if (!(TASK_STATUS as readonly string[]).includes(status)) {
-    return { ok: false, error: `task ${id} の status が不正: ${status}（${TASK_STATUS.join(' / ')}）` }
+    return {
+      ok: false,
+      error: `task ${id} の status が不正: ${status}（${TASK_STATUS.join(' / ')}）`
+    }
   }
   return {
     ok: true,
@@ -185,7 +188,10 @@ export function formatLogEntry(e: LogEntry): string {
 
 /** `./src/` と `src` を同じものとして扱う。先頭の `./` と末尾の `/` を落とす */
 function normalizePath(p: string): string {
-  return p.trim().replace(/^(\.\/)+/, '').replace(/\/+$/, '')
+  return p
+    .trim()
+    .replace(/^(\.\/)+/, '')
+    .replace(/\/+$/, '')
 }
 
 /**
@@ -208,10 +214,11 @@ const live = (t: Task): boolean => t.status === 'doing' || t.status === 'idle'
 /** 2 つの札のあいだで重なるパス。両方の書き方を並べて返す（どちらが広いか分かるように） */
 function overlapOf(a: Task, b: Task): string[] {
   const out: string[] = []
-  for (const p of a.paths) for (const q of b.paths) {
-    if (!pathsOverlap(p, q)) continue
-    for (const s of p === q ? [p] : [p, q]) if (!out.includes(s)) out.push(s)
-  }
+  for (const p of a.paths)
+    for (const q of b.paths) {
+      if (!pathsOverlap(p, q)) continue
+      for (const s of p === q ? [p] : [p, q]) if (!out.includes(s)) out.push(s)
+    }
   return out
 }
 
@@ -245,8 +252,10 @@ export function pathCollisions(tasks: Task[]): Array<{ a: string; b: string; pat
 export function readyTasks(tasks: Task[]): Task[] {
   const done = new Set(tasks.filter((t) => t.status === 'done').map((t) => t.id))
   const running = tasks.filter(live)
-  return tasks.filter((t) =>
-    t.status === 'todo' &&
-    t.depends_on.every((d) => done.has(d)) &&
-    running.every((r) => overlapOf(t, r).length === 0))
+  return tasks.filter(
+    (t) =>
+      t.status === 'todo' &&
+      t.depends_on.every((d) => done.has(d)) &&
+      running.every((r) => overlapOf(t, r).length === 0)
+  )
 }

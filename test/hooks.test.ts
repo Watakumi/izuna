@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { hookEventsIn, hookFilesFor, hooksRefusal, isTrusted, mcpCommandsIn } from '../src/shared/hooks'
+import {
+  hookEventsIn,
+  hookFilesFor,
+  hooksRefusal,
+  isTrusted,
+  mcpCommandsIn
+} from '../src/shared/hooks'
 
 /**
  * リポジトリが持ち込む hook の関所（§26）。
@@ -9,7 +15,9 @@ import { hookEventsIn, hookFilesFor, hooksRefusal, isTrusted, mcpCommandsIn } fr
  */
 describe('hook の検出', () => {
   it('hooks にイベントがあれば名前を返す', () => {
-    const text = JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'curl x' }] }], PreToolUse: [] } })
+    const text = JSON.stringify({
+      hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'curl x' }] }], PreToolUse: [] }
+    })
     expect(hookEventsIn(text)).toEqual(['SessionStart'])
   })
 
@@ -24,7 +32,10 @@ describe('hook の検出', () => {
   })
 
   it('読まれるファイルは出どころで決まる。user はリポジトリの外', () => {
-    expect(hookFilesFor(['project', 'local'])).toEqual(['.claude/settings.json', '.claude/settings.local.json'])
+    expect(hookFilesFor(['project', 'local'])).toEqual([
+      '.claude/settings.json',
+      '.claude/settings.local.json'
+    ])
     expect(hookFilesFor(['user'])).toEqual([])
     expect(hookFilesFor([])).toEqual([])
   })
@@ -40,7 +51,11 @@ describe('信頼した場所', () => {
   })
 
   it('止めるときは、何が・どこに・どうすれば通るかを言う', () => {
-    const msg = hooksRefusal('/h/x', [{ file: '.claude/settings.json', events: ['SessionStart'] }], '/h/.izuna/config.json')
+    const msg = hooksRefusal(
+      '/h/x',
+      [{ file: '.claude/settings.json', events: ['SessionStart'] }],
+      '/h/.izuna/config.json'
+    )
     expect(msg).toContain('/h/x')
     expect(msg).toContain('.claude/settings.json')
     expect(msg).toContain('SessionStart')
@@ -50,10 +65,12 @@ describe('信頼した場所', () => {
 
 describe('.mcp.json（開いただけでプログラムが起動する）', () => {
   it('command のあるサーバを数える。http / sse は数えない', () => {
-    const text = JSON.stringify({ mcpServers: {
-      evil: { command: 'curl', args: ['x'] },
-      remote: { type: 'http', url: 'https://x' }
-    } })
+    const text = JSON.stringify({
+      mcpServers: {
+        evil: { command: 'curl', args: ['x'] },
+        remote: { type: 'http', url: 'https://x' }
+      }
+    })
     expect(mcpCommandsIn(text)).toEqual(['mcp:evil'])
   })
 

@@ -54,7 +54,9 @@ describe('呼び方', () => {
     reply([])
     await listRepos('http://localhost:4649/')
     expect(calls[0].url).toBe('http://localhost:4649/api/v1/user/repos?limit=100')
-    expect((calls[0].init.headers as Record<string, string>).Authorization).toBe('token tok_abcdef12345678')
+    expect((calls[0].init.headers as Record<string, string>).Authorization).toBe(
+      'token tok_abcdef12345678'
+    )
   })
 
   it('**403 は足りない権限を名指しする**（「足りません」だけでは直せない）', async () => {
@@ -70,16 +72,30 @@ describe('呼び方', () => {
     reply('落ちています', 500)
     await expect(listRepos('http://localhost:4649/')).rejects.toThrow(/落ちています/)
   })
-
 })
 
 describe('読み取り', () => {
   it('リポジトリの形を読む', async () => {
     const { listRepos } = await import('../src/main/forge/client')
-    reply([{ full_name: 'me/r', owner: { login: 'me' }, name: 'r', private: true,
-      default_branch: 'main', html_url: 'http://x/me/r', empty: false }])
+    reply([
+      {
+        full_name: 'me/r',
+        owner: { login: 'me' },
+        name: 'r',
+        private: true,
+        default_branch: 'main',
+        html_url: 'http://x/me/r',
+        empty: false
+      }
+    ])
     const [r] = await listRepos('http://localhost:4649/')
-    expect(r).toMatchObject({ owner: 'me', name: 'r', private: true, defaultBranch: 'main', empty: false })
+    expect(r).toMatchObject({
+      owner: 'me',
+      name: 'r',
+      private: true,
+      defaultBranch: 'main',
+      empty: false
+    })
   })
 
   it('**中身の無いリポジトリの 404 は「まだ無い」**（PR は存在しえない）', async () => {
@@ -96,16 +112,31 @@ describe('読み取り', () => {
 
   it('PR の形を読む', async () => {
     const { listPulls } = await import('../src/main/forge/client')
-    reply([{ number: 3, title: 'なおす', html_url: 'http://x/3',
-      head: { ref: 'feat' }, base: { ref: 'main' }, state: 'open' }])
+    reply([
+      {
+        number: 3,
+        title: 'なおす',
+        html_url: 'http://x/3',
+        head: { ref: 'feat' },
+        base: { ref: 'main' },
+        state: 'open'
+      }
+    ])
     const [p] = await listPulls('http://localhost:4649/', 'o', 'r')
     expect(p).toMatchObject({ number: 3, title: 'なおす', head: 'feat', base: 'main' })
   })
 
   it('トークンの一覧は権限と末尾 8 文字を返す（記録ではなくサーバの事実）', async () => {
     const { listTokens } = await import('../src/main/forge/client')
-    reply([{ id: 1, name: 'izuna-x', scopes: ['write:user'], token_last_eight: 'abcd1234',
-      created_at: '2026-09-08T00:00:00+09:00' }])
+    reply([
+      {
+        id: 1,
+        name: 'izuna-x',
+        scopes: ['write:user'],
+        token_last_eight: 'abcd1234',
+        created_at: '2026-09-08T00:00:00+09:00'
+      }
+    ])
     const [t] = await listTokens('http://localhost:4649/', 'me')
     expect(t).toMatchObject({ id: 1, name: 'izuna-x', last8: 'abcd1234' })
     expect(t.scopes).toEqual(['write:user'])
@@ -128,8 +159,17 @@ describe('作る', () => {
   it('**既にあれば作らない**（作業場は作り直す前提なので冪等にする）', async () => {
     const { ensureRepo } = await import('../src/main/forge/client')
     reply({ login: 'me' })
-    reply([{ full_name: 'me/r', owner: { login: 'me' }, name: 'r', private: true,
-      default_branch: 'main', html_url: '', empty: true }])
+    reply([
+      {
+        full_name: 'me/r',
+        owner: { login: 'me' },
+        name: 'r',
+        private: true,
+        default_branch: 'main',
+        html_url: '',
+        empty: true
+      }
+    ])
     const r = await ensureRepo('http://localhost:4649/', 'r')
     expect(r.name).toBe('r')
     expect(calls).toHaveLength(2) // POST していない
@@ -139,8 +179,15 @@ describe('作る', () => {
     const { ensureRepo } = await import('../src/main/forge/client')
     reply({ login: 'me' })
     reply([])
-    reply({ full_name: 'me/new', owner: { login: 'me' }, name: 'new', private: true,
-      default_branch: 'main', html_url: '', empty: true })
+    reply({
+      full_name: 'me/new',
+      owner: { login: 'me' },
+      name: 'new',
+      private: true,
+      default_branch: 'main',
+      html_url: '',
+      empty: true
+    })
     await ensureRepo('http://localhost:4649/', 'new')
     const post = calls[2]
     expect(post.init.method).toBe('POST')
@@ -149,9 +196,19 @@ describe('作る', () => {
 
   it('PR を作る', async () => {
     const { createPull } = await import('../src/main/forge/client')
-    reply({ number: 7, title: 't', html_url: 'http://x/7',
-      head: { ref: 'feat' }, base: { ref: 'main' }, state: 'open' })
-    const p = await createPull('http://localhost:4649/', 'o', 'r', { title: 't', head: 'feat', base: 'main' })
+    reply({
+      number: 7,
+      title: 't',
+      html_url: 'http://x/7',
+      head: { ref: 'feat' },
+      base: { ref: 'main' },
+      state: 'open'
+    })
+    const p = await createPull('http://localhost:4649/', 'o', 'r', {
+      title: 't',
+      head: 'feat',
+      base: 'main'
+    })
     expect(p.number).toBe(7)
     expect(calls[0].init.method).toBe('POST')
   })
@@ -179,7 +236,9 @@ describe('Actions の実行（GOAL.md 測り方「Izuna がその状態を読め
     const { listRuns } = await import('../src/main/forge/client')
     reply([])
     await listRuns('http://localhost:4649/', 'izuna', 'r', 'feat/x')
-    expect(calls[0].url).toBe('http://localhost:4649/api/v1/repos/izuna/r/actions/runs?limit=20&ref=refs%2Fheads%2Ffeat%2Fx')
+    expect(calls[0].url).toBe(
+      'http://localhost:4649/api/v1/repos/izuna/r/actions/runs?limit=20&ref=refs%2Fheads%2Ffeat%2Fx'
+    )
   })
 
   it('ref が既に refs/ なら二重に付けない。無ければ付けない', async () => {
@@ -194,23 +253,53 @@ describe('Actions の実行（GOAL.md 測り方「Izuna がその状態を読め
 
   it('配列でも { workflow_runs } でも同じ形に読む', async () => {
     const { listRuns } = await import('../src/main/forge/client')
-    const raw = { id: 7, title: 'verify', status: 'success', event: 'push', prettyref: 'refs/heads/feat/x',
-      commit_sha: 'abc', html_url: 'http://x/r/actions/runs/7', workflow_id: 'verify.yml',
-      started: '2026-09-09T00:00:00Z', stopped: '' }
+    const raw = {
+      id: 7,
+      title: 'verify',
+      status: 'success',
+      event: 'push',
+      prettyref: 'refs/heads/feat/x',
+      commit_sha: 'abc',
+      html_url: 'http://x/r/actions/runs/7',
+      workflow_id: 'verify.yml',
+      started: '2026-09-09T00:00:00Z',
+      stopped: ''
+    }
     reply([raw])
     const a = await listRuns('http://localhost:4649/', 'izuna', 'r')
     reply({ workflow_runs: [raw], total_count: 1 })
     const b = await listRuns('http://localhost:4649/', 'izuna', 'r')
     expect(a).toEqual(b)
-    expect(a[0]).toEqual({ id: 7, title: 'verify', status: 'success', event: 'push', ref: 'refs/heads/feat/x',
-      sha: 'abc', htmlUrl: 'http://x/r/actions/runs/7', workflow: 'verify.yml',
-      startedAt: '2026-09-09T00:00:00Z', stoppedAt: null })
+    expect(a[0]).toEqual({
+      id: 7,
+      title: 'verify',
+      status: 'success',
+      event: 'push',
+      ref: 'refs/heads/feat/x',
+      sha: 'abc',
+      htmlUrl: 'http://x/r/actions/runs/7',
+      workflow: 'verify.yml',
+      startedAt: '2026-09-09T00:00:00Z',
+      stoppedAt: null
+    })
   })
 
   it('prettyref が無ければ head_branch から組む', async () => {
     const { listRuns } = await import('../src/main/forge/client')
-    reply([{ id: 1, title: 't', status: 'running', event: 'push', head_branch: 'main', commit_sha: 'a',
-      html_url: 'u', workflow_id: 'w', started: null, stopped: null }])
+    reply([
+      {
+        id: 1,
+        title: 't',
+        status: 'running',
+        event: 'push',
+        head_branch: 'main',
+        commit_sha: 'a',
+        html_url: 'u',
+        workflow_id: 'w',
+        started: null,
+        stopped: null
+      }
+    ])
     expect((await listRuns('http://localhost:4649/', 'o', 'r'))[0].ref).toBe('refs/heads/main')
   })
 

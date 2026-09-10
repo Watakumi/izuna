@@ -3,7 +3,16 @@ import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { adoptToken, applyFix, gatherFacts } from '../forge/setup'
 import { claudeStatus } from '../claude/status'
-import { createPull, ensureRepo, listPulls, listRepos, listRuns, listTokens, pullDiff, whoami } from '../forge/client'
+import {
+  createPull,
+  ensureRepo,
+  listPulls,
+  listRepos,
+  listRuns,
+  listTokens,
+  pullDiff,
+  whoami
+} from '../forge/client'
 import { loadToken } from '../forge/store'
 import * as gh from '../forge/github'
 import * as remote from '../git/remote'
@@ -31,15 +40,25 @@ import { CH, IPC_VERSION, type IzunaApi, type SessionEvent } from '../../shared/
 
 /** 購読以外の口すべて。1 つ欠けても 1 つ余っても型検査で落ちる */
 type Handlers = {
-  [K in Exclude<keyof IzunaApi, 'onEvent' | 'onTerminal'>]:
-    (...args: Parameters<IzunaApi[K]>) => ReturnType<IzunaApi[K]> | Awaited<ReturnType<IzunaApi[K]>>
+  [K in Exclude<keyof IzunaApi, 'onEvent' | 'onTerminal'>]: (
+    ...args: Parameters<IzunaApi[K]>
+  ) => ReturnType<IzunaApi[K]> | Awaited<ReturnType<IzunaApi[K]>>
 }
 
 let hub: SessionHub | null = null
 
 /** WebContentsView は整数の px しか受けない。renderer の実測は小数で来る */
-const roundRect = (r: { x: number; y: number; width: number; height: number }): { x: number; y: number; width: number; height: number } =>
-  ({ x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) })
+const roundRect = (r: {
+  x: number
+  y: number
+  width: number
+  height: number
+}): { x: number; y: number; width: number; height: number } => ({
+  x: Math.round(r.x),
+  y: Math.round(r.y),
+  width: Math.round(r.width),
+  height: Math.round(r.height)
+})
 
 export function registerSessionIpc(getWindow: () => BrowserWindow | null): void {
   const emit = (event: SessionEvent): void => {
@@ -52,7 +71,13 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
      */
     if (win && !win.isDestroyed() && !win.isFocused()) {
       const notice = noticeFor(event, h.labelOf(event.id))
-      if (notice) notify(notice, () => { if (!win.isDestroyed()) { win.show(); win.focus() } })
+      if (notice)
+        notify(notice, () => {
+          if (!win.isDestroyed()) {
+            win.show()
+            win.focus()
+          }
+        })
     }
   }
   // emit は h を閉じ込めるが、呼ばれるのは登録より後（constructor は購読を張るだけ）
@@ -76,7 +101,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     // 頁の埋め込み（§32）。行き先は Forgejo と GitHub だけ
     previewOpen: async (url, bounds) => {
       const root = (await gatherFacts()).config?.rootUrl ?? null
-      if (!canPreview(url, root)) throw new Error(`中で見られるのは Forgejo と GitHub の頁だけです: ${url}`)
+      if (!canPreview(url, root))
+        throw new Error(`中で見られるのは Forgejo と GitHub の頁だけです: ${url}`)
       const win = getWindow()
       if (!win) throw new Error('窓がありません')
       openPreview(win, url, roundRect(bounds))
@@ -89,8 +115,10 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     forgeFix: (id) => applyFix(id),
     forgeRepos: async () => listRepos(await forgeRoot()),
     forgePulls: async (owner, repo) => listPulls(await forgeRoot(), owner, repo),
-    forgePullDiff: async (owner, repo, index) => parseUnifiedDiff(await pullDiff(await forgeRoot(), owner, repo, index)),
-    forgeCreatePull: async (owner, repo, input) => createPull(await forgeRoot(), owner, repo, input),
+    forgePullDiff: async (owner, repo, index) =>
+      parseUnifiedDiff(await pullDiff(await forgeRoot(), owner, repo, index)),
+    forgeCreatePull: async (owner, repo, input) =>
+      createPull(await forgeRoot(), owner, repo, input),
     forgeRuns: async (owner, repo, ref) => listRuns(await forgeRoot(), owner, repo, ref),
     forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
     forgeSetToken: async (token) => adoptToken(await forgeRoot(), token),
@@ -118,7 +146,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     isPushed: async (cwd, r, b) => remote.isPushed(cwd, r, b, await forgeRoot().catch(() => null)),
     push: async (cwd, r, b) => remote.push(cwd, r, b, await forgeRoot().catch(() => null)),
     remoteHeads: async (cwd, r) => remote.remoteHeads(cwd, r, await forgeRoot().catch(() => null)),
-    deleteRemoteBranch: async (cwd, r, b) => remote.deleteRemoteBranch(cwd, r, b, await forgeRoot().catch(() => null)),
+    deleteRemoteBranch: async (cwd, r, b) =>
+      remote.deleteRemoteBranch(cwd, r, b, await forgeRoot().catch(() => null)),
     commitsSince: (cwd, base) => remote.commitsSince(cwd, base),
 
     openTerminal: (input) => term.openTerminal(getWindow, CH.terminalEvent, input),
@@ -128,7 +157,9 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
     configInfo: async () => {
       const { ignored } = await loadConfig()
-      const exists = await access(CONFIG_PATH).then(() => true).catch(() => false)
+      const exists = await access(CONFIG_PATH)
+        .then(() => true)
+        .catch(() => false)
       return { path: CONFIG_PATH, ignored, exists }
     },
     findRepos: () => findRepos(),
@@ -137,7 +168,11 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     teamPath: (name) => teamPathFor(name),
 
     repo: async (cwd) => {
-      const [root, name, worktrees] = await Promise.all([repoRoot(cwd), repoName(cwd), listWorktrees(cwd)])
+      const [root, name, worktrees] = await Promise.all([
+        repoRoot(cwd),
+        repoName(cwd),
+        listWorktrees(cwd)
+      ])
       return { root, name, worktrees }
     },
     removeWorktree: (cwd, path, force) => removeWorktree(cwd, path, force),
@@ -167,7 +202,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
   for (const [name, fn] of Object.entries(handlers)) {
     ipcMain.handle(CH[name as keyof typeof CH], (_e, ...args: unknown[]) =>
-      (fn as (...a: unknown[]) => unknown)(...args))
+      (fn as (...a: unknown[]) => unknown)(...args)
+    )
   }
 }
 

@@ -27,7 +27,9 @@ export interface RunOptions {
 }
 
 export async function run(cmd: string, args: string[], options: RunOptions = {}): Promise<string> {
-  const env = options.replaceEnv ? (options.env ?? {}) : { ...(await loginShellEnv()), ...(options.env ?? {}) }
+  const env = options.replaceEnv
+    ? (options.env ?? {})
+    : { ...(await loginShellEnv()), ...(options.env ?? {}) }
   try {
     const { stdout } = await exec(cmd, args, {
       cwd: options.cwd,

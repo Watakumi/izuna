@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  decide, EMPTY_PROGRESS, iterationPrompt, MAX_LEARNINGS, parseProgress, trimLearnings,
-  type Learning, type Progress
+  decide,
+  EMPTY_PROGRESS,
+  iterationPrompt,
+  MAX_LEARNINGS,
+  parseProgress,
+  trimLearnings,
+  type Learning,
+  type Progress
 } from '../src/shared/loop'
 
 /**
@@ -12,11 +18,16 @@ const p = (over: Partial<Progress> = {}): Progress => ({ ...EMPTY_PROGRESS, ...o
 
 describe('進捗の読み取り', () => {
   it('普通に読む', () => {
-    const r = parseProgress(JSON.stringify({
-      currentIteration: 3, phase: 'building', status: 'running',
-      completionSignal: false, learnings: [{ iteration: 1, summary: 'やった', filesChanged: ['a.ts'] }],
-      blockers: []
-    }))
+    const r = parseProgress(
+      JSON.stringify({
+        currentIteration: 3,
+        phase: 'building',
+        status: 'running',
+        completionSignal: false,
+        learnings: [{ iteration: 1, summary: 'やった', filesChanged: ['a.ts'] }],
+        blockers: []
+      })
+    )
     expect(r).toMatchObject({ currentIteration: 3, phase: 'building' })
     expect(r.learnings).toHaveLength(1)
   })
@@ -28,7 +39,9 @@ describe('進捗の読み取り', () => {
   })
 
   it('知らない値は既定に倒す（勝手に完了扱いしない）', () => {
-    const r = parseProgress(JSON.stringify({ phase: 'なにこれ', status: 'ふしぎ', completionSignal: 'true' }))
+    const r = parseProgress(
+      JSON.stringify({ phase: 'なにこれ', status: 'ふしぎ', completionSignal: 'true' })
+    )
     expect(r.phase).toBe('planning')
     expect(r.status).toBe('running')
     // **文字列の "true" を真と読まない。** 誤って完了にすると黙って止まる
@@ -36,12 +49,16 @@ describe('進捗の読み取り', () => {
   })
 
   it('形の違う learnings は捨てる', () => {
-    const r = parseProgress(JSON.stringify({ learnings: ['ただの文字列', { summary: 'ok', iteration: 1 }] }))
+    const r = parseProgress(
+      JSON.stringify({ learnings: ['ただの文字列', { summary: 'ok', iteration: 1 }] })
+    )
     expect(r.learnings).toHaveLength(1)
   })
 
   it('人からの指示は残す', () => {
-    expect(parseProgress(JSON.stringify({ userFeedback: 'ここを直して' })).userFeedback).toBe('ここを直して')
+    expect(parseProgress(JSON.stringify({ userFeedback: 'ここを直して' })).userFeedback).toBe(
+      'ここを直して'
+    )
   })
 })
 
@@ -51,8 +68,10 @@ describe('続けるか、やめるか', () => {
   })
 
   it('詰まったら止まり、理由を残す', () => {
-    expect(decide(p({ status: 'blocked', blockers: ['鍵が無い'] }), 20))
-      .toMatchObject({ reason: 'blocked', detail: '鍵が無い' })
+    expect(decide(p({ status: 'blocked', blockers: ['鍵が無い'] }), 20)).toMatchObject({
+      reason: 'blocked',
+      detail: '鍵が無い'
+    })
   })
 
   it('理由が書かれていなくても、そう言う（黙らない）', () => {
@@ -64,8 +83,9 @@ describe('続けるか、やめるか', () => {
   })
 
   it('**最後の反復で終わったら「完了」。**「上限で打ち切り」にしない', () => {
-    expect(decide(p({ currentIteration: 20, completionSignal: true }), 20))
-      .toMatchObject({ reason: 'completed' })
+    expect(decide(p({ currentIteration: 20, completionSignal: true }), 20)).toMatchObject({
+      reason: 'completed'
+    })
   })
 
   it('まだなら続ける', () => {
@@ -75,7 +95,9 @@ describe('続けるか、やめるか', () => {
 
 describe('引き継ぐ量', () => {
   const many: Learning[] = Array.from({ length: 30 }, (_, i) => ({
-    iteration: i + 1, summary: `${i + 1} 回目`, filesChanged: []
+    iteration: i + 1,
+    summary: `${i + 1} 回目`,
+    filesChanged: []
   }))
 
   it('増え続けさせない（プロンプトが膨らんで文脈を食う）', () => {
@@ -93,7 +115,9 @@ describe('次の反復に渡す本文', () => {
   it('**引き継ぎを本文に入れる**（別の場所に置いてもモデルには届かない）', () => {
     const text = iterationPrompt({
       ...base,
-      progress: p({ learnings: [{ iteration: 2, summary: '検査を直した', filesChanged: ['a.ts'] }] })
+      progress: p({
+        learnings: [{ iteration: 2, summary: '検査を直した', filesChanged: ['a.ts'] }]
+      })
     })
     expect(text).toContain('検査を直した')
     expect(text).toContain('a.ts')
@@ -116,8 +140,9 @@ describe('次の反復に渡す本文', () => {
   })
 
   it('人からの指示があれば渡す', () => {
-    expect(iterationPrompt({ ...base, progress: p({ userFeedback: 'ここを直して' }) }))
-      .toContain('ここを直して')
+    expect(iterationPrompt({ ...base, progress: p({ userFeedback: 'ここを直して' }) })).toContain(
+      'ここを直して'
+    )
   })
 
   it('**毎回、進捗を宣言させる**（文面から推測しない）', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -36,8 +36,10 @@ describe('設定', () => {
 
   it('書いた値が効く', async () => {
     mkdirSync(join(home, '.izuna'), { recursive: true })
-    writeFileSync(join(home, '.izuna', 'config.json'),
-      JSON.stringify({ sandboxRemote: 'sandbox', repoDepth: 2 }))
+    writeFileSync(
+      join(home, '.izuna', 'config.json'),
+      JSON.stringify({ sandboxRemote: 'sandbox', repoDepth: 2 })
+    )
     const { loadConfig } = await import('../src/main/config')
     const { config } = await loadConfig()
     expect(config.sandboxRemote).toBe('sandbox')
@@ -46,8 +48,10 @@ describe('設定', () => {
 
   it('**壊れた値で起動不能にしない。** 既定に倒して、落としたものを名指しする', async () => {
     mkdirSync(join(home, '.izuna'), { recursive: true })
-    writeFileSync(join(home, '.izuna', 'config.json'),
-      JSON.stringify({ repoDepth: 'ふかい', sandboxRemote: 42 }))
+    writeFileSync(
+      join(home, '.izuna', 'config.json'),
+      JSON.stringify({ repoDepth: 'ふかい', sandboxRemote: 42 })
+    )
     const { loadConfig } = await import('../src/main/config')
     const r = await loadConfig()
     expect(r.ignored).toContain('repoDepth')

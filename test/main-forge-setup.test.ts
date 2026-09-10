@@ -27,12 +27,17 @@ vi.mock('../src/main/forge/store', () => ({
   loadToken: async () => 'tok_abcdefgh',
   loadScopes: async () => null,
   tokenStatus: async () => tokenState,
-  saveToken: async (token: string, scopes?: readonly string[]) => { saved = { token, scopes } }
+  saveToken: async (token: string, scopes?: readonly string[]) => {
+    saved = { token, scopes }
+  }
 }))
 let tokenState: 'none' | 'unreadable' | 'ok' = 'ok'
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
-    const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
+    const cb = all[all.length - 1] as (
+      e: Error | null,
+      r?: { stdout: string; stderr: string }
+    ) => void
     runs.push([all[0] as string, ...((all[1] as string[]) ?? [])])
     const next = out.shift()
     if (next instanceof Error) cb(next)
@@ -64,8 +69,10 @@ beforeEach(() => {
   fetchStatus = 200
   vi.resetModules()
   vi.stubGlobal('fetch', async () => ({
-    ok: fetchStatus < 400, status: fetchStatus,
-    json: async () => ({ login: 'me' }), text: async () => ''
+    ok: fetchStatus < 400,
+    status: fetchStatus,
+    json: async () => ({ login: 'me' }),
+    text: async () => ''
   }))
 })
 
@@ -98,11 +105,20 @@ describe('調べる', () => {
     setUp()
     out = ['/opt/homebrew/bin/forgejo', 'version 16.0.3']
     vi.stubGlobal('fetch', async (url: URL) => ({
-      ok: true, status: 200,
-      json: async () => String(url).endsWith('/tokens')
-        ? [{ id: 1, name: 'izuna', scopes: ['write:user', 'write:repository'],
-             token_last_eight: 'abcdefgh', created_at: '' }]
-        : { login: 'me' },
+      ok: true,
+      status: 200,
+      json: async () =>
+        String(url).endsWith('/tokens')
+          ? [
+              {
+                id: 1,
+                name: 'izuna',
+                scopes: ['write:user', 'write:repository'],
+                token_last_eight: 'abcdefgh',
+                created_at: ''
+              }
+            ]
+          : { login: 'me' },
       text: async () => ''
     }))
     const { gatherFacts } = await load()
@@ -182,8 +198,10 @@ describe('押したときだけ動く', () => {
 
   it('経路が危なければトークンを試さない（分からないまま返す）', async () => {
     setUp()
-    writeFileSync(join(work, 'custom', 'conf', 'app.ini'),
-      appIni().replace('http://localhost:4649/', 'http://192.168.1.10:4649/'))
+    writeFileSync(
+      join(work, 'custom', 'conf', 'app.ini'),
+      appIni().replace('http://localhost:4649/', 'http://192.168.1.10:4649/')
+    )
     out = ['/opt/homebrew/bin/forgejo', 'version 16.0.3']
     const { gatherFacts } = await load()
     const f = await gatherFacts()
@@ -233,8 +251,10 @@ describe('設定を書き換えるときは控えを残す', () => {
 
   it('**書ける形でなければ触らない。** 手でやる場所を言う', async () => {
     mkdirSync(join(work, 'custom', 'conf'), { recursive: true })
-    writeFileSync(join(work, 'custom', 'conf', 'app.ini'),
-      '[server]\nROOT_URL = http://localhost:4649/\n[security]\nINSTALL_LOCK = true\n')
+    writeFileSync(
+      join(work, 'custom', 'conf', 'app.ini'),
+      '[server]\nROOT_URL = http://localhost:4649/\n[security]\nINSTALL_LOCK = true\n'
+    )
     out = ['/f', 'version 1']
     const { applyFix } = await load()
     await expect(applyFix('openAddr')).rejects.toThrow(/HTTP_ADDR/)
@@ -254,14 +274,20 @@ describe('runner の登録トークン', () => {
     out = ['/f', 'version 1', 'ABCDEF123456']
     const { applyFix } = await load()
     expect(await applyFix('runnerToken')).toContain('ABCDEF123456')
-    expect(runs.at(-1)).toEqual(expect.arrayContaining(['forgejo-cli', 'actions', 'generate-runner-token']))
+    expect(runs.at(-1)).toEqual(
+      expect.arrayContaining(['forgejo-cli', 'actions', 'generate-runner-token'])
+    )
   })
 })
 
 describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
   const loadRemote = async (): Promise<typeof import('../src/main/forge/setup')> => {
     vi.doMock('../src/main/config', () => ({
-      resolved: async () => ({ forgejoWorkPaths: [], forgejoUrl: 'http://localhost:4649/', ignored: [] })
+      resolved: async () => ({
+        forgejoWorkPaths: [],
+        forgejoUrl: 'http://localhost:4649/',
+        ignored: []
+      })
     }))
     return import('../src/main/forge/setup')
   }
@@ -280,10 +306,21 @@ describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
   it('貼られたトークンは、**通るか・ボットのものか**を聞いてから保管する', async () => {
     const { adoptToken } = await loadRemote()
     vi.stubGlobal('fetch', async (url: URL) => ({
-      ok: true, status: 200, statusText: 'OK',
-      json: async () => String(url).includes('/tokens')
-        ? [{ id: 1, name: 'izuna', scopes: ['write:user', 'write:repository'], token_last_eight: 'aaaaaaaa', created_at: '' }]
-        : { login: 'izuna' },
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () =>
+        String(url).includes('/tokens')
+          ? [
+              {
+                id: 1,
+                name: 'izuna',
+                scopes: ['write:user', 'write:repository'],
+                token_last_eight: 'aaaaaaaa',
+                created_at: ''
+              }
+            ]
+          : { login: 'izuna' },
       text: async () => ''
     }))
     const msg = await adoptToken('http://localhost:4649/', ' fake-aaaaaaaa ')
@@ -293,9 +330,21 @@ describe('手元に forgejo が無い構成（docs/SETUP.md）', () => {
 
   it('人のトークンは受け取らない。通らないものも保管しない。空も LAN も断る', async () => {
     const { adoptToken } = await loadRemote()
-    vi.stubGlobal('fetch', async () => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ login: 'someone' }), text: async () => '' }))
+    vi.stubGlobal('fetch', async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({ login: 'someone' }),
+      text: async () => ''
+    }))
     await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/人の鍵/)
-    vi.stubGlobal('fetch', async () => ({ ok: false, status: 401, statusText: 'x', json: async () => ({}), text: async () => '' }))
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 401,
+      statusText: 'x',
+      json: async () => ({}),
+      text: async () => ''
+    }))
     await expect(adoptToken('http://localhost:4649/', 'tok')).rejects.toThrow(/401/)
     await expect(adoptToken('http://localhost:4649/', '   ')).rejects.toThrow(/空/)
     await expect(adoptToken('http://192.168.1.5:4649/', 'tok')).rejects.toThrow(/平文/)

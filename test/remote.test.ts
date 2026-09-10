@@ -30,13 +30,19 @@ const FORGE = 'http://localhost:4649/'
 
 describe('URL を読む', () => {
   it('ssh 形式', () => {
-    expect(parseRemoteUrl('git@github.com:Watakumi/gh-radar.git'))
-      .toEqual({ host: 'github.com', owner: 'Watakumi', repo: 'gh-radar' })
+    expect(parseRemoteUrl('git@github.com:Watakumi/gh-radar.git')).toEqual({
+      host: 'github.com',
+      owner: 'Watakumi',
+      repo: 'gh-radar'
+    })
   })
 
   it('http 形式', () => {
-    expect(parseRemoteUrl('http://localhost:4649/watakumi/gh-radar.git'))
-      .toEqual({ host: 'localhost:4649', owner: 'watakumi', repo: 'gh-radar' })
+    expect(parseRemoteUrl('http://localhost:4649/watakumi/gh-radar.git')).toEqual({
+      host: 'localhost:4649',
+      owner: 'watakumi',
+      repo: 'gh-radar'
+    })
   })
 
   it('.git が無くても読む', () => {
@@ -44,8 +50,11 @@ describe('URL を読む', () => {
   })
 
   it('ssh:// とポート付き', () => {
-    expect(parseRemoteUrl('ssh://git@forge.home.lan:2222/watakumi/izuna.git'))
-      .toEqual({ host: 'forge.home.lan', owner: 'watakumi', repo: 'izuna' })
+    expect(parseRemoteUrl('ssh://git@forge.home.lan:2222/watakumi/izuna.git')).toEqual({
+      host: 'forge.home.lan',
+      owner: 'watakumi',
+      repo: 'izuna'
+    })
   })
 
   it('読めないものは null（空文字や 0 に倒さない）', () => {
@@ -115,8 +124,9 @@ describe('段の判定', () => {
 
 describe('作業場の URL を組む', () => {
   it('末尾のスラッシュを重ねない', () => {
-    expect(sandboxRemoteUrl('http://localhost:4649/', 'watakumi', 'izuna'))
-      .toBe('http://localhost:4649/watakumi/izuna.git')
+    expect(sandboxRemoteUrl('http://localhost:4649/', 'watakumi', 'izuna')).toBe(
+      'http://localhost:4649/watakumi/izuna.git'
+    )
   })
 
   it('ホストだけ取り出す', () => {
@@ -128,15 +138,29 @@ describe('作業場の URL を組む', () => {
 
 describe('GitHub に漏れた作業ブランチ（GOAL.md 測り方「GitHub に出るのは 6 の二段目だけ」）', () => {
   it('sandbox にも upstream にもあるものが漏れ。既定ブランチといま出すブランチは除く', () => {
-    expect(upstreamLeaks({
-      upstreamHeads: ['main', 'feat/deliver', 'worktree-scoring', 'worktree-virtualize', 'hotfix'],
-      sandboxHeads: ['main', 'feat/deliver', 'worktree-scoring', 'worktree-virtualize'],
-      allowed: ['main', 'feat/deliver']
-    })).toEqual(['worktree-scoring', 'worktree-virtualize'])
+    expect(
+      upstreamLeaks({
+        upstreamHeads: [
+          'main',
+          'feat/deliver',
+          'worktree-scoring',
+          'worktree-virtualize',
+          'hotfix'
+        ],
+        sandboxHeads: ['main', 'feat/deliver', 'worktree-scoring', 'worktree-virtualize'],
+        allowed: ['main', 'feat/deliver']
+      })
+    ).toEqual(['worktree-scoring', 'worktree-virtualize'])
   })
 
   it('upstream にしか無いものは漏れではない（人が別に押したもの）。null の許可は無視する', () => {
-    expect(upstreamLeaks({ upstreamHeads: ['main', 'hotfix'], sandboxHeads: ['main', 'feat'], allowed: ['main', null] })).toEqual([])
+    expect(
+      upstreamLeaks({
+        upstreamHeads: ['main', 'hotfix'],
+        sandboxHeads: ['main', 'feat'],
+        allowed: ['main', null]
+      })
+    ).toEqual([])
   })
 
   it('何も無ければ空', () => {
@@ -146,13 +170,45 @@ describe('GitHub に漏れた作業ブランチ（GOAL.md 測り方「GitHub に
 
 describe('git に渡してよい名前（引数の注入を止める。§26）', () => {
   it('普通のブランチ名と remote 名は通る', () => {
-    for (const n of ['main', 'feat/x', 'worktree-agent-a1b2', 'issue-1-09081859', 'forgejo', 'upstream', 'v1.2.3', 'a.b']) {
+    for (const n of [
+      'main',
+      'feat/x',
+      'worktree-agent-a1b2',
+      'issue-1-09081859',
+      'forgejo',
+      'upstream',
+      'v1.2.3',
+      'a.b'
+    ]) {
       expect(isSafeRef(n), n).toBe(true)
     }
   })
 
   it('**`-` 始まりはオプションになるので断る。** 空白・制御文字・git が拒む形も', () => {
-    for (const n of ['-x', '--upload-pack=/bin/sh', '--delete', '', ' a', 'a b', 'a..b', '/a', 'a/', 'a.lock', 'a.', 'a//b', 'a@{1}', 'a~1', 'a^', 'a:b', 'a?', 'a*', 'a[b', 'a\\b', 'a\x00b', 'x'.repeat(256)]) {
+    for (const n of [
+      '-x',
+      '--upload-pack=/bin/sh',
+      '--delete',
+      '',
+      ' a',
+      'a b',
+      'a..b',
+      '/a',
+      'a/',
+      'a.lock',
+      'a.',
+      'a//b',
+      'a@{1}',
+      'a~1',
+      'a^',
+      'a:b',
+      'a?',
+      'a*',
+      'a[b',
+      'a\\b',
+      'a\x00b',
+      'x'.repeat(256)
+    ]) {
       expect(isSafeRef(n), JSON.stringify(n)).toBe(false)
     }
   })

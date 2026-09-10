@@ -14,9 +14,13 @@ paths:
 ## 10. 完了の条件
 
 ```bash
-pnpm verify     # typecheck + test + カバレッジ。緑にならないものを完了としない
+pnpm verify     # typecheck + lint（警告 0）+ test + カバレッジ。緑にならないものを完了としない
 pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが要るので verify には入れない
 ```
+
+lint は 2026-09-10 から verify の中（§27）。`eslint-disable` を置くときは理由を同じ行に書く ——
+置いてあるのは、await の後で setState する effect（`react-hooks/set-state-in-effect` が同期と区別しない）、
+ANSI の制御列を探す正規表現、型の無い `.js` / `.mjs` の 3 種だけ。
 
 ### カバレッジ（2026-09-08 に入れた）
 

@@ -27,13 +27,21 @@ export function Files({ panel }: { panel: Panel }): React.JSX.Element {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.lg, padding: S.lg }}>
-      {wrote.length > 0 && <Group label={`書き換えた ${wrote.length} 件`} files={wrote} cwd={panel.cwd} />}
-      {read.length > 0 && <Group label={`読んだだけ ${read.length} 件`} files={read} cwd={panel.cwd} />}
+      {wrote.length > 0 && (
+        <Group label={`書き換えた ${wrote.length} 件`} files={wrote} cwd={panel.cwd} />
+      )}
+      {read.length > 0 && (
+        <Group label={`読んだだけ ${read.length} 件`} files={read} cwd={panel.cwd} />
+      )}
     </div>
   )
 }
 
-function Group({ label, files, cwd }: {
+function Group({
+  label,
+  files,
+  cwd
+}: {
   label: string
   files: Touched[]
   cwd: string
@@ -43,13 +51,33 @@ function Group({ label, files, cwd }: {
       <span style={{ fontSize: F.small, color: C.dim2 }}>{label}</span>
       <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
         {files.map((f) => (
-          <div key={f.path} style={{ display: 'flex', alignItems: 'baseline', gap: S.md,
-            padding: `${S.sm}px ${S.md}px`, border: `1px solid ${C.line}`, borderRadius: R.md }}>
-            <span title={f.path} style={{ font: `${F.small}px ${MONO}`, color: C.ink2,
-              flexGrow: 1, direction: 'rtl', textAlign: 'left', ...ellipsis }}>
+          <div
+            key={f.path}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: S.md,
+              padding: `${S.sm}px ${S.md}px`,
+              border: `1px solid ${C.line}`,
+              borderRadius: R.md
+            }}
+          >
+            <span
+              title={f.path}
+              style={{
+                font: `${F.small}px ${MONO}`,
+                color: C.ink2,
+                flexGrow: 1,
+                direction: 'rtl',
+                textAlign: 'left',
+                ...ellipsis
+              }}
+            >
               {relative(f.path, cwd)}
             </span>
-            {f.by.map((who) => <Tag key={who}>{who}</Tag>)}
+            {f.by.map((who) => (
+              <Tag key={who}>{who}</Tag>
+            ))}
             <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
               {f.wrote > 0 ? `${f.wrote} 回` : `${f.read} 回`}
             </span>

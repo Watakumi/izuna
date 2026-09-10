@@ -23,7 +23,9 @@ import { loadGhosttySkin } from '../src/main/ghostty'
 const ROOT = resolve(import.meta.dirname, '..')
 const OUT = join(ROOT, 'shots')
 const problems: string[] = []
-const check = (ok: boolean, what: string): void => { if (!ok) problems.push(what) }
+const check = (ok: boolean, what: string): void => {
+  if (!ok) problems.push(what)
+}
 
 async function shoot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: join(OUT, `${name}.png`), animations: 'disabled' })
@@ -46,10 +48,15 @@ async function main(): Promise<void> {
   await server.listen()
 
   const browser = await chromium.launch()
-  const page = await browser.newPage({ viewport: { width: 1380, height: 900 }, deviceScaleFactor: 2 })
+  const page = await browser.newPage({
+    viewport: { width: 1380, height: 900 },
+    deviceScaleFactor: 2
+  })
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(String(e)))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
 
   // 実機の Ghostty を読んで流し込む。**本番と同じ配色で撮る**
   const skin = await loadGhosttySkin()
@@ -71,8 +78,10 @@ async function main(): Promise<void> {
 
   // 入力欄が既定の白に落ちていないか（一度これで真っ白を出した）
   const ta = await styleOf(page, 'textarea', 'background-color')
-  check(!/rgb\(255, 255, 255\)|rgba\(0, 0, 0, 0\)$/.test(ta) || ta === 'rgba(0, 0, 0, 0)',
-    `入力欄の背景が既定に落ちている: ${ta}`)
+  check(
+    !/rgb\(255, 255, 255\)|rgba\(0, 0, 0, 0\)$/.test(ta) || ta === 'rgba(0, 0, 0, 0)',
+    `入力欄の背景が既定に落ちている: ${ta}`
+  )
 
   // 続きから → 会話
   await page.getByText('セッションの一覧と復元').click()
@@ -90,7 +99,7 @@ async function main(): Promise<void> {
   })
   check(!prose.includes('**'), '本文に ** が残っている（markdown が描けていない）')
   check(!prose.includes('| ---'), '表が描けていない')
-  check(await page.locator('table').count() > 0, '表が要素になっていない')
+  check((await page.locator('table').count()) > 0, '表が要素になっていない')
   check(prose.includes('現状'), '見出しが出ていない')
 
   /**
@@ -101,15 +110,20 @@ async function main(): Promise<void> {
    * 次の候補である BIZ UDGothic が**欧文まで描いていた**。
    * 書体名を書いただけでは、入っているかどうかは分からない。
    */
-  const latin = (await page.evaluate(
-    readFileSync(join(ROOT, 'scripts/latin.js'), 'utf8')
-  )) as { body: string; actual: number; japaneseOnly: number; parts: string[] }
-  check(Math.abs(latin.actual - latin.japaneseOnly) > 1,
-    `欧文が日本語の書体で描かれている（${latin.parts[0]} が入っていない）: ${latin.body}`)
+  const latin = (await page.evaluate(readFileSync(join(ROOT, 'scripts/latin.js'), 'utf8'))) as {
+    body: string
+    actual: number
+    japaneseOnly: number
+    parts: string[]
+  }
+  check(
+    Math.abs(latin.actual - latin.japaneseOnly) > 1,
+    `欧文が日本語の書体で描かれている（${latin.parts[0]} が入っていない）: ${latin.body}`
+  )
 
   // 本文の色と書体
   const strong = await page.locator('strong').first()
-  check(await strong.count() > 0, '強調が要素になっていない')
+  check((await strong.count()) > 0, '強調が要素になっていない')
   const font = await styleOf(page, 'body', 'font-family')
   check(!font.includes('var('), `書体が var() のまま解決されていない: ${font}`)
 
@@ -123,32 +137,40 @@ async function main(): Promise<void> {
   await page.waitForTimeout(1200)
   const svgs = await page.locator('.izuna-md svg, svg[id^="m"]').count()
   check(svgs > 0, 'mermaid が図になっていない')
-  check(await page.getByText('これは mermaid ではない').count() > 0,
-    '図にできない mermaid で、書いてあった字まで消えている')
+  check(
+    (await page.getByText('これは mermaid ではない').count()) > 0,
+    '図にできない mermaid で、書いてあった字まで消えている'
+  )
   await shoot(page, '6-mermaid')
 
   // 触ったファイル
   await page.getByText('ファイル', { exact: true }).click()
   await page.waitForTimeout(300)
-  check(await page.getByText('書き換えた', { exact: false }).count() > 0,
-    '書き換えたファイルが出ていない')
-  check(await page.getByText('skin.ts', { exact: false }).count() > 0,
-    'Write したファイルが一覧に出ていない')
+  check(
+    (await page.getByText('書き換えた', { exact: false }).count()) > 0,
+    '書き換えたファイルが出ていない'
+  )
+  check(
+    (await page.getByText('skin.ts', { exact: false }).count()) > 0,
+    'Write したファイルが一覧に出ていない'
+  )
   await shoot(page, '7-files')
 
   // 共有フォルダの盤面（§16）
   await page.getByText('盤面', { exact: true }).click()
   await page.waitForTimeout(300)
-  check(await page.getByText('同時に走らせてはいけない組があります').count() > 0,
-    'paths の重なりが出ていない')
+  check(
+    (await page.getByText('同時に走らせてはいけない組があります').count()) > 0,
+    'paths の重なりが出ていない'
+  )
   await shoot(page, '8-board')
 
   // 自律ループ（§23）
   await page.getByText('ループ', { exact: true }).click()
   await page.waitForTimeout(400)
   await shoot(page, '5-loop')
-  check(await page.getByText('回す').count() > 0, 'ループを始める釦が無い')
-  check(await page.getByText('止める').count() === 0, '回っていないのに止める釦が出ている')
+  check((await page.getByText('回す').count()) > 0, 'ループを始める釦が無い')
+  check((await page.getByText('止める').count()) === 0, '回っていないのに止める釦が出ている')
   await page.getByText('情報', { exact: true }).click()
 
   // ターミナル
@@ -179,9 +201,11 @@ async function main(): Promise<void> {
    * 同じ色でも面によって比が変わる。**描いてから測るしかない。**
    */
   const FLOOR = 6
-  const texts = (await page.evaluate(
-    readFileSync(join(ROOT, 'scripts/contrast.js'), 'utf8')
-  )) as { text: string; size: number; ratio: number }[]
+  const texts = (await page.evaluate(readFileSync(join(ROOT, 'scripts/contrast.js'), 'utf8'))) as {
+    text: string
+    size: number
+    ratio: number
+  }[]
   const faint = texts.filter((t) => t.ratio < FLOOR)
   console.log(`\n画面の字 ${texts.length} 箇所 / 最も薄いもの ${texts[0]?.ratio}`)
   for (const t of faint) problems.push(`薄い（比 ${t.ratio} / ${t.size}px）: ${t.text}`)
@@ -191,8 +215,11 @@ async function main(): Promise<void> {
 
   if (errors.length) problems.push(...errors.map((e) => `画面のエラー: ${e.slice(0, 160)}`))
 
-  await writeFile(join(OUT, 'README.md'),
-    '撮ったもの。`pnpm shots` で作り直せる。**commit しない**（差分に意味が無い）。\n', 'utf8')
+  await writeFile(
+    join(OUT, 'README.md'),
+    '撮ったもの。`pnpm shots` で作り直せる。**commit しない**（差分に意味が無い）。\n',
+    'utf8'
+  )
 
   if (problems.length) {
     console.error('\n落ちた:')

@@ -171,7 +171,10 @@ export class ClaudeSession extends EventEmitter<Events> {
     ])
     // **鍵は渡さない。** 拾うと従量課金に切り替わる（`shared/billing.ts`）
     const { env, removed } = withoutBillingKeys(shellEnv)
-    if (removed.length > 0) console.warn(`[izuna] 環境の ${removed.join(', ')} は claude に渡しません（課金の経路を変えないため）`)
+    if (removed.length > 0)
+      console.warn(
+        `[izuna] 環境の ${removed.join(', ')} は claude に渡しません（課金の経路を変えないため）`
+      )
 
     this.#query = query({
       prompt: this.#input,
@@ -215,7 +218,11 @@ export class ClaudeSession extends EventEmitter<Events> {
    * 送るものは人が打っていない。そこを `human` にすると、CLI の
    * 「人が言った」を根拠にする判断が全部その前提で動く（§26）。
    */
-  send(text: string, images: Attachment[] = [], origin: SDKMessageOrigin = { kind: 'human' }): void {
+  send(
+    text: string,
+    images: Attachment[] = [],
+    origin: SDKMessageOrigin = { kind: 'human' }
+  ): void {
     if (!this.#running) throw new Error('セッションが起動していません')
     // 画像を先に置く。**後ろに置くと、指示より前に見てもらえない** ——
     // 「この画面のここ」のような指示は、画像を見た後でしか意味を持たない

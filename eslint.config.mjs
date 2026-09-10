@@ -28,5 +28,19 @@ export default defineConfig(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
+  {
+    rules: {
+      // `_` で始まる名前は「使わないと宣言した」もの（分割代入で外す、引数の形だけ合わせる）
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true
+        }
+      ]
+    }
+  },
   eslintConfigPrettier
 )

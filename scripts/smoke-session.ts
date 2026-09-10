@@ -26,15 +26,31 @@ session.on('permission', (req) => {
   session.respondToPermission(req.id, { behavior: 'deny', message: 'スモークではツールを使わない' })
 })
 
-session.on('error', (e) => { console.error('[error]', e.message); process.exit(1) })
+session.on('error', (e) => {
+  console.error('[error]', e.message)
+  process.exit(1)
+})
 
 session
   .start()
   .then(async () => {
     const commands = await session.slashCommands()
-    console.log('[/] %d 件。先頭5件: %s', commands.length, commands.slice(0, 5).map((c) => '/' + c.name).join(', '))
+    console.log(
+      '[/] %d 件。先頭5件: %s',
+      commands.length,
+      commands
+        .slice(0, 5)
+        .map((c) => '/' + c.name)
+        .join(', ')
+    )
     session.send('Reply with exactly: pong')
   })
-  .catch((e) => { console.error(String(e)); process.exit(1) })
+  .catch((e) => {
+    console.error(String(e))
+    process.exit(1)
+  })
 
-setTimeout(() => { console.error('timeout'); process.exit(1) }, 120_000)
+setTimeout(() => {
+  console.error('timeout')
+  process.exit(1)
+}, 120_000)

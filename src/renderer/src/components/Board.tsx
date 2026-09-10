@@ -18,7 +18,10 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
   const [board, setBoard] = useState<TeamBoard | null | undefined>(undefined)
 
   const load = (): void => {
-    void window.izuna.teamBoard(panel.id).then(setBoard).catch(() => setBoard(null))
+    void window.izuna
+      .teamBoard(panel.id)
+      .then(setBoard)
+      .catch(() => setBoard(null))
   }
   useEffect(load, [panel.id])
 
@@ -48,7 +51,9 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
         <Card tone="attention">
           <div style={{ fontSize: F.body, color: C.ink, marginBottom: S.xs }}>読めなかった札</div>
           {board.errors.map((e, i) => (
-            <div key={i} style={{ font: `${F.small}px ${MONO}`, color: C.ink2, lineHeight: 1.7 }}>{e}</div>
+            <div key={i} style={{ font: `${F.small}px ${MONO}`, color: C.ink2, lineHeight: 1.7 }}>
+              {e}
+            </div>
           ))}
         </Card>
       )}
@@ -56,10 +61,23 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
       <Section label={`作業 ${board.tasks.length} 件`} action={<Reload onClick={load} />}>
         {board.tasks.length === 0 && <Faint>まだ札がありません</Faint>}
         {board.tasks.map((t) => (
-          <div key={t.id} style={{ display: 'flex', alignItems: 'baseline', gap: S.md,
-            padding: '8px 12px', border: `1px solid ${C.line}`, borderRadius: R.md }}>
-            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>{t.id}</span>
-            <span style={{ fontSize: F.body, color: C.ink2, flexGrow: 1, ...ellipsis }}>{t.title}</span>
+          <div
+            key={t.id}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: S.md,
+              padding: '8px 12px',
+              border: `1px solid ${C.line}`,
+              borderRadius: R.md
+            }}
+          >
+            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+              {t.id}
+            </span>
+            <span style={{ fontSize: F.body, color: C.ink2, flexGrow: 1, ...ellipsis }}>
+              {t.title}
+            </span>
             <Tag tone={needsHuman(t.status)}>{t.status}</Tag>
           </div>
         ))}
@@ -68,7 +86,10 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
       {board.ready.length > 0 && (
         <Section label={`いま着手できるもの ${board.ready.length} 件`}>
           {board.ready.map((t) => (
-            <div key={t.id} style={{ font: `${F.small}px ${MONO}`, color: C.ink2, lineHeight: 1.7 }}>
+            <div
+              key={t.id}
+              style={{ font: `${F.small}px ${MONO}`, color: C.ink2, lineHeight: 1.7 }}
+            >
               {t.id} {t.title}
             </div>
           ))}
@@ -80,7 +101,9 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
           {board.summaries.map((s, i) => (
             <div key={i} style={{ display: 'flex', gap: S.md, alignItems: 'baseline' }}>
               <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint }}>{s.task}</span>
-              <span style={{ fontSize: F.small, color: C.ink2, flexGrow: 1, ...ellipsis }}>{s.by}</span>
+              <span style={{ fontSize: F.small, color: C.ink2, flexGrow: 1, ...ellipsis }}>
+                {s.by}
+              </span>
               <Tag tone={s.outcome === 'done' ? 'plain' : 'attention'}>{s.outcome}</Tag>
             </div>
           ))}
@@ -89,28 +112,41 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
 
       {board.decisions.length > 0 && (
         <Section label={`決めたこと ${board.decisions.length} 件`}>
-          {board.decisions.slice(-5).reverse().map((d, i) => (
-            <div key={i} style={{ fontSize: F.small, color: C.ink2, lineHeight: 1.7, ...ellipsis }}>
-              {d.body.split('\n')[0]}
-            </div>
-          ))}
+          {board.decisions
+            .slice(-5)
+            .reverse()
+            .map((d, i) => (
+              <div
+                key={i}
+                style={{ fontSize: F.small, color: C.ink2, lineHeight: 1.7, ...ellipsis }}
+              >
+                {d.body.split('\n')[0]}
+              </div>
+            ))}
         </Section>
       )}
 
       {board.log.length > 0 && (
         <Section label={`記録 ${board.log.length} 行`}>
-          {board.log.slice(-6).reverse().map((l, i) => (
-            <div key={i} style={{ font: `${F.micro}px ${MONO}`, color: C.faint, ...ellipsis }}>
-              {l.kind} {l.target} {l.note}
-            </div>
-          ))}
+          {board.log
+            .slice(-6)
+            .reverse()
+            .map((l, i) => (
+              <div key={i} style={{ font: `${F.micro}px ${MONO}`, color: C.faint, ...ellipsis }}>
+                {l.kind} {l.target} {l.note}
+              </div>
+            ))}
         </Section>
       )}
     </div>
   )
 }
 
-function Section({ label, action, children }: {
+function Section({
+  label,
+  action,
+  children
+}: {
   label: string
   action?: React.ReactNode
   children: React.ReactNode

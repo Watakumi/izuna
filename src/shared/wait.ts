@@ -7,11 +7,7 @@
  *
  * 純粋関数ではないが、時間しか触らないので検査できる。
  */
-export async function withTimeout<T>(
-  work: Promise<T>,
-  ms: number,
-  onTimeout: () => T
-): Promise<T> {
+export async function withTimeout<T>(work: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([

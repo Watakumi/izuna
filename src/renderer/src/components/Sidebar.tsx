@@ -51,12 +51,25 @@ export function Sidebar({
   onNew: () => void
 }): React.JSX.Element {
   return (
-    <div style={{
-      width: 246, flexShrink: 0, background: C.panel, borderRight: `1px solid ${C.line}`,
-      display: 'flex', flexDirection: 'column'
-    }}>
-      <div style={{ padding: '12px 16px 8px', fontSize: F.small, letterSpacing: '0.08em',
-        color: C.dim2, fontWeight: 600 }}>
+    <div
+      style={{
+        width: 246,
+        flexShrink: 0,
+        background: C.panel,
+        borderRight: `1px solid ${C.line}`,
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <div
+        style={{
+          padding: '12px 16px 8px',
+          fontSize: F.small,
+          letterSpacing: '0.08em',
+          color: C.dim2,
+          fontWeight: 600
+        }}
+      >
         {/*
           **数を出さない。** 「セッション 1」は「1 番目のセッション」とも読める。
           そもそも下に並んでいるので数えれば分かる。数が要るのは、
@@ -65,8 +78,17 @@ export function Sidebar({
         セッション
       </div>
 
-      <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px',
-        display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div
+        style={{
+          flexGrow: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '0 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2
+        }}
+      >
         {panels.length === 0 && (
           <div style={{ padding: '12px 8px', fontSize: F.small, color: C.faint, lineHeight: 1.7 }}>
             {/* **釦の文字を引用しない。** 変えたときにずれる（実際ずれていた）*/}
@@ -77,44 +99,89 @@ export function Sidebar({
           <div key={repo} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* リポジトリで束ねる。並列で走らせると、どのリポジトリの話か分からなくなる */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 6px 4px' }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.faint}
-                strokeWidth="1.9"><path d="M4 4h11l5 5v11H4z" /></svg>
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={C.faint}
+                strokeWidth="1.9"
+              >
+                <path d="M4 4h11l5 5v11H4z" />
+              </svg>
               <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2 }}>{repo}</span>
             </div>
             {group.map((p) => {
-          const d = dot(p)
-          const on = p.id === activeId
-          return (
-            <div
-              key={p.id}
-              onClick={() => onSelect(p.id)}
-              style={{
-                display: 'flex', gap: 8, padding: '8px 12px', borderRadius: 7, cursor: 'pointer',
-                background: on ? C.raised : 'transparent',
-                borderLeft: `2px solid ${p.pending ? C.amber : on ? C.line2 : 'transparent'}`
-              }}
-            >
-              <span style={{
-                width: 7, height: 7, borderRadius: '50%', marginTop: 5, flexShrink: 0,
-                background: d.filled ? d.color : 'transparent',
-                border: d.filled ? 'none' : `1.5px solid ${d.color}`
-              }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flexGrow: 1 }}>
-                <span style={{ fontSize: F.body, color: on ? C.ink : C.ink2, ...ellipsis }}>{p.label}</span>
-                <span style={{ font: `${F.micro}px ${MONO}`, color: p.pending ? C.amber : C.dim2,
-                  ...ellipsis }}>
-                  {/* **無いことを書かない。** worktree は Izuna が作らないので
+              const d = dot(p)
+              const on = p.id === activeId
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => onSelect(p.id)}
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    padding: '8px 12px',
+                    borderRadius: 7,
+                    cursor: 'pointer',
+                    background: on ? C.raised : 'transparent',
+                    borderLeft: `2px solid ${p.pending ? C.amber : on ? C.line2 : 'transparent'}`
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      marginTop: 5,
+                      flexShrink: 0,
+                      background: d.filled ? d.color : 'transparent',
+                      border: d.filled ? 'none' : `1.5px solid ${d.color}`
+                    }}
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      minWidth: 0,
+                      flexGrow: 1
+                    }}
+                  >
+                    <span style={{ fontSize: F.body, color: on ? C.ink : C.ink2, ...ellipsis }}>
+                      {p.label}
+                    </span>
+                    <span
+                      style={{
+                        font: `${F.micro}px ${MONO}`,
+                        color: p.pending ? C.amber : C.dim2,
+                        ...ellipsis
+                      }}
+                    >
+                      {/* **無いことを書かない。** worktree は Izuna が作らないので
                       大半のセッションで空になる。空なら状態だけ出せばよい */}
-                  {p.branch ? `${p.branch} · ` : ''}{label(p)}
-                </span>
-              </div>
-              <span
-                onClick={(e) => { e.stopPropagation(); onClose(p.id) }}
-                title="このセッションを閉じる"
-                style={{ color: C.faint, fontSize: F.title, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
-              >×</span>
-            </div>
-          )
+                      {p.branch ? `${p.branch} · ` : ''}
+                      {label(p)}
+                    </span>
+                  </div>
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onClose(p.id)
+                    }}
+                    title="このセッションを閉じる"
+                    style={{
+                      color: C.faint,
+                      fontSize: F.title,
+                      lineHeight: 1,
+                      padding: '0 2px',
+                      flexShrink: 0
+                    }}
+                  >
+                    ×
+                  </span>
+                </div>
+              )
             })}
           </div>
         ))}
@@ -124,13 +191,29 @@ export function Sidebar({
         <div
           onClick={onNew}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '8px 12px', borderRadius: 7, border: `1px dashed ${C.line2}`,
-            color: C.dim, fontSize: F.body, cursor: 'pointer'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '8px 12px',
+            borderRadius: 7,
+            border: `1px dashed ${C.line2}`,
+            color: C.dim,
+            fontSize: F.body,
+            cursor: 'pointer'
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            strokeWidth="1.9" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
           新しいセッション
         </div>
       </div>

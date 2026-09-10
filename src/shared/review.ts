@@ -20,7 +20,9 @@ export interface ReviewContext {
 
 /** 比べる先が無ければ頼まない。**何と比べるのかが決まらない** */
 export function canReview(context: ReviewContext): boolean {
-  return context.head !== null && context.head !== '' && context.base !== null && context.base !== ''
+  return (
+    context.head !== null && context.head !== '' && context.base !== null && context.base !== ''
+  )
 }
 
 export function reviewPrompt(context: ReviewContext): string {

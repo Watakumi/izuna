@@ -36,14 +36,20 @@ export function parseRemoteUrl(url: string): { host: string; owner: string; repo
   if (!trimmed) return null
 
   // git@host:owner/repo.git / ssh://git@host[:port]/owner/repo.git
-  const ssh = /^(?:ssh:\/\/)?(?:[^@/]+@)?([^:/]+)(?::\d+)?[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/.exec(trimmed)
+  const ssh = /^(?:ssh:\/\/)?(?:[^@/]+@)?([^:/]+)(?::\d+)?[:/]([^/]+)\/(.+?)(?:\.git)?\/?$/.exec(
+    trimmed
+  )
   if (ssh && !/^https?:/.test(trimmed)) {
     return { host: ssh[1], owner: ssh[2], repo: ssh[3] }
   }
 
   try {
     const u = new URL(trimmed)
-    const parts = u.pathname.replace(/^\//, '').replace(/\.git$/, '').split('/').filter(Boolean)
+    const parts = u.pathname
+      .replace(/^\//, '')
+      .replace(/\.git$/, '')
+      .split('/')
+      .filter(Boolean)
     if (parts.length < 2) return null
     // owner/repo は末尾 2 つ。Forgejo は sub path に置けるため
     return { host: u.host, owner: parts.at(-2)!, repo: parts.at(-1)! }
@@ -100,7 +106,10 @@ export function hostOf(url: string | null): string | null {
 }
 
 /** sandbox と upstream を取り出す。無ければ null */
-export function rolesIn(remotes: RemoteRef[]): { sandbox: RemoteRef | null; upstream: RemoteRef | null } {
+export function rolesIn(remotes: RemoteRef[]): {
+  sandbox: RemoteRef | null
+  upstream: RemoteRef | null
+} {
   return {
     sandbox: remotes.find((r) => r.role === 'sandbox') ?? null,
     upstream: remotes.find((r) => r.role === 'upstream') ?? null
@@ -158,8 +167,12 @@ export function upstreamLeaks(input: {
  */
 export function isSafeRef(name: string): boolean {
   if (!name || name.length > 255) return false
-  if (name.startsWith('-') || name.startsWith('/') || name.endsWith('/') || name.endsWith('.')) return false
-  if (name.endsWith('.lock') || name.includes('..') || name.includes('//') || name.includes('@{')) return false
+  if (name.startsWith('-') || name.startsWith('/') || name.endsWith('/') || name.endsWith('.'))
+    return false
+  if (name.endsWith('.lock') || name.includes('..') || name.includes('//') || name.includes('@{'))
+    return false
+  // 制御文字はわざと見ている（git が拒む形）
+  // eslint-disable-next-line no-control-regex
   if (/[\s~^:?*[\\\x00-\x1f\x7f]/.test(name)) return false
   return true
 }

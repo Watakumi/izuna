@@ -18,7 +18,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/shared/**/*.ts', 'src/main/**/*.ts', 'src/renderer/src/components/**/*.tsx'],
       exclude: [
-        'src/main/index.ts',        // Electron の起動そのもの
+        'src/main/index.ts', // Electron の起動そのもの
         'src/main/ipc/register.ts', // 口を関数に繋ぐ表だけ。判断は main/hub.ts にあり、そちらを数える
         'src/main/**/*.d.ts'
       ],

@@ -28,13 +28,19 @@ vi.mock('../src/main/forge/store', () => ({ loadToken: async () => token }))
 vi.mock('../src/main/forge/client', () => ({ whoami: async () => 'someone' }))
 vi.mock('node:child_process', () => ({
   execFile: (...all: unknown[]) => {
-    const cb = all[all.length - 1] as (e: Error | null, r?: { stdout: string; stderr: string }) => void
+    const cb = all[all.length - 1] as (
+      e: Error | null,
+      r?: { stdout: string; stderr: string }
+    ) => void
     const env = (all[2] as { env: NodeJS.ProcessEnv })?.env ?? {}
     runs.push({ args: (all[1] as string[]) ?? [], env })
     if (env.GIT_ASKPASS) {
       const exists = existsSync(env.GIT_ASKPASS)
-      askpass.push({ exists, mode: exists ? statSync(env.GIT_ASKPASS).mode : 0,
-        script: exists ? readFileSync(env.GIT_ASKPASS, 'utf8') : '' })
+      askpass.push({
+        exists,
+        mode: exists ? statSync(env.GIT_ASKPASS).mode : 0,
+        script: exists ? readFileSync(env.GIT_ASKPASS, 'utf8') : ''
+      })
     }
     const next = out.shift()
     if (next instanceof Error) cb(next)
@@ -42,7 +48,8 @@ vi.mock('node:child_process', () => ({
   }
 }))
 
-const load = async (): Promise<typeof import('../src/main/git/remote')> => import('../src/main/git/remote')
+const load = async (): Promise<typeof import('../src/main/git/remote')> =>
+  import('../src/main/git/remote')
 const SANDBOX = 'http://localhost:4649/'
 
 beforeEach(() => {
@@ -85,12 +92,18 @@ describe('sandbox 相手のとき', () => {
     expect(seen.script).toContain('IZUNA_GIT_USER')
     // **中身にトークンを書かない。** 環境変数から取る
     expect(seen.script).not.toContain('tok_secret_value')
-    expect(path.startsWith(tmpdir()) || path.startsWith(join('/private', tmpdir().replace(/^\//, '')))).toBe(true)
+    expect(
+      path.startsWith(tmpdir()) || path.startsWith(join('/private', tmpdir().replace(/^\//, '')))
+    ).toBe(true)
   })
 
   it('**仲介は呼ぶたびに作り、使い終わったら消す**（固定のパスは差し替えられる。§26）', async () => {
-    out = ['http://localhost:4649/someone/izuna.git\n', '',
-           'http://localhost:4649/someone/izuna.git\n', '']
+    out = [
+      'http://localhost:4649/someone/izuna.git\n',
+      '',
+      'http://localhost:4649/someone/izuna.git\n',
+      ''
+    ]
     const { push } = await load()
     await push('/w', 'forgejo', 'main', SANDBOX)
     const first = runs.at(-1)!.env.GIT_ASKPASS!
@@ -111,7 +124,9 @@ describe('sandbox 相手のとき', () => {
   it('**平文で LAN を通る根には載せない**。push は止まる', async () => {
     out = ['http://192.168.1.10:4649/someone/izuna.git\n', '']
     const { push } = await load()
-    await expect(push('/w', 'forgejo', 'main', 'http://192.168.1.10:4649/')).rejects.toThrow(/トークンを送りません/)
+    await expect(push('/w', 'forgejo', 'main', 'http://192.168.1.10:4649/')).rejects.toThrow(
+      /トークンを送りません/
+    )
     expect(runs.some((r) => r.args.includes('push'))).toBe(false)
   })
 

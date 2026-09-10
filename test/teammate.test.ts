@@ -3,7 +3,13 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
-import { applyMessage, emptyTranscript, type Block, type Item, type Transcript } from '../src/shared/transcript'
+import {
+  applyMessage,
+  emptyTranscript,
+  type Block,
+  type Item,
+  type Transcript
+} from '../src/shared/transcript'
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 
 /**
@@ -20,7 +26,6 @@ const messages: SDKMessage[] = readFileSync(FIXTURE, 'utf8')
   .split('\n')
   .filter((l) => l.trim())
   .map((l) => JSON.parse(l) as SDKMessage)
-
 
 /**
  * 検査だけが要る組み立て。**製品コードには置かない** ——
@@ -80,7 +85,9 @@ describe('ブレインと実行役を混ぜない', () => {
   })
 
   it('実行役のツールと結果も tasks 側で閉じる', () => {
-    const tools = task.blocks.filter((b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool')
+    const tools = task.blocks.filter(
+      (b): b is Extract<Block, { kind: 'tool' }> => b.kind === 'tool'
+    )
     expect(tools.map((b) => b.name)).toContain('Write')
     for (const b of tools) expect(b.state).toBe('done')
   })
@@ -102,7 +109,9 @@ describe('ブレインと実行役を混ぜない', () => {
 
 describe('会話の並び', () => {
   it('ブレインの assistant は message id ごとにまとまる', () => {
-    const assistants = t.items.filter((i): i is Extract<Item, { kind: 'assistant' }> => i.kind === 'assistant')
+    const assistants = t.items.filter(
+      (i): i is Extract<Item, { kind: 'assistant' }> => i.kind === 'assistant'
+    )
     const raw = messages.filter((m) => m.type === 'assistant' && !m.parent_tool_use_id).length
     expect(assistants.length).toBeLessThan(raw)
     expect(new Set(assistants.map((a) => a.id)).size).toBe(assistants.length)

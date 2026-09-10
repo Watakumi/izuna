@@ -4,11 +4,23 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
-  commitContext, commitsSince, currentBranch, defaultBranch, ensureSandboxRemote,
-  deleteRemoteBranch, isPushed, listRemotes, push, remoteHeads
+  commitContext,
+  commitsSince,
+  currentBranch,
+  defaultBranch,
+  ensureSandboxRemote,
+  deleteRemoteBranch,
+  isPushed,
+  listRemotes,
+  push,
+  remoteHeads
 } from '../src/main/git/remote'
 import {
-  listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus
+  listWorktrees,
+  removeWorktree,
+  repoName,
+  repoRoot,
+  worktreeStatus
 } from '../src/main/git/worktree'
 
 // トークンの置き場は Electron の safeStorage を使う。ここで見るのは本物の git だけなので差し替える。
@@ -28,8 +40,8 @@ vi.mock('../src/main/forge/store', () => ({
  * 模造の git を置くと、**引数が間違っていても通る**検査になる。
  */
 
-let base: string   // 上流役（bare）
-let work: string   // 作業リポジトリ
+let base: string // 上流役（bare）
+let work: string // 作業リポジトリ
 let outside: string // git ではない場所
 
 const git = (cwd: string, ...args: string[]): string =>
@@ -40,14 +52,17 @@ beforeAll(() => {
   base = join(root, 'base.git')
   work = join(root, 'work')
   outside = join(root, 'plain')
-  mkdirSync(base); mkdirSync(work); mkdirSync(outside)
+  mkdirSync(base)
+  mkdirSync(work)
+  mkdirSync(outside)
 
   git(base, 'init', '--bare', '-b', 'main')
   git(work, 'init', '-b', 'main')
   git(work, 'config', 'user.email', 't@example.com')
   git(work, 'config', 'user.name', 't')
   writeFileSync(join(work, 'a.txt'), 'one\n')
-  git(work, 'add', '-A'); git(work, 'commit', '-m', '最初のコミット')
+  git(work, 'add', '-A')
+  git(work, 'commit', '-m', '最初のコミット')
   git(work, 'remote', 'add', 'origin', base)
   git(work, 'push', '-u', 'origin', 'main')
 })
@@ -73,7 +88,13 @@ describe('remote', () => {
   it('sandbox の remote を足す。二度目は URL を合わせるだけ', async () => {
     const first = await ensureSandboxRemote(work, 'http://localhost:4649/', 'me', 'repo', 'forgejo')
     expect(first).toContain('forgejo')
-    const again = await ensureSandboxRemote(work, 'http://localhost:4649/', 'me', 'repo2', 'forgejo')
+    const again = await ensureSandboxRemote(
+      work,
+      'http://localhost:4649/',
+      'me',
+      'repo2',
+      'forgejo'
+    )
     expect(again).toContain('合わせました')
     const url = git(work, 'remote', 'get-url', 'forgejo').trim()
     expect(url).toBe('http://localhost:4649/me/repo2.git')
@@ -100,7 +121,8 @@ describe('remote', () => {
   it('push して上流を張る', async () => {
     git(work, 'checkout', '-q', '-b', 'feat')
     writeFileSync(join(work, 'b.txt'), 'two\n')
-    git(work, 'add', '-A'); git(work, 'commit', '-m', '二つ目')
+    git(work, 'add', '-A')
+    git(work, 'commit', '-m', '二つ目')
     expect(await push(work, 'origin', 'feat')).toContain('push しました')
     expect(await isPushed(work, 'origin', 'feat')).toBe(true)
     git(work, 'checkout', '-q', 'main')
@@ -162,11 +184,15 @@ describe('worktree のロック', () => {
     const dir = join(work, '..', 'wt-locked')
     git(work, 'worktree', 'add', '-q', dir, '-b', 'locked-branch')
     git(work, 'worktree', 'lock', '--reason', `claude agent x (pid ${process.pid} start now)`, dir)
-    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(false)
+    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(
+      false
+    )
     await expect(removeWorktree(work, dir, true)).rejects.toThrow(/ロック/)
     git(work, 'worktree', 'unlock', dir)
     git(work, 'worktree', 'lock', '--reason', 'claude agent x (pid 999999999 start then)', dir)
-    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(true)
+    expect((await listWorktrees(work)).find((w) => w.branch === 'locked-branch')?.lockStale).toBe(
+      true
+    )
     await removeWorktree(work, dir, true)
     expect((await listWorktrees(work)).some((w) => w.branch === 'locked-branch')).toBe(false)
   })

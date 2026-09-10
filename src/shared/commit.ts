@@ -42,4 +42,3 @@ export function draftPrompt(context: CommitContext): string {
     '- 前置きも後書きも要らない。**コミット文だけ**を返す'
   ].join('\n')
 }
-

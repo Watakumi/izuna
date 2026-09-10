@@ -53,8 +53,9 @@ describe('壊れた値は落として既定を使う', () => {
 
   it('settingSources は既知の値だけ', () => {
     expect(mergeConfig({ settingSources: ['user', 'nope'] }).ignored).toEqual(['settingSources'])
-    expect(mergeConfig({ settingSources: ['user', 'project', 'local'] }).config.settingSources)
-      .toEqual(['user', 'project', 'local'])
+    expect(
+      mergeConfig({ settingSources: ['user', 'project', 'local'] }).config.settingSources
+    ).toEqual(['user', 'project', 'local'])
   })
 
   it('空文字の混ざった配列は落とす', () => {

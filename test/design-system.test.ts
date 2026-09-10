@@ -27,7 +27,10 @@ function sources(dir: string, out: string[] = []): string[] {
   return out
 }
 
-const files = sources(UI_ROOT).map((p) => ({ path: relative(ROOT, p), text: readFileSync(p, 'utf8') }))
+const files = sources(UI_ROOT).map((p) => ({
+  path: relative(ROOT, p),
+  text: readFileSync(p, 'utf8')
+}))
 const THEME = 'src/renderer/src/theme.ts'
 const UI = 'src/renderer/src/components/ui.tsx'
 
@@ -240,7 +243,7 @@ describe('繰り返す書き方をまとめる', () => {
    * whiteSpace: 'nowrap'` を **17 箇所**手書きしていた。
    * `ellipsis` という部品を作っておきながら、**当てるのを忘れていた**。
    */
-  it("溢れを「…」にする書き方は theme.ts の ellipsis を使う", () => {
+  it('溢れを「…」にする書き方は theme.ts の ellipsis を使う', () => {
     const bad = files
       .filter((f) => f.path !== THEME && /textOverflow: 'ellipsis'/.test(f.text))
       .map((f) => f.path)
@@ -275,18 +278,23 @@ describe('部品を 1 箇所にまとめる', () => {
 
 describe('CSP（§26）', () => {
   const csp = (file: string): string =>
-    /Content-Security-Policy"\s*content="([^"]+)"/.exec(readFileSync(join(ROOT, 'src', 'renderer', file), 'utf8'))?.[1] ?? ''
+    /Content-Security-Policy"\s*content="([^"]+)"/.exec(
+      readFileSync(join(ROOT, 'src', 'renderer', file), 'utf8')
+    )?.[1] ?? ''
 
-  it.each(['index.html', 'harness.html'])('%s は object / base / frame / form を閉じ、eval を許さない', (file) => {
-    const c = csp(file)
-    expect(c).toContain("object-src 'none'")
-    expect(c).toContain("base-uri 'none'")
-    expect(c).toContain("frame-src 'none'")
-    expect(c).toContain("form-action 'none'")
-    expect(c).not.toContain("'unsafe-eval'")
-    // WASM のコンパイルだけを許す（§7）。JS の eval は許さない
-    expect(c).toContain("'wasm-unsafe-eval'")
-  })
+  it.each(['index.html', 'harness.html'])(
+    '%s は object / base / frame / form を閉じ、eval を許さない',
+    (file) => {
+      const c = csp(file)
+      expect(c).toContain("object-src 'none'")
+      expect(c).toContain("base-uri 'none'")
+      expect(c).toContain("frame-src 'none'")
+      expect(c).toContain("form-action 'none'")
+      expect(c).not.toContain("'unsafe-eval'")
+      // WASM のコンパイルだけを許す（§7）。JS の eval は許さない
+      expect(c).toContain("'wasm-unsafe-eval'")
+    }
+  )
 
   it('製品とハーネスの CSP は ws:（dev の HMR）以外同じ。緩めると CSP 由来の不具合を見逃す（§22）', () => {
     expect(csp('harness.html').replace(' ws:', '')).toBe(csp('index.html'))

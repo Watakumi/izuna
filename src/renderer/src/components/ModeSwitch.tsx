@@ -17,7 +17,7 @@ import { F, C, MONO } from '../theme'
  * 説明のほうは日本語で書く —— こちらは「何が起きるか」であって、
  * 語彙を合わせる相手がいない。
  */
-export const MODES: Array<{ value: PermissionMode; hint: string; danger?: boolean }> = [
+const MODES: Array<{ value: PermissionMode; hint: string; danger?: boolean }> = [
   { value: 'plan', hint: '読むだけ。変更はしない' },
   { value: 'default', hint: '変更のたびに承認を求める' },
   { value: 'acceptEdits', hint: 'ファイル編集だけ自動で許可' },
@@ -44,10 +44,17 @@ export function ModeSwitch({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 7,
-          border: `1px solid ${current?.danger ? C.red : C.line2}`, background: 'transparent',
-          color: current?.danger ? C.red : C.ink2, font: `${F.small}px ${MONO}`,
-          cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 12px',
+          borderRadius: 7,
+          border: `1px solid ${current?.danger ? C.red : C.line2}`,
+          background: 'transparent',
+          color: current?.danger ? C.red : C.ink2,
+          font: `${F.small}px ${MONO}`,
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: disabled ? 0.5 : 1
         }}
       >
         {mode}
@@ -57,22 +64,40 @@ export function ModeSwitch({
       {open && !disabled && (
         <>
           <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
-          <div style={{
-            position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 11, width: 260,
-            background: C.surface, border: `1px solid ${C.line2}`, borderRadius: 7,
-            boxShadow: '0 18px 48px rgba(0,0,0,0.55)', overflow: 'hidden'
-          }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              zIndex: 11,
+              width: 260,
+              background: C.surface,
+              border: `1px solid ${C.line2}`,
+              borderRadius: 7,
+              boxShadow: '0 18px 48px rgba(0,0,0,0.55)',
+              overflow: 'hidden'
+            }}
+          >
             {MODES.map((m) => (
               <div
                 key={m.value}
-                onClick={() => { onChange(m.value); setOpen(false) }}
+                onClick={() => {
+                  onChange(m.value)
+                  setOpen(false)
+                }}
                 style={{
-                  padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 2,
-                  cursor: 'pointer', background: m.value === mode ? C.raised : 'transparent',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  cursor: 'pointer',
+                  background: m.value === mode ? C.raised : 'transparent',
                   borderLeft: `2px solid ${m.value === mode ? C.amber : 'transparent'}`
                 }}
               >
-                <span style={{ font: `${F.body}px ${MONO}`, color: m.danger ? C.red : C.ink }}>{m.value}</span>
+                <span style={{ font: `${F.body}px ${MONO}`, color: m.danger ? C.red : C.ink }}>
+                  {m.value}
+                </span>
                 <span style={{ fontSize: F.small, color: C.dim2, lineHeight: 1.5 }}>{m.hint}</span>
               </div>
             ))}

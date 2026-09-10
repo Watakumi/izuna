@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { forbiddenAuthors, localShas, manifestChanged, secretScanArgs } from '../scripts/prepush.mjs'
+import {
+  forbiddenAuthors,
+  localShas,
+  manifestChanged,
+  secretScanArgs
+} from '../scripts/prepush.mjs'
 import { needsGate } from '../scripts/commit-gate.mjs'
 
 /** push とコミットの門（docs/NIMBALYST.md §3 の 5 と 7）。門そのものを検査する */

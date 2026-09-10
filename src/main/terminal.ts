@@ -63,7 +63,8 @@ export async function openTerminal(
   pty.onExit(({ exitCode }) => {
     terminals.delete(id)
     const win = getWindow()
-    if (win && !win.isDestroyed()) win.webContents.send(channel, { id, kind: 'exit', code: exitCode })
+    if (win && !win.isDestroyed())
+      win.webContents.send(channel, { id, kind: 'exit', code: exitCode })
   })
 
   terminals.set(id, pty)

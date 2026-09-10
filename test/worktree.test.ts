@@ -25,8 +25,15 @@ branch refs/heads/probe/sample
 `
 
 const wt = (over: Partial<Worktree>): Worktree => ({
-  path: '/x', head: null, branch: null, detached: false, bare: false,
-  locked: null, prunable: null, main: false, ...over
+  path: '/x',
+  head: null,
+  branch: null,
+  detached: false,
+  bare: false,
+  locked: null,
+  prunable: null,
+  main: false,
+  ...over
 })
 
 describe('porcelain を読む', () => {
@@ -50,9 +57,9 @@ describe('porcelain を読む', () => {
   it('detached / bare / locked / prunable を拾う', () => {
     const parsed = parseWorktrees(
       'worktree /a\nHEAD abc\ndetached\n\n' +
-      'worktree /b\nbare\n\n' +
-      'worktree /c\nHEAD d\nbranch refs/heads/x\nlocked 手で止めた\n\n' +
-      'worktree /d\nHEAD e\nbranch refs/heads/y\nprunable gitdir が無い\n'
+        'worktree /b\nbare\n\n' +
+        'worktree /c\nHEAD d\nbranch refs/heads/x\nlocked 手で止めた\n\n' +
+        'worktree /d\nHEAD e\nbranch refs/heads/y\nprunable gitdir が無い\n'
     )
     expect(parsed[0]).toMatchObject({ detached: true, branch: null })
     expect(parsed[1]).toMatchObject({ bare: true })
@@ -85,9 +92,7 @@ describe('置き場所', () => {
     expect(slugifyBranch('//a//b//')).toBe('a-b')
     expect(slugifyBranch('a---b')).toBe('a-b')
   })
-
 })
-
 
 describe('畳んでよいか', () => {
   it('本体は畳めない', () => {

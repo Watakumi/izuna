@@ -28,8 +28,16 @@ const T = join(ROOT, 'templates', 'team')
 const read = (...p: string[]): string => readFileSync(join(T, ...p), 'utf8')
 
 const task = (over: Partial<Task>): Task => ({
-  id: '01', title: 't', assignee: null, branch: null, status: 'todo',
-  depends_on: [], paths: [], updated: '', body: '', ...over
+  id: '01',
+  title: 't',
+  assignee: null,
+  branch: null,
+  status: 'todo',
+  depends_on: [],
+  paths: [],
+  updated: '',
+  body: '',
+  ...over
 })
 
 describe('雛形が仕様どおりに読める', () => {
@@ -103,7 +111,14 @@ describe('パースの端', () => {
   })
 
   it('log の行は書いて読み直しても同じ', () => {
-    const e = { at: '2026-09-07T15:02:11+09:00', from: 'brain', to: 'A', kind: 'instruct', target: '01', note: 'x' }
+    const e = {
+      at: '2026-09-07T15:02:11+09:00',
+      from: 'brain',
+      to: 'A',
+      kind: 'instruct',
+      target: '01',
+      note: 'x'
+    }
     expect(parseLog(formatLogEntry(e))).toEqual([e])
   })
 })
@@ -118,10 +133,12 @@ describe('並列させてよいかの判定', () => {
   })
 
   it('触るパスが分かれていれば衝突しない', () => {
-    expect(pathCollisions([
-      task({ id: '01', status: 'doing', paths: ['a.ts'] }),
-      task({ id: '02', status: 'doing', paths: ['b.ts'] })
-    ])).toEqual([])
+    expect(
+      pathCollisions([
+        task({ id: '01', status: 'doing', paths: ['a.ts'] }),
+        task({ id: '02', status: 'doing', paths: ['b.ts'] })
+      ])
+    ).toEqual([])
   })
 
   it('**ディレクトリとその中のファイルは重なる**（`paths` はディレクトリで書かれることが多い）', () => {
@@ -133,10 +150,12 @@ describe('並列させてよいかの判定', () => {
   })
 
   it('書き方の違いで取り違えない（`./` と末尾の `/`）', () => {
-    expect(pathCollisions([
-      task({ id: '01', status: 'doing', paths: ['./src/a.ts'] }),
-      task({ id: '02', status: 'doing', paths: ['src/a.ts'] })
-    ])).toHaveLength(1)
+    expect(
+      pathCollisions([
+        task({ id: '01', status: 'doing', paths: ['./src/a.ts'] }),
+        task({ id: '02', status: 'doing', paths: ['src/a.ts'] })
+      ])
+    ).toHaveLength(1)
   })
 
   it('接頭辞は区切り単位。`src` と `src2` は別', () => {
@@ -148,10 +167,12 @@ describe('並列させてよいかの判定', () => {
 
   it('走っていないものは衝突に数えない', () => {
     // todo と done は誰も触っていないので、重なっていても問題にならない
-    expect(pathCollisions([
-      task({ id: '01', status: 'todo', paths: ['a.ts'] }),
-      task({ id: '02', status: 'done', paths: ['a.ts'] })
-    ])).toEqual([])
+    expect(
+      pathCollisions([
+        task({ id: '01', status: 'todo', paths: ['a.ts'] }),
+        task({ id: '02', status: 'done', paths: ['a.ts'] })
+      ])
+    ).toEqual([])
   })
 
   it('雛形の 2 件は同時に走らせてよい', () => {

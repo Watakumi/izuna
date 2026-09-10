@@ -26,7 +26,9 @@ const ROOT = join(__dirname, '..')
  */
 const DOC_FILES = [
   join(ROOT, 'CLAUDE.md'),
-  ...readdirSync(join(ROOT, '.claude', 'rules')).filter((f) => f.endsWith('.md')).sort()
+  ...readdirSync(join(ROOT, '.claude', 'rules'))
+    .filter((f) => f.endsWith('.md'))
+    .sort()
     .map((f) => join(ROOT, '.claude', 'rules', f)),
   join(ROOT, 'docs', 'DECISIONS.md')
 ]
@@ -42,9 +44,7 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
-const srcFiles = walk(join(ROOT, 'src')).filter(
-  (f) => /\.tsx?$/.test(f) && !f.endsWith('.d.ts')
-)
+const srcFiles = walk(join(ROOT, 'src')).filter((f) => /\.tsx?$/.test(f) && !f.endsWith('.d.ts'))
 /**
  * **コメントを剥がしてから数える。** 語で数えると、註に名前が出ているだけで
  * 「使われている」ことになる。実際に `projectDirName` と `until` がそれで
@@ -53,7 +53,9 @@ const srcFiles = walk(join(ROOT, 'src')).filter(
 const stripComments = (text: string): string =>
   text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
-const src = new Map(srcFiles.map((f) => [relative(ROOT, f), stripComments(readFileSync(f, 'utf8'))]))
+const src = new Map(
+  srcFiles.map((f) => [relative(ROOT, f), stripComments(readFileSync(f, 'utf8'))])
+)
 
 const outsideFiles = [
   ...walk(join(ROOT, 'test')),
@@ -68,9 +70,7 @@ const quoted = [...DOC.matchAll(/`([^`\n]+)`/g)].map((m) => m[1])
 describe('文書が名指しするファイル', () => {
   const paths = [
     ...new Set(
-      quoted.filter((q) =>
-        /^(src|test|docs|scripts|harness|templates)\/[\w./-]+$/.test(q)
-      )
+      quoted.filter((q) => /^(src|test|docs|scripts|harness|templates)\/[\w./-]+$/.test(q))
     )
   ]
 
@@ -81,7 +81,9 @@ describe('文書が名指しするファイル', () => {
   it('規則のファイルには paths の frontmatter がある（無いと常に読まれる）', () => {
     for (const f of DOC_FILES.filter((p) => p.includes('/.claude/rules/'))) {
       const head = readFileSync(f, 'utf8').slice(0, 2000)
-      expect(head, `${relative(ROOT, f)} に paths が無い`).toMatch(/^---\npaths:\n(  - ".+"\n)+---\n/)
+      expect(head, `${relative(ROOT, f)} に paths が無い`).toMatch(
+        /^---\npaths:\n( {2}- ".+"\n)+---\n/
+      )
     }
   })
 
@@ -90,12 +92,22 @@ describe('文書が名指しするファイル', () => {
    * clone した先には無い。文書がそう書いている以上、実在の検査から外す。
    * それ以外は CI でも実在しなければならない（GitHub の CI で 2026-09-09 に踏んだ）
    */
-  const ignored = readFileSync(join(ROOT, '.gitignore'), 'utf8').split('\n')
-    .map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
-  const isIgnored = (p: string): boolean => ignored.some((g) => {
-    const re = new RegExp('^' + g.replace(/^\//, '').replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*') + '(/|$)')
-    return re.test(p)
-  })
+  const ignored = readFileSync(join(ROOT, '.gitignore'), 'utf8')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'))
+  const isIgnored = (p: string): boolean =>
+    ignored.some((g) => {
+      const re = new RegExp(
+        '^' +
+          g
+            .replace(/^\//, '')
+            .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+            .replace(/\*/g, '[^/]*') +
+          '(/|$)'
+      )
+      return re.test(p)
+    })
 
   it.each(paths.filter((p) => !isIgnored(p)))('%s が実在する', (p) => {
     expect(() => statSync(join(ROOT, p))).not.toThrow()
@@ -154,7 +166,7 @@ describe('公開した値は製品コードから呼ばれている', () => {
       uses,
       inTests > 0
         ? `${name}（${home}）は検査から ${inTests} 回呼ばれているが、製品コードからは 0 回。` +
-          `検査は通るが何も守っていない。${doc}実装に繋ぐか、消すこと。`
+            `検査は通るが何も守っていない。${doc}実装に繋ぐか、消すこと。`
         : `${name}（${home}）はどこからも呼ばれていない。${doc}`
     ).toBeGreaterThan(0)
   })
@@ -162,7 +174,7 @@ describe('公開した値は製品コードから呼ばれている', () => {
 
 describe('節番号の参照', () => {
   const headings = new Set(
-    [...DOC.matchAll(/^#{2,3} (\d+(?:\.\d+)?)[.．]?[ 　]/gm)].map((m) => m[1])
+    [...DOC.matchAll(/^#{2,3} (\d+(?:\.\d+)?)[.．]?[ \u3000]/gm)].map((m) => m[1])
   )
 
   const refs = new Map<string, string>()

@@ -26,7 +26,14 @@ export function PermissionBar({
   const questions = questionsOf(request.toolName, request.input)
   if (questions) {
     return (
-      <div style={{ border: `1px solid ${C.amberLine}`, background: C.amberBg, borderRadius: 11, padding: 16 }}>
+      <div
+        style={{
+          border: `1px solid ${C.amberLine}`,
+          background: C.amberBg,
+          borderRadius: 11,
+          padding: 16
+        }}
+      >
         <Questions questions={questions} onAnswer={onAnswer} onDeny={onDeny} />
       </div>
     )
@@ -37,16 +44,32 @@ export function PermissionBar({
   const suggestion = request.suggestions?.[0]
 
   return (
-    <div style={{ border: `1px solid ${C.amberLine}`, background: C.amberBg, borderRadius: 11,
-      display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+    <div
+      style={{
+        border: `1px solid ${C.amberLine}`,
+        background: C.amberBg,
+        borderRadius: 11,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        padding: 16
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexGrow: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <b style={{ fontSize: F.base }}>{request.toolName}</b>
             {request.agentId && (
               // 実行役の要求でも人間に上げる。誰の要求かは見せる
-              <span style={{ font: `${F.micro}px ${MONO}`, color: C.dim2, padding: '2px 8px',
-                border: `1px solid ${C.amberLine}`, borderRadius: 4 }}>
+              <span
+                style={{
+                  font: `${F.micro}px ${MONO}`,
+                  color: C.dim2,
+                  padding: '2px 8px',
+                  border: `1px solid ${C.amberLine}`,
+                  borderRadius: 4
+                }}
+              >
                 実行役 {request.agentId.slice(0, 6)}
               </span>
             )}
@@ -55,19 +78,31 @@ export function PermissionBar({
             </span>
           </div>
           {request.description && (
-            <span style={{ fontSize: F.body, color: C.dim, lineHeight: 1.6 }}>{request.description}</span>
+            <span style={{ fontSize: F.body, color: C.dim, lineHeight: 1.6 }}>
+              {request.description}
+            </span>
           )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <Button kind="primary" onClick={() => onAllow(false)}>許可</Button>
-          <Button onClick={onDeny} >拒否</Button>
+          <Button kind="primary" onClick={() => onAllow(false)}>
+            許可
+          </Button>
+          <Button onClick={onDeny}>拒否</Button>
         </div>
       </div>
 
       {diff && <DiffView diff={diff} max={200} />}
 
       {suggestion && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: F.small, color: C.dim2 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: F.small,
+            color: C.dim2
+          }}
+        >
           <span>CLI の提案:</span>
           <Button size="sm" onClick={() => onAllow(true)}>
             このセッション中は許可
@@ -82,4 +117,3 @@ export function PermissionBar({
     </div>
   )
 }
-

@@ -177,7 +177,7 @@ Windows / Linux、複数エージェント対応。
 ## 完了の条件
 
 ```bash
-pnpm verify     # typecheck + test + カバレッジの線。緑にならないものを完了としない
+pnpm verify     # typecheck + lint + test + カバレッジの線。緑にならないものを完了としない
 pnpm shots      # 画面を描いて撮って測る（§22）。ブラウザが要るので verify には入れない
 pnpm e2e        # 本物の Electron を起動して口を叩く（§30）。Forgejo とトークンが要る
 pnpm walk       # v1 の 7 手を本物で通して撮る（§31）。実 API を呼び、GitHub と Forgejo に書く

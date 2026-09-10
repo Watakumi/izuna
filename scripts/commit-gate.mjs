@@ -34,7 +34,11 @@ function main() {
 
   const r = spawnSync('pnpm', ['verify'], { encoding: 'utf8' })
   if (r.status === 0) return 0
-  const tail = `${r.stdout ?? ''}\n${r.stderr ?? ''}`.split('\n').filter(Boolean).slice(-40).join('\n')
+  const tail = `${r.stdout ?? ''}\n${r.stderr ?? ''}`
+    .split('\n')
+    .filter(Boolean)
+    .slice(-40)
+    .join('\n')
   console.error(`pnpm verify が落ちている。直してからコミットすること。\n${tail}`)
   return 2
 }
