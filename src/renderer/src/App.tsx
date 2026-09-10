@@ -371,7 +371,7 @@ function App(): React.JSX.Element {
                       placeholder={
                         active.ended
                           ? 'このセッションは終了しています'
-                          : '依頼を書く（画像は貼るか落とす）'
+                          : '依頼を書く（画像は貼り付けるかドロップ）'
                       }
                       onPaste={(e) => take([...e.clipboardData.files])}
                       disabled={active.ended}

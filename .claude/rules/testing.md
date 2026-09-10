@@ -359,7 +359,7 @@ sandbox は walk が `forgeEnsureRepo` でボットの下に作る。
 | 1 | `forgeEnsureRepo` → `ensureSandboxRemote` → 既定ブランチを push | `forgeRepos` で `empty: false` になる（push 直後は 404 の罠。§7） |
 | 2 | 「新しいセッション」→ リポジトリ → Issue の札（`#1`）→「開く」 | 会話の入力欄が出る |
 | 3 | 依頼を打つ（2 つに分けて `Agent` を `isolation: "worktree"` で 2 つ） | 「実行役 … を開きました」が 2 つ、worktree が 2 本 |
-| 4 | 待つ。ブレインが `SendMessage` で追加指示を送り「BRANCH:」で報告する | 「手を止めました」が 4 回以上（起き直した分を含む） |
+| 4 | 待つ。ブレインが `SendMessage` で追加指示を送り「BRANCH:」で報告する | 「止まりました」が 4 回以上（起き直した分を含む） |
 | 5 | 出た承認の札を「許可」で押す | 押した数を README に書く |
 | 6 | 「forgejo に push」→「sandbox で PR を作る」→「差分」→ upstream に push →「Upstream に PR を作る」 | 差分が描ける。`ghPulls` に出るブランチの PR がある。漏れの判定が「出ていません」 |
 | 7 | 実行役のブランチを sandbox に push → PR タブの「作業ブランチ」を消す → 「ブランチ」タブを撮る → セッションを閉じる → worktree を消す | worktree が本体だけ、sandbox のブランチが main と出したブランチだけ。**残っていれば落ちる** |

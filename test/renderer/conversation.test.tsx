@@ -91,7 +91,7 @@ describe('会話', () => {
         draft={{ messageId: 'm', index: 0, kind: 'tool', text: '', toolName: 'Write' }}
       />
     )
-    expect(container.textContent).toContain('Write を組み立てています')
+    expect(container.textContent).toContain('Write の入力を書いています')
     rerender(
       <Conversation
         items={[]}

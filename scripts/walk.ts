@@ -172,7 +172,7 @@ function answerPermissions(page: Page): () => void {
  * 「送った時点より増えたか」で返事を見分ける（3 回目に自分の依頼文に反応して踏んだ）
  */
 async function send(page: Page, text: string, marker: RegExp): Promise<number> {
-  const box = page.getByPlaceholder('依頼を書く（画像は貼るか落とす）')
+  const box = page.getByPlaceholder('依頼を書く（画像は貼り付けるかドロップ）')
   await box.fill(text)
   await box.press('Meta+Enter')
   await sleep(1500)
@@ -265,7 +265,8 @@ async function main(): Promise<void> {
     await page.getByRole('button', { name: '開く', exact: true }).click()
     await until(
       '会話が開く',
-      async () => (await page.getByPlaceholder('依頼を書く（画像は貼るか落とす）').count()) > 0,
+      async () =>
+        (await page.getByPlaceholder('依頼を書く（画像は貼り付けるかドロップ）').count()) > 0,
       60_000
     )
     record('2. GitHub の Issue を選んでブレインを開く', `Issue #${ISSUE}「${issueTitle}」`, s2)
@@ -305,7 +306,7 @@ async function main(): Promise<void> {
     // 実行役は数分かかることがある（1 回目は B が 5 分）。区切りは節目の数ではなく**ブレインの報告**で見る
     await until(
       '実行役が 2 つ止まる',
-      async () => (await countText(page, /が手を止めました/)) >= 2,
+      async () => (await countText(page, /が止まりました/)) >= 2,
       15 * 60_000
     )
     const s4a = await shot(page, 'executors-stopped')
@@ -316,10 +317,10 @@ async function main(): Promise<void> {
     )
     const s4b = await shot(page, 'followup-delivered')
     const opened = await countText(page, /を開きました/)
-    const stopped = await countText(page, /が手を止めました/)
+    const stopped = await countText(page, /が止まりました/)
     record(
       '4. 実行役が止まり、ブレインが次の指示を返す',
-      `止まった → SendMessage で追加指示 → 報告。「開きました」${opened} 回、「手を止めました」${stopped} 回（追加指示で起き直した分を含む）`,
+      `止まった → SendMessage で追加指示 → 報告。「開きました」${opened} 回、「止まりました」${stopped} 回（追加指示で起き直した分を含む）`,
       `${s4a}, ${s4b}`
     )
 

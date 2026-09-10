@@ -56,7 +56,7 @@ export function Palette({
       <div ref={listRef} style={{ maxHeight: 268, overflowY: 'auto', padding: 6 }}>
         {results.length === 0 && (
           <div style={{ padding: '16px 12px', fontSize: F.body, color: C.faint }}>
-            当たるコマンドがありません
+            一致するコマンドがありません
           </div>
         )}
         {results.map((s, i) => {

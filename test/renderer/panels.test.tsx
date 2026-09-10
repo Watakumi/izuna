@@ -40,7 +40,7 @@ const tool = (
 describe('触ったファイル', () => {
   it('何も無ければそう言う', () => {
     render(<Files panel={panel()} />)
-    expect(screen.getByText('まだファイルを触っていません')).toBeTruthy()
+    expect(screen.getByText('まだファイルを読み書きしていません')).toBeTruthy()
   })
 
   it('書いたものを上に、作業ディレクトリからの相対で出す。外は絶対のまま', () => {

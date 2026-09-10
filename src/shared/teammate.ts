@@ -107,9 +107,9 @@ export function teammateNotice(e: TeammateEvent): string {
     case 'start':
       return `${who} を開きました（${e.target}）`
     case 'stop':
-      return `${who} が手を止めました${e.note ? `: ${e.note}` : ''}`
+      return `${who} が止まりました${e.note ? `: ${e.note}` : ''}`
     case 'idle':
-      return `${who} が手を止めました（ブレインが読む番）`
+      return `${who} が止まりました（ブレインが読む番）`
     case 'taskCreated':
       return `作業単位を作りました: ${e.target}`
     case 'taskCompleted':

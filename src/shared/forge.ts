@@ -278,7 +278,7 @@ export function diagnose(facts: ForgeFacts): Check[] {
             id: 'installed',
             label: 'インストール',
             level: 'ok',
-            detail: `手元には無い。設定の forgejoUrl（${facts.config?.rootUrl ?? ''}）を使う`,
+            detail: `手元にはありません。設定の forgejoUrl（${facts.config?.rootUrl ?? ''}）を使います`,
             fix: null
           }
         : {
@@ -403,7 +403,7 @@ export function diagnose(facts: ForgeFacts): Check[] {
             id: 'runner',
             label: 'runner が登録されている（任意）',
             level: 'warn',
-            detail: 'ありません。Actions は動きますが、実行するものがいません',
+            detail: 'ありません。runner が無いので、ジョブは実行されません',
             fix: { label: '登録用トークンを出す', warning: 'runner のバイナリは別途必要です' }
           }
     )

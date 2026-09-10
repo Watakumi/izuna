@@ -27,7 +27,7 @@ const scored = (
 describe('Palette', () => {
   it('当たりが無ければそう言い、件数を出す', () => {
     render(<Palette results={[]} total={52} selected={0} onSelect={() => {}} onChoose={() => {}} />)
-    expect(screen.getByText('当たるコマンドがありません')).toBeTruthy()
+    expect(screen.getByText('一致するコマンドがありません')).toBeTruthy()
     expect(screen.getByText('0 / 52 件')).toBeTruthy()
   })
 

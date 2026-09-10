@@ -117,7 +117,7 @@ function DraftView({ draft }: { draft: Draft }): React.JSX.Element {
     draft.kind === 'thinking'
       ? '考えています'
       : draft.kind === 'tool'
-        ? `${draft.toolName ?? 'ツール'} を組み立てています`
+        ? `${draft.toolName ?? 'ツール'} の入力を書いています`
         : null
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

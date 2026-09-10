@@ -169,7 +169,7 @@ async function main(): Promise<void> {
   await page.getByText('ループ', { exact: true }).click()
   await page.waitForTimeout(400)
   await shoot(page, '5-loop')
-  check((await page.getByText('回す').count()) > 0, 'ループを始める釦が無い')
+  check((await page.getByText('始める').count()) > 0, 'ループを始める釦が無い')
   check((await page.getByText('止める').count()) === 0, '回っていないのに止める釦が出ている')
   await page.getByText('情報', { exact: true }).click()
 
