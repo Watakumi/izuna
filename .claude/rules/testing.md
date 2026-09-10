@@ -325,6 +325,9 @@ Playwright の `connectOverCDP` で renderer に繋いで `window.izuna` を呼�
 見るもの: 窓の題、preload の面が `CH` と一致すること、`IPC_VERSION` が main と renderer で同じこと、
 読むだけの口 12 個が返ること、Forgejo に届いてトークンが通るなら `forgeRepos` → `forgePulls` →
 `forgePullDiff` が差分を返すこと、画面の見出しと釦。**書く口は呼ばない**（push、worktree の削除、セッションの起動）。
+2026-09-10 に §32 の枠も足した: `previewOpen` が Forgejo と GitHub 以外を拒むこと、準備の画面 → sandbox の一覧 →
+「頁」で覆いが閉じて本体の柱に枠が出ること（セッション無し）、「閉じる」で消えること。埋めた頁の中身は
+`WebContentsView` なので CDP からは見えない —— 見ているのは枠と門で、頁が描けたかは人が目で見る。
 
 要るものが多い（組み立て済みのアプリ、Forgejo、保管したトークン）ので `verify` には入れない。
 初回（2026-09-09）は `_electron.launch` で書いていて、Forgejo の段が「トークンが読めない」で skip した。
