@@ -343,7 +343,8 @@ export async function applyFix(id: FixId): Promise<string> {
  * CLI の代わりに Forgejo の API を**管理者の名前とパスワード**で呼ぶ（Basic 認証）。
  * `POST /admin/users` でボット `izuna` を作り（既にあれば飛ばす）、
  * `POST /users/izuna/tokens` でトークンを発行する（Gitea 系は管理者なら他人のトークンを作れる。
- * `reqSelfOrAdmin`。**この Forgejo で実際に通るかは未検証**）。受け取ったトークンは `adoptToken` と
+ * `reqSelfOrAdmin`。Forgejo 16.0.3 で 2026-09-11 に測った —— 201 / 既にあれば 422 / トークンは
+ * ボットとして通る。docs/SETUP.md）。受け取ったトークンは `adoptToken` と
  * 同じ関所（通るか・ボットのものか）を通して保管する。
  *
  * **パスワードは持たない。** この関数の中で 2 回の要求に載せて捨てる。ディスクに書かず、
