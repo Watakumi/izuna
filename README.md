@@ -54,6 +54,7 @@ that face inward, for the author and for the agents that work on this repository
   files you touch), [docs/DECISIONS.md](docs/DECISIONS.md) (background)
 - **Compared with other tools**: [docs/NIMBALYST.md](docs/NIMBALYST.md), [docs/ORCA.md](docs/ORCA.md)
 - **CI on your own Forgejo Actions**: [docs/ACTIONS.md](docs/ACTIONS.md)
+- **Documents for product decisions** (Now / Next / Later, Impact Mapping, Example Mapping, Working Backwards) as skills: [docs/FRAMEWORKS.md](docs/FRAMEWORKS.md)
 
 ## Developing
 

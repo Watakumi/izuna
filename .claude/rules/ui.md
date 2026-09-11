@@ -1,5 +1,7 @@
 ---
 paths:
+  - "src/renderer/src/components/Docs.tsx"
+  - "src/shared/docs.ts"
   - "src/renderer/**"
   - "harness/**"
   - "scripts/shots.ts"
@@ -812,3 +814,17 @@ Izuna の口に無い（ボットのトークンに権限を持たせない。§
 - 開発中のアプリ（dev サーバ）を映す。行き先を `localhost` の任意の port に広げる判断が要る
 - 頁の中の遷移を枠の URL 欄に反映する（main → renderer の口が要る）
 
+## 33. 資料タブ（2026-09-11）
+
+PdM との会話や PJ の今後を決める資料を、Izuna から作れるようにした（docs/FRAMEWORKS.md）。**製品の機能ではなく skill**
+（`.claude/skills/doc-now-next-later/SKILL.md` ほか 4 本）で、claude が実行し、出来た資料は `docs/plans/<資料名>/` に
+日付つきの版として置かれ、いつもどおり承認と差分と PR を通る。
+
+右パネルの「資料」タブ（`components/Docs.tsx`、`shared/docs.ts`）は**入口を見えるようにするだけ**。`/` パレットでも
+同じものが呼べるが、名前を覚えていないと出てこない。タブは名前が `doc-` で始まる skill を、枠組みの名前と説明つきで
+並べ、引数があれば欄を出し、「頼む」で `/doc-… 引数` を会話に送る（パレットで打つのと同じ文）。
+skill の description は「資料 — 枠組み。説明」の形で書く約束で、`docSkills` がそれを読む。
+利用者の「コマンドで呼ぶのではなく別の呼び方があると UX が上がる」から（2026-09-11）。
+
+skill が `supportedCommands()` に出ることは 2026-09-11 に測った（Izuna の cwd で 56 件、うち `doc-` 4 件。
+description の末尾に「(project)」が付く）。他のリポジトリで使うには `.claude/skills/` に置く（FRAMEWORKS.md の手順）。

@@ -22,6 +22,7 @@ import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Preview } from './components/Preview'
+import { Docs } from './components/Docs'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
 import { useSessions } from './useSessions'
@@ -41,7 +42,9 @@ function App(): React.JSX.Element {
   const [showTerm, setShowTerm] = useState(false)
   // 中で見ている頁（§32）。無ければ null
   const [preview, setPreview] = useState<string | null>(null)
-  const [tab, setTab] = useState<'info' | 'files' | 'board' | 'loop' | 'pr' | 'branch'>('info')
+  const [tab, setTab] = useState<'info' | 'files' | 'docs' | 'board' | 'loop' | 'pr' | 'branch'>(
+    'info'
+  )
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
@@ -466,7 +469,7 @@ function App(): React.JSX.Element {
               }}
             >
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
-                {(['info', 'files', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
+                {(['info', 'files', 'docs', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
                   <div
                     key={t}
                     data-tab={t}
@@ -486,13 +489,15 @@ function App(): React.JSX.Element {
                       ? '情報'
                       : t === 'files'
                         ? 'ファイル'
-                        : t === 'board'
-                          ? '盤面'
-                          : t === 'loop'
-                            ? 'ループ'
-                            : t === 'pr'
-                              ? 'PR'
-                              : 'ブランチ'}
+                        : t === 'docs'
+                          ? '資料'
+                          : t === 'board'
+                            ? '盤面'
+                            : t === 'loop'
+                              ? 'ループ'
+                              : t === 'pr'
+                                ? 'PR'
+                                : 'ブランチ'}
                   </div>
                 ))}
               </div>
@@ -501,6 +506,9 @@ function App(): React.JSX.Element {
                 {tab === 'files' && <Files panel={active} />}
                 {tab === 'board' && <Board panel={active} />}
                 {tab === 'loop' && <Loop panel={active} />}
+                {tab === 'docs' && (
+                  <Docs panel={active} onAsk={(text) => void window.izuna.send(active.id, text)} />
+                )}
                 {tab === 'pr' && (
                   <Forge
                     cwd={active.cwd}
