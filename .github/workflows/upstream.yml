@@ -1,0 +1,23 @@
+# 追っているもの（claude と Forgejo）の最新と、測った版の差を週 1 回出す。読むだけで、何も変えない。
+# 上げるのは人（claude は pnpm run catchup、Forgejo は brew か Docker）。scripts/upstream.mjs
+name: upstream
+
+on:
+  schedule:
+    - cron: '23 3 * * 1' # 週に 1 回（security.yml と同じ朝）
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: 最新と測った版の差
+        # 依存は要らない（npm view と fetch だけ）。手元に claude と forgejo は無いので「無し」と出る
+        run: node scripts/upstream.mjs
