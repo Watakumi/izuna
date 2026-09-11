@@ -209,20 +209,39 @@ export function ForgeSetup({
           <Reload onClick={() => void refresh()} />
         </div>
 
-        <div
-          style={{
-            flexGrow: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            padding: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8
-          }}
-        >
-          {!checks && <Loading style={{ padding: 12, fontSize: F.body }} />}
-          {claude && (
-            <>
+        {/*
+          **スクロールする箱と、並べる箱を分ける。** 1 つの div に `overflowY: auto` と
+          `display: flex; flexDirection: column` を同時に付けると、高さが足りないときに
+          子が**縮んで**しまい、スクロールが働かない。縮んだ子の中身は箱の外に描かれ、
+          窓の下に出て押せなくなる（2026-09-11 に `pnpm e2e` が「sandbox 1 件」を
+          押せずに見つけた。y=897 で窓は 828）。外がスクロール、中が並べる係。
+        */}
+        <div style={{ flexGrow: 1, minHeight: 0, overflowY: 'auto' }}>
+          <div
+            style={{
+              padding: 16,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8
+            }}
+          >
+            {!checks && <Loading style={{ padding: 12, fontSize: F.body }} />}
+            {claude && (
+              <>
+                <span
+                  style={{
+                    fontSize: F.small,
+                    letterSpacing: '0.08em',
+                    color: C.dim2,
+                    fontWeight: 600
+                  }}
+                >
+                  Claude Code
+                </span>
+                {claude.map(row)}
+              </>
+            )}
+            {checks && (
               <span
                 style={{
                   fontSize: F.small,
@@ -231,89 +250,81 @@ export function ForgeSetup({
                   fontWeight: 600
                 }}
               >
-                Claude Code
+                Forgejo
               </span>
-              {claude.map(row)}
-            </>
-          )}
-          {checks && (
-            <span
-              style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
-            >
-              Forgejo
-            </span>
-          )}
-          {checks?.map(row)}
+            )}
+            {checks?.map(row)}
 
-          {/* 手元に forgejo が無ければ発行できない。人が Forgejo で作ったボットのトークンを貼る（docs/SETUP.md） */}
-          {remote && checks?.some((c) => c.id === 'token' && c.level !== 'ok') && (
-            <>
-              {/* 管理者の名前とパスワードで、ボットとトークンを作る。パスワードは main がその場で使って捨てる */}
-              <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
-                <Input
-                  value={adminUser}
-                  placeholder="Forgejo の管理者の名前"
-                  autoComplete="off"
-                  onChange={(e) => setAdminUser(e.target.value)}
-                  style={{ flexGrow: 1 }}
-                />
-                <Input
-                  value={adminPassword}
-                  placeholder="そのパスワード"
-                  type="password"
-                  autoComplete="off"
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  style={{ flexGrow: 1 }}
-                />
-                <Button
-                  reserve={['ボットとトークンを作る', '作っています…']}
-                  kind="primary"
-                  size="sm"
-                  disabled={busy !== null || !adminUser.trim() || !adminPassword}
-                  onClick={() => void provision()}
-                >
-                  {busy === 'token' ? '作っています…' : 'ボットとトークンを作る'}
-                </Button>
+            {/* 手元に forgejo が無ければ発行できない。人が Forgejo で作ったボットのトークンを貼る（docs/SETUP.md） */}
+            {remote && checks?.some((c) => c.id === 'token' && c.level !== 'ok') && (
+              <>
+                {/* 管理者の名前とパスワードで、ボットとトークンを作る。パスワードは main がその場で使って捨てる */}
+                <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
+                  <Input
+                    value={adminUser}
+                    placeholder="Forgejo の管理者の名前"
+                    autoComplete="off"
+                    onChange={(e) => setAdminUser(e.target.value)}
+                    style={{ flexGrow: 1 }}
+                  />
+                  <Input
+                    value={adminPassword}
+                    placeholder="そのパスワード"
+                    type="password"
+                    autoComplete="off"
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    style={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    reserve={['ボットとトークンを作る', '作っています…']}
+                    kind="primary"
+                    size="sm"
+                    disabled={busy !== null || !adminUser.trim() || !adminPassword}
+                    onClick={() => void provision()}
+                  >
+                    {busy === 'token' ? '作っています…' : 'ボットとトークンを作る'}
+                  </Button>
+                </div>
+                <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
+                  <Input
+                    value={pasted}
+                    placeholder="または、Forgejo で作った izuna のトークンを貼る"
+                    type="password"
+                    onChange={(e) => setPasted(e.target.value)}
+                    style={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    reserve={['保管する', '確かめています…']}
+                    kind="primary"
+                    size="sm"
+                    disabled={busy !== null || !pasted.trim()}
+                    onClick={() => void paste()}
+                  >
+                    {busy === 'token' ? '確かめています…' : '保管する'}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            <Repos onPreview={onPreview} />
+            <Tokens onPreview={onPreview} />
+
+            {message && (
+              <div
+                style={{
+                  border: `1px solid ${message.bad ? C.red : C.line2}`,
+                  borderRadius: 7,
+                  padding: '12px 12px',
+                  fontSize: F.body,
+                  color: message.bad ? C.red : C.ink2,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all'
+                }}
+              >
+                {message.text}
               </div>
-              <div style={{ display: 'flex', gap: S.md, alignItems: 'center' }}>
-                <Input
-                  value={pasted}
-                  placeholder="または、Forgejo で作った izuna のトークンを貼る"
-                  type="password"
-                  onChange={(e) => setPasted(e.target.value)}
-                  style={{ flexGrow: 1 }}
-                />
-                <Button
-                  reserve={['保管する', '確かめています…']}
-                  kind="primary"
-                  size="sm"
-                  disabled={busy !== null || !pasted.trim()}
-                  onClick={() => void paste()}
-                >
-                  {busy === 'token' ? '確かめています…' : '保管する'}
-                </Button>
-              </div>
-            </>
-          )}
-
-          <Repos onPreview={onPreview} />
-          <Tokens onPreview={onPreview} />
-
-          {message && (
-            <div
-              style={{
-                border: `1px solid ${message.bad ? C.red : C.line2}`,
-                borderRadius: 7,
-                padding: '12px 12px',
-                fontSize: F.body,
-                color: message.bad ? C.red : C.ink2,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all'
-              }}
-            >
-              {message.text}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {cfg && (
