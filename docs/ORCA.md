@@ -188,20 +188,20 @@ Releases を変更履歴にする（Orca「The changelog is the real feature lis
 
 | # | 何を | Orca での根拠 | Izuna での費用 |
 | --- | --- | --- | --- |
-| 1 | **「聞かれている」の印をサイドバーの札に** | `AgentQuestionIcon.tsx`。1 色 1 アイコンを 4 面に同じものとして出す | `Sidebar.tsx` の札に `pending` を見る点を 1 つ。半日。GOAL「承認待ちが埋もれない」に直結 |
-| 2 | **自分のアイコン** | `resources/logo.svg` 1 本から全 OS を生成 | SVG を 1 本描き、`build/` を差し替える。半日〜1 日 |
-| 3 | **§17.4 の禁止語を落とす門** | `verify-localization-*` が JSX の生文字と `aria-label` / `placeholder` / `title` を文言として数える | `test/docs.test.ts` の隣に、renderer の文言を抜いて禁止語（起こす・畳む・回す・触る・落とす…）を grep する検査。半日 |
-| 4 | **自己紹介を 1 文に固定して門にする** | 8 通りに割れた反例 | `package.json` の `description` と README の 1 行目を同じにし、`docs.test.ts` で見る。1 時間 |
-| 5 | **ratchet の形** | `check-*-ratchet.mjs`。baseline は縮む方向にしか動かせない | §27「握りつぶした例外 57 か所」を baseline にして、増えたら落とす。1 日 |
-| 6 | **`minimumReleaseAge` を 3 日にし、除外に解除の条件を書く** | `pnpm-workspace.yaml:7-11` | 数行。Dependabot の cooldown 7 日と整合する |
-| 7 | **所要時間別のフィードバック** | STYLEGUIDE UX rule 1 | 「読んでいます…」を 100ms 未満で出さない、釦の幅を先に取る。`ui.tsx` の `Button` と `Faint`。1 日 |
-| 8 | **redactor を 1 段** | `observability/redactor.ts` の 8 本の pattern | `run()` の stderr と例外の文面に当てる純粋関数。半日 |
-| 9 | **Esc で覆いを閉じる、アイコン釦に `aria-label`** | キーバインド 88 手、`aria-label` 1,288 | 準備・新しいセッション・枠の 3 つに Esc。`Reload` に `aria-label`。半日 |
-| 10 | **README に画面を 1 枚と録った日** | feature wall の `recorded-at.json` | `pnpm walk` の PNG から 1 枚。1 時間 |
-| 11 | **名前の由来を 1 段落** | 書いていないことの反例 | README か GOAL に。30 分 |
-| 12 | **「hook を利用者の設定ファイルに書かない」判断を文書に** | `hook-settings.ts` が `~/.claude/settings.json` を書く | team.md §12 に 3 行。15 分 |
-| 13 | **GitHub の看板** | topics 18 個、英語 1 行 | description を英語 1 行にし、topics（claude-code / forgejo / electron / worktrees）を付ける。30 分 |
-| 14 | **Homebrew tap** | `stablyai/homebrew-orca` | `watakumi/homebrew-izuna` に Cask 1 ファイル。`caveats` に `xattr` の手順。1〜2 時間 |
+| 1 | **「聞かれている」の印を 4 面に**（済 2026-09-11、#36） | `AgentQuestionIcon.tsx`。1 色 1 アイコンを 4 面に同じものとして出す | `Sidebar.tsx` の札に `pending` を見る点を 1 つ。半日。GOAL「承認待ちが埋もれない」に直結 |
+| 2 | **自分のアイコン**（済 2026-09-11、#37） | `resources/logo.svg` 1 本から全 OS を生成 | SVG を 1 本描き、`build/` を差し替える。半日〜1 日 |
+| 3 | **§17.4 の禁止語を落とす門**（済 2026-09-11、#35） | `verify-localization-*` が JSX の生文字と `aria-label` / `placeholder` / `title` を文言として数える | `test/docs.test.ts` の隣に、renderer の文言を抜いて禁止語（起こす・畳む・回す・触る・落とす…）を grep する検査。半日 |
+| 4 | **自己紹介を 1 文に固定して門にする**（済 2026-09-11、#35。GitHub の description も揃えた） | 8 通りに割れた反例 | `package.json` の `description` と README の 1 行目を同じにし、`docs.test.ts` で見る。1 時間 |
+| 5 | **ratchet の形**（済 2026-09-11、#35） | `check-*-ratchet.mjs`。baseline は縮む方向にしか動かせない | §27「握りつぶした例外 57 か所」を baseline にして、増えたら落とす。1 日 |
+| 6 | **`minimumReleaseAge` を 3 日にし、除外に解除の条件を書く**（済 2026-09-11、#35） | `pnpm-workspace.yaml:7-11` | 数行。Dependabot の cooldown 7 日と整合する |
+| 7 | **所要時間別のフィードバック**（済 2026-09-11、#36） | STYLEGUIDE UX rule 1 | 「読んでいます…」を 100ms 未満で出さない、釦の幅を先に取る。`ui.tsx` の `Button` と `Faint`。1 日 |
+| 8 | **redactor を 1 段**（済 2026-09-11、この PR） | `observability/redactor.ts` の 8 本の pattern | `run()` の stderr と例外の文面に当てる純粋関数。半日 |
+| 9 | **Esc で覆いを閉じる、アイコン釦に `aria-label`**（済 2026-09-11、#36） | キーバインド 88 手、`aria-label` 1,288 | 準備・新しいセッション・枠の 3 つに Esc。`Reload` に `aria-label`。半日 |
+| 10 | **README に画面を 1 枚と録った日**（済 2026-09-11、#37） | feature wall の `recorded-at.json` | `pnpm walk` の PNG から 1 枚。1 時間 |
+| 11 | **名前の由来を 1 段落**（**未**。作者に聞く） | 書いていないことの反例 | README か GOAL に。30 分 |
+| 12 | **「hook を利用者の設定ファイルに書かない」判断を文書に**（済 2026-09-11、#35） | `hook-settings.ts` が `~/.claude/settings.json` を書く | team.md §12 に 3 行。15 分 |
+| 13 | **GitHub の看板**（済 2026-09-11。description は自己紹介の 1 文、topics 6 個） | topics 18 個、英語 1 行 | description を英語 1 行にし、topics（claude-code / forgejo / electron / worktrees）を付ける。30 分 |
+| 14 | **Homebrew tap**（済 2026-09-11。`Watakumi/homebrew-izuna`。Homebrew 6 は `brew trust` が要る） | `stablyai/homebrew-orca` | `watakumi/homebrew-izuna` に Cask 1 ファイル。`caveats` に `xattr` の手順。1〜2 時間 |
 | 15 | **Releases を変更履歴にする**（保留） | 「The changelog is the real feature list」 | 版を上げるとき `.claude/rules` の差分を Release note に写す。**保留（2026-09-11、利用者）**: 規則の差分をどう書くか、規則の記述方針そのものが決まっていない。決めてから |
 
 小さいもの: `shouldOpenOutside` に `file:` を理由つきで明示的に拒む行、Forgejo の `/pulls` は

@@ -1,5 +1,6 @@
 import { loadToken } from './store'
 import { tokenMayTravel, transportRefusal, BOT_USER } from '../../shared/forge'
+import { redact } from '../../shared/redact'
 
 /**
  * Forgejo の API クライアント（段5）。
@@ -78,7 +79,8 @@ async function request(rootUrl: string, path: string, init?: RequestInit): Promi
         ? `トークンに ${missing ?? '必要な権限'} がありません。` +
           '「Forgejo」画面の「トークンを発行」で作り直してください（古いものは差し替わります）'
         : body.slice(0, 300) || res.statusText
-    throw new ForgeError(`Forgejo が ${res.status} を返しました: ${hint}`, res.status)
+    // 応答の本文に鍵が混ざっても画面に載せない（shared/redact.ts）
+    throw new ForgeError(`Forgejo が ${res.status} を返しました: ${redact(hint)}`, res.status)
   }
   return res
 }

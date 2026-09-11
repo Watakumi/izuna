@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { loginShellEnv } from './claude/locate'
+import { redact } from '../shared/redact'
 
 const exec = promisify(execFile)
 
@@ -12,6 +13,7 @@ const exec = promisify(execFile)
  *
  * **シェルは通さない。** 引数は配列で渡す。
  * **stderr を捨てない。** 道具の言い分をそのまま人に見せる。握りつぶすと原因が分からなくなる。
+ * ただし鍵の形をしたものだけは伏せる（`shared/redact.ts`）。文面に混ざった URL の userinfo やトークンを画面に載せない。
  */
 export interface RunOptions {
   cwd?: string
@@ -40,6 +42,6 @@ export async function run(cmd: string, args: string[], options: RunOptions = {})
     return stdout
   } catch (err) {
     const e = err as { stderr?: string; message?: string }
-    throw new Error((e.stderr || e.message || String(err)).trim())
+    throw new Error(redact((e.stderr || e.message || String(err)).trim()))
   }
 }
