@@ -45,6 +45,34 @@ function App(): React.JSX.Element {
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
+  /**
+   * **承認待ちは 4 面に同じ印を出す。** サイドバーの札（アンバーの点）、帯の「承認待ち n」、窓の題名、
+   * Dock の badge。窓が後ろにあっても Dock と題名で分かる。Orca の AgentQuestionIcon は 1 色 1 アイコンを
+   * 4 面に置く（docs/ORCA.md §7 の 1）。数だけを出す —— 何を聞かれているかは札を開いて読む
+   */
+  useEffect(() => {
+    const n = sessions.waiting.length
+    document.title = n > 0 ? `承認待ち ${n} · Izuna` : 'Izuna'
+    void window.izuna.setBadge(n)
+  }, [sessions.waiting.length])
+
+  /**
+   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 準備 の順に、いちばん上のものだけ。
+   * 入力欄の中でも効く —— 覆いを閉じたいときに入力欄から出る手間を要らなくする（docs/ORCA.md §7 の 9）
+   */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || e.isComposing) return
+      if (preview) setPreview(null)
+      else if (showNew) setShowNew(false)
+      else if (showSetup) setShowSetup(false)
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [preview, showNew, showSetup])
+
   useEffect(() => {
     void window.izuna
       .ghosttySkin()
@@ -204,7 +232,13 @@ function App(): React.JSX.Element {
               </span>
             )}
             {sessions.waiting.length > 0 && (
-              <span style={{ ...S.note, color: C.amber }}>承認待ち {sessions.waiting.length}</span>
+              <span
+                style={{ ...S.note, color: C.amber, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                {/* 札と同じ印（Sidebar.tsx の点）。承認待ちはどの面でも同じ形で出す */}
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.amber }} />
+                承認待ち {sessions.waiting.length}
+              </span>
             )}
             {active.transcript.limits && (
               // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。

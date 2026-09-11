@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Panel } from '../useSessions'
 import { until, WAKEUP_STATE_LABEL, type Wakeup } from '../../../shared/wakeup'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
-import { Button, Faint, Input, Meter, NumberInput, Reload } from './ui'
+import { Button, Faint, Input, Loading, Meter, NumberInput, Reload } from './ui'
 
 /**
  * 自律ループ（§23）。
@@ -45,6 +45,7 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
             <NumberInput value={max} min={1} max={100} onChange={setMax} disabled={busy} />回
           </label>
           <Button
+            reserve={['始める', '始めています…']}
             kind="primary"
             disabled={busy || panel.ended}
             onClick={() =>
@@ -219,7 +220,7 @@ function Wakeups({ panel }: { panel: Panel }): React.JSX.Element {
         予約する
       </Button>
 
-      {list === null && <Faint>読んでいます…</Faint>}
+      {list === null && <Loading />}
       {list?.length === 0 && <Faint>予約はありません</Faint>}
       {(list ?? []).map((w) => (
         <div

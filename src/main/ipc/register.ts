@@ -1,4 +1,4 @@
-import { ipcMain, type BrowserWindow } from 'electron'
+import { app, ipcMain, type BrowserWindow } from 'electron'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { adoptToken, applyFix, gatherFacts, provisionBot } from '../forge/setup'
@@ -194,6 +194,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     setPermissionMode: (id, mode) => h.setPermissionMode(id, mode),
     setModel: (id, model) => h.setModel(id, model),
     interrupt: (id) => h.interrupt(id),
+    // macOS の Dock。他の OS では dock が無い
+    setBadge: async (count) => app.dock?.setBadge(count > 0 ? String(count) : ''),
     stop: (id) => h.stop(id),
     teamBoard: (id) => h.teamBoard(id),
     setTaskStatus: (id, taskId, status) => h.setTaskStatus(id, taskId, status),

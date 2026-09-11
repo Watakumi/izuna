@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { C, F, MONO, R, S, SANS } from '../theme'
 
 /**
@@ -31,6 +31,7 @@ export function Button({
   kind = 'ghost',
   size = 'md',
   block,
+  reserve,
   style,
   ...rest
 }: {
@@ -38,10 +39,21 @@ export function Button({
   size?: ButtonSize
   /** 幅いっぱいに伸ばす */
   block?: boolean
+  /**
+   * **幅を先に確保する。** 「作る」→「作っています…」のように字が入れ替わる釦は、押した瞬間に
+   * 幅が変わって隣がずれる。入れ替わる字を全部渡すと、一番長い字の幅で最初から描く
+   * （`base.css` の `.reserve::before` / `::after`。DOM の文字にはしないので検査の getByText に当たらない）。
+   * Orca の STYLEGUIDE「幅は先に確保する」から（docs/ORCA.md §7 の 7）
+   */
+  reserve?: string[]
 } & React.ButtonHTMLAttributes<HTMLButtonElement>): React.JSX.Element {
+  const [r0, r1] = reserve ?? []
   return (
     <button
       {...rest}
+      className={[rest.className, reserve ? 'reserve' : ''].filter(Boolean).join(' ') || undefined}
+      data-r0={r0}
+      data-r1={r1}
       style={{
         borderRadius: R.md,
         cursor: rest.disabled ? 'default' : 'pointer',
@@ -216,6 +228,7 @@ export function Reload({
   return (
     <button
       title="取り直す"
+      aria-label="取り直す"
       onClick={onClick}
       disabled={busy}
       style={{
@@ -322,6 +335,32 @@ export function Card({
       {children}
     </div>
   )
+}
+
+/**
+ * 読んでいる間の印。**100ms 未満では出さない。**
+ *
+ * すぐ返るものにまで「読んでいます…」を出すと、画面が一瞬ちらつくだけで何も伝えない。
+ * Orca の STYLEGUIDE は所要時間で分ける（100ms 未満は何も出さない / 1〜3 秒はスピナー /
+ * 3 秒超は段階の札。docs/ORCA.md §4）。Izuna は最初の段だけ取る —— 段階の札を要する長さの
+ * 待ちは無い。字は §17.4 で揃えた「読んでいます…」のまま
+ */
+export function Loading({
+  children = '読んでいます…',
+  after = 100,
+  style
+}: {
+  children?: React.ReactNode
+  after?: number
+  style?: React.CSSProperties
+}): React.JSX.Element | null {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), after)
+    return () => clearTimeout(t)
+  }, [after])
+  if (!show) return null
+  return <Faint style={style}>{children}</Faint>
 }
 
 /** 補助の説明。読めるが目立たない */
