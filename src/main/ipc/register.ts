@@ -6,6 +6,7 @@ import { claudeStatus } from '../claude/status'
 import {
   createPull,
   ensureRepo,
+  listIssues,
   listPulls,
   listRepos,
   listRuns,
@@ -142,6 +143,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
     ghStatus: (cwd) => gh.ghStatus(cwd),
     ghIssues: (cwd) => gh.listIssues(cwd),
+    forgeIssues: async (owner, repo) => listIssues(await forgeRoot(), owner, repo),
     ghPulls: (cwd) => gh.listPulls(cwd),
     ghCreatePull: (cwd, input) => gh.createPull(cwd, input),
 

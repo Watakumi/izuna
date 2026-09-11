@@ -350,4 +350,34 @@ describe('sandbox を消す（片付け。ボットの下だけ）', () => {
     )
     expect(calls).toHaveLength(0)
   })
+
+  it('Issue は open だけ、PR を除いて読み、GitHub と同じ形にする。中身の無い 404 は空', async () => {
+    const { listIssues } = await import('../src/main/forge/client')
+    reply([
+      {
+        number: 3,
+        title: 't',
+        html_url: 'http://x/issues/3',
+        state: 'open',
+        labels: [{ name: 'bug' }],
+        updated_at: '2026-09-11T00:00:00Z'
+      }
+    ])
+    const list = await listIssues('http://localhost:4649/', 'izuna', 'r')
+    expect(calls[0].url).toBe(
+      'http://localhost:4649/api/v1/repos/izuna/r/issues?state=open&type=issues&limit=30'
+    )
+    expect(list).toEqual([
+      {
+        number: 3,
+        title: 't',
+        url: 'http://x/issues/3',
+        state: 'open',
+        labels: ['bug'],
+        updatedAt: '2026-09-11T00:00:00Z'
+      }
+    ])
+    reply('empty', 404)
+    expect(await listIssues('http://localhost:4649/', 'izuna', 'r')).toEqual([])
+  })
 })

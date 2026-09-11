@@ -20,6 +20,16 @@ export interface ForgejoRepo {
   empty: boolean
 }
 
+/** Forgejo の Issue。GitHub の `GitHubIssue` と同じ形にして、画面で並べられるようにする */
+export interface ForgejoIssue {
+  number: number
+  title: string
+  url: string
+  state: string
+  labels: string[]
+  updatedAt: string
+}
+
 export interface ForgejoPull {
   number: number
   title: string
@@ -372,4 +382,40 @@ export async function deleteRepo(rootUrl: string, owner: string, repo: string): 
   await call<undefined>(rootUrl, `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, {
     method: 'DELETE'
   })
+}
+
+/**
+ * open な Issue。`GET /repos/{owner}/{repo}/issues?state=open&type=issues`（PR を除く）。
+ * 中身の無いリポジトリは `/pulls` と同じく 404 を返すことがあるので、空で返す（§7）。
+ */
+export async function listIssues(
+  rootUrl: string,
+  owner: string,
+  repo: string
+): Promise<ForgejoIssue[]> {
+  interface RawIssue {
+    number: number
+    title: string
+    html_url: string
+    state: string
+    labels?: Array<{ name: string }>
+    updated_at: string
+  }
+  try {
+    const raw = await call<RawIssue[]>(
+      rootUrl,
+      `repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?state=open&type=issues&limit=30`
+    )
+    return raw.map((i) => ({
+      number: i.number,
+      title: i.title,
+      url: i.html_url,
+      state: i.state,
+      labels: (i.labels ?? []).map((l) => l.name),
+      updatedAt: i.updated_at
+    }))
+  } catch (e) {
+    if (e instanceof ForgeError && e.status === 404) return []
+    throw e
+  }
 }
