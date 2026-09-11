@@ -17,7 +17,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
-  セッションの一覧と resume・画像・mermaid・盤面・自律ループ）。
+  セッションの一覧と resume・画像・mermaid・作業・自律ループ）。
   2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直し、
   `docs/NIMBALYST.md` §3 の 7 件を入れた。2026-09-09 に features ページの 3 件（§7）、
   `pnpm e2e`（§30）、**v1 の 7 手の通し**（`pnpm walk`。§31、`docs/v1-walk/`）を入れた。
@@ -81,7 +81,7 @@ src/main/claude/trust.ts    開く前の関所。hook と .mcp.json を数え、
 src/main/hub.ts             セッションの駆動部。1 件 1 record（session・共有フォルダ・cwd・ループ）。§28
 src/main/ipc/register.ts    口を関数に繋ぐ表だけ。Handlers の型が口の数だけ手があることを見る
 src/main/exec.ts            外の道具（git / gh / forgejo / brew）を呼ぶ唯一の包み（§27）
-src/main/team.ts            共有フォルダと盤面（作る・読む・log.md を書く）
+src/main/team.ts            共有フォルダと作業の一覧（作る・読む・log.md を書く）
 src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
 src/main/loop.ts            自律ループの駆動と、進捗を申告する MCP ツール（§23）
 src/main/wakeup.ts          起床の予約。覚えのある id だけ起こす（§26）
@@ -105,7 +105,7 @@ src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで�
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
 src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
-src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 盤面 / ループ / PR / ブランチ。
+src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 作業 / ループ / PR / ブランチ。
                             会話の柱の下に、頁（§32）かファイル（§34）のどちらか一方
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）

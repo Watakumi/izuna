@@ -132,7 +132,7 @@ describe('盤面', () => {
     await waitFor(() => expect(screen.getByText('共有フォルダがありません')).toBeTruthy())
   })
 
-  it('**重なる組と読めなかった札を目立たせる**', async () => {
+  it('**重なる組と読めなかった作業を目立たせる**', async () => {
     izuna(
       board({
         tasks: [
@@ -174,7 +174,7 @@ describe('盤面', () => {
     )
     const text = container.textContent ?? ''
     expect(text).toContain('A-01 と A-02')
-    expect(text).toContain('読めなかった札')
+    expect(text).toContain('読めなかった作業')
     expect(text).toContain('いま着手できるもの 1 件')
     expect(text).toContain('先に読む')
     expect(text).not.toContain('詳細')

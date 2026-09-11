@@ -241,7 +241,7 @@ export class SessionHub {
 
   // ── 共有フォルダ（§16）────────────────────────────────────
 
-  /** 盤面は読むだけ。**壊れた札も落とさずに返す**（黙って消すと書いた本人が気づけない） */
+  /** 共有フォルダの作業は読むだけ。**壊れたものも落とさずに返す**（黙って消すと書いた本人が気づけない） */
   async teamBoard(id: SessionId): Promise<TeamBoard | null> {
     const r = this.#records.get(id)
     return r ? await readBoard(r.team) : null

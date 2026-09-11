@@ -4,11 +4,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 /**
- * 共有フォルダの盤面に対する門（§16 / §24）。
+ * 共有フォルダの作業に対する門（§16 / §24）。
  *
  * `shared/team.ts` のパースは `test/team.test.ts` が見ている。
  * ここが見るのは**その純粋関数を誰が呼ぶか**である ——
- * 呼ぶ側が無いと、パースがどれだけ正しくても盤面は動かない。
+ * 呼ぶ側が無いと、パースがどれだけ正しくても画面は動かない。
  * これが `SafePathValidator` の形（§24）で、それを塞ぐのがここ。
  */
 
@@ -50,7 +50,7 @@ const taskFile = (over: Record<string, unknown>): string => {
   return `---\n${yaml}\n---\n\n本文\n`
 }
 
-describe('盤面を読む', () => {
+describe('共有フォルダの作業を読む', () => {
   it('札・要約・決定・記録をまとめて返す', async () => {
     const { ensureTeam, readBoard } = await load()
     const dir = await ensureTeam('t', '狙いはこう')
@@ -73,8 +73,8 @@ describe('盤面を読む', () => {
   })
 
   /**
-   * **重なりを見つけるのが盤面の本題**（§16）。
-   * これが動かないなら、盤面を出す意味が無い。
+   * **重なりを見つけるのがこの画面の本題**（§16）。
+   * これが動かないなら、この画面を出す意味が無い。
    */
   it('paths が重なる札を、同時に走らせてはいけない組として返す', async () => {
     const { ensureTeam, readBoard } = await load()

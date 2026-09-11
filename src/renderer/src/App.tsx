@@ -532,7 +532,7 @@ function App(): React.JSX.Element {
                         : t === 'docs'
                           ? '資料'
                           : t === 'board'
-                            ? '盤面'
+                            ? '作業'
                             : t === 'loop'
                               ? 'ループ'
                               : t === 'pr'
