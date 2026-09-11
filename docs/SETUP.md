@@ -96,7 +96,7 @@ Work down the list. Optional rows (Actions, runner) do not count.
 Claude Code   ✓ 2.1.266 · ~/.local/bin/claude
 Login         ✓ claude.ai · max
 Forgejo
-Install       ✓ 16.0.3 · /opt/homebrew/bin/forgejo      (with Docker: "uses forgejoUrl from the config")
+Install       ✓ 16.0.4 · /opt/homebrew/bin/forgejo      (with Docker: "uses forgejoUrl from the config")
 Setup         ✓ http://localhost:4649/ · …/app.ini
 Running       ✓ responded
 Token         ✓ write:user, write:repository
