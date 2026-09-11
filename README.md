@@ -9,7 +9,12 @@ PR にしてまとめて見て、GitHub（upstream）には仕上がったもの
 - **使うには**: [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo、gh。準備画面が判定する）
 - **何を作るか**: [docs/GOAL.md](docs/GOAL.md)（三本の柱と、やらないこと）
 - **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`（触るファイルに応じて読まれる）、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）
-- **Nimbalyst との違い**: [docs/NIMBALYST.md](docs/NIMBALYST.md)
+- **Nimbalyst との違い**: [docs/NIMBALYST.md](docs/NIMBALYST.md)。**Orca との違い**: [docs/ORCA.md](docs/ORCA.md)
+
+![会話・承認・右パネル（作り物の window.izuna で描いた画面。2026-09-10 に撮った）](docs/readme/conversation.png)
+
+画面は `pnpm shots` の作り物の記録で描いたもの（実 API は呼んでいない）。撮った日を書いてあるのは、
+画面が変わっても画像だけ古いまま残るのを見つけるため（docs/ORCA.md §7 の 10）。
 - **CI（自宅 Forgejo Actions）**: [docs/ACTIONS.md](docs/ACTIONS.md)
 
 ## 動かす

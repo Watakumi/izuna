@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Izuna の印。飯綱（管狐）の顔を 1 色 1 パスに略す。耳を高く、口先を細く。目と鼻は地の色で抜く -->
+  <rect x="0" y="0" width="1024" height="1024" rx="226" fill="#15171a"/>
+  <path fill="#f2efe8" d="
+    M 246 150
+    L 432 440
+    Q 512 402 592 440
+    L 778 150
+    Q 826 400 776 560
+    L 512 866
+    L 248 560
+    Q 198 400 246 150 Z"/>
+  <ellipse cx="426" cy="572" rx="22" ry="34" fill="#15171a" transform="rotate(-12 426 572)"/>
+  <ellipse cx="598" cy="572" rx="22" ry="34" fill="#15171a" transform="rotate(12 598 572)"/>
+  <path fill="#15171a" d="M 484 712 L 540 712 L 512 748 Z"/>
+</svg>

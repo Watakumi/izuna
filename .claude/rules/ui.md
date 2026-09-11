@@ -242,6 +242,8 @@ docs/ORCA.md §7 の 1・7・9。どれも Orca の STYLEGUIDE か部品から�
 | 釦の幅を先に確保する | `ui.tsx` の `Button` の `reserve`、`base.css` の `.reserve` | 「作る」→「作っています…」で幅が変わって隣がずれていた。入れ替わる字を高さ 0 の疑似要素で描き、一番長い幅で最初から出す。DOM の文字にはしないので `getByText` に当たらない。15 か所に付けた |
 | 読んでいる印は 100ms 未満では出さない | `ui.tsx` の `Loading` | すぐ返るものにまで「読んでいます…」が一瞬出てちらついていた。Orca は所要時間で 3 段に分けるが、Izuna は最初の段だけ。9 か所を置き換えた |
 | Esc で覆いを閉じる、アイコン釦に `aria-label` | `App.tsx`、`ui.tsx` の `Reload` | 枠（頁）→ 新しいセッション → 準備 の順に、いちばん上のものだけ。IME の変換中は無視 |
+| 自分のアイコン | `build/icon.svg`（元）、`build/icon.png` / `icon.icns`、`resources/icon.png` | electron-vite の雛形の原子ロゴのままだった（docs/ORCA.md §6）。飯綱（管狐）の顔を 1 色 1 パスに略した。黒地に生成りの白。png は Playwright の Chromium で 1024px に描き、icns は `sips` + `iconutil`。`icon.ico` は消した（Windows は作らない。electron-builder が要れば png から作る）。作り直すときは svg を直して同じ手順 |
+| README に画面を 1 枚 | `docs/readme/conversation.png` | `pnpm shots` の作り物の記録で描いた画面（実データを含まない）。撮った日を添える。Orca の feature wall は `recorded-at.json` で鮮度を見張る（docs/ORCA.md §4） |
 
 ## 17.4 比喩を使わない（2026-09-08）
 
