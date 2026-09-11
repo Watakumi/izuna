@@ -5,7 +5,7 @@ import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
 import { makeCache } from '../remember'
 import { F, C, MONO, ellipsis } from '../theme'
-import { Meter } from './ui'
+import { Loading, Meter } from './ui'
 
 /**
  * 右ペインの「情報」タブ。
@@ -135,13 +135,15 @@ export function Inspector({
           />
           <span style={{ fontSize: F.small, color: C.dim2 }}>
             {/* 読み終わるまで断定しない。`[]` を「無い」と読むと一瞬だけ嘘が出る */}
-            {remotes === null
-              ? '読んでいます…'
-              : !sandbox
-                ? 'sandbox 未設定'
-                : pushed
-                  ? 'sandbox に push 済み'
-                  : 'push していません'}
+            {remotes === null ? (
+              <Loading />
+            ) : !sandbox ? (
+              'sandbox 未設定'
+            ) : pushed ? (
+              'sandbox に push 済み'
+            ) : (
+              'push していません'
+            )}
           </span>
         </div>
 

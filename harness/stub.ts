@@ -130,6 +130,7 @@ let handler: ((e: SessionEvent) => void) | null = null
 export function installStub(): void {
   const api: Partial<IzunaApi> = {
     ipcVersion: async () => IPC_VERSION,
+    setBadge: async () => {},
     // 実機の Ghostty の代わり。**ハーネス側から差し替えられる**ようにしておく
     ghosttySkin: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
     listSessions: async () => [

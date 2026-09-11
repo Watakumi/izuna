@@ -4,7 +4,7 @@ import { diagnoseClaude, readyForClaude } from '../../../shared/prereq'
 import type { FixId } from '../../../main/forge/setup'
 import type { ForgejoRepo, ForgejoToken } from '../../../main/forge/client'
 import { F, C, MONO, R, S, ellipsis } from '../theme'
-import { Button, Input, Reload, Tag } from './ui'
+import { Button, Input, Loading, Reload, Tag } from './ui'
 
 /**
  * Forgejo のセットアップ（段5 の入口）。
@@ -150,7 +150,13 @@ export function ForgeSetup({
           )}
         </div>
         {c.fix && (
-          <Button kind="primary" size="sm" disabled={busy !== null} onClick={() => void fix(c)}>
+          <Button
+            reserve={[c.fix.label, '実行しています…']}
+            kind="primary"
+            size="sm"
+            disabled={busy !== null}
+            onClick={() => void fix(c)}
+          >
             {busy === c.id ? '実行しています…' : c.fix.label}
           </Button>
         )}
@@ -214,9 +220,7 @@ export function ForgeSetup({
             gap: 8
           }}
         >
-          {!checks && (
-            <div style={{ padding: 12, color: C.faint, fontSize: F.body }}>読んでいます…</div>
-          )}
+          {!checks && <Loading style={{ padding: 12, fontSize: F.body }} />}
           {claude && (
             <>
               <span
@@ -262,6 +266,7 @@ export function ForgeSetup({
                   style={{ flexGrow: 1 }}
                 />
                 <Button
+                  reserve={['ボットとトークンを作る', '作っています…']}
                   kind="primary"
                   size="sm"
                   disabled={busy !== null || !adminUser.trim() || !adminPassword}
@@ -279,6 +284,7 @@ export function ForgeSetup({
                   style={{ flexGrow: 1 }}
                 />
                 <Button
+                  reserve={['保管する', '確かめています…']}
                   kind="primary"
                   size="sm"
                   disabled={busy !== null || !pasted.trim()}
@@ -578,6 +584,7 @@ function Repos({ onPreview }: { onPreview?: (url: string) => void }): React.JSX.
                   </span>
                   <div style={{ flexGrow: 1 }} />
                   <Button
+                    reserve={['消す', '消しています…']}
                     size="sm"
                     kind="primary"
                     disabled={busy !== null}

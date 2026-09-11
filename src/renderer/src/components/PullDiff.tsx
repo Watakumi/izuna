@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FileDiff } from '../../../shared/diff'
 import { C, F, MONO, S } from '../theme'
 import { DiffView } from './DiffView'
-import { Faint } from './ui'
+import { Faint, Loading } from './ui'
 
 /**
  * sandbox（Forgejo）の PR の差分（docs/NIMBALYST.md §7 の 3）。
@@ -33,7 +33,7 @@ export function PullDiff({ load }: { load: () => Promise<FileDiff[]> }): React.J
     }
   }, [load])
 
-  if (files === undefined) return <Faint>差分を読んでいます…</Faint>
+  if (files === undefined) return <Loading>差分を読んでいます…</Loading>
   if (files === null)
     return <span style={{ fontSize: F.small, color: C.red }}>{failure ?? '読めませんでした'}</span>
   if (files.length === 0) return <Faint>差分がありません</Faint>

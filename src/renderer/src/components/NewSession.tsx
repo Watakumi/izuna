@@ -4,7 +4,7 @@ import type { FoundRepo } from '../../../main/repos'
 import type { GitHubIssue } from '../../../main/forge/github'
 import { belongsTo, filterSessions, labelOf, type SessionSummary } from '../../../shared/sessions'
 import { C, F, MONO, R, S, ellipsis } from '../theme'
-import { Button, Faint, Input, TextArea } from './ui'
+import { Button, Faint, Input, Loading, TextArea } from './ui'
 
 /**
  * セッションを開く（段3・段4 の入口）。
@@ -242,7 +242,7 @@ export function NewSession({
               </Button>
             }
           >
-            {found === null && <Faint>読んでいます…</Faint>}
+            {found === null && <Loading />}
             {found !== null && (
               <>
                 <Input
@@ -442,7 +442,12 @@ export function NewSession({
           </span>
           <div style={{ flexGrow: 1 }} />
           <Button onClick={onCancel}>閉じる</Button>
-          <Button kind="primary" onClick={() => void start()} disabled={!ready}>
+          <Button
+            reserve={['開く', '用意しています…']}
+            kind="primary"
+            onClick={() => void start()}
+            disabled={!ready}
+          >
             {busy ? '用意しています…' : '開く'}
           </Button>
         </div>

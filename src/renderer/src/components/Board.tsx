@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Panel } from '../useSessions'
 import type { TeamBoard } from '../../../main/team'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
-import { Card, Faint, Reload, Tag } from './ui'
+import { Card, Faint, Loading, Reload, Tag } from './ui'
 
 /**
  * 共有フォルダの盤面（§16）。
@@ -25,7 +25,7 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
   }
   useEffect(load, [panel.id])
 
-  if (board === undefined) return <Faint style={{ padding: S.lg }}>読んでいます…</Faint>
+  if (board === undefined) return <Loading style={{ padding: S.lg }} />
   if (board === null) return <Faint style={{ padding: S.lg }}>共有フォルダがありません</Faint>
 
   // 人の判断を待っているものだけ目立たせる（`attention` の定義）

@@ -5,7 +5,7 @@ import type { GitHubIssue, GitHubPull } from '../../../main/forge/github'
 import { rolesIn, stageOf, upstreamLeaks, type RemoteRef } from '../../../shared/remote'
 import { makeCache } from '../remember'
 import { C, F, MONO, S, ellipsis } from '../theme'
-import { Button, Card, Faint, Reload, Result } from './ui'
+import { Button, Card, Faint, Loading, Reload, Result } from './ui'
 import { PullDiff } from './PullDiff'
 import { CiBadge } from './CiBadge'
 
@@ -209,7 +209,7 @@ export function Forge({
   if (remotes === null) {
     return (
       <div style={{ padding: S.lg }}>
-        <Faint>読んでいます…</Faint>
+        <Loading />
       </div>
     )
   }
@@ -242,6 +242,7 @@ export function Forge({
               出しません
             </Faint>
             <Button
+              reserve={['sandbox を用意する', '用意しています…']}
               disabled={busy !== null}
               kind="primary"
               onClick={() =>
@@ -261,6 +262,7 @@ export function Forge({
               <>
                 <Faint>{branch} はまだ sandbox にありません</Faint>
                 <Button
+                  reserve={[`${sandbox.name} に push`, 'push しています…']}
                   disabled={busy !== null}
                   kind="primary"
                   onClick={() =>
@@ -299,6 +301,7 @@ export function Forge({
                   )}
                   {/* 片付け。ブランチを消しても Forgejo は PR を閉じないので、ここから閉じる。マージはしない */}
                   <Button
+                    reserve={['閉じる', '閉じています…']}
                     size="sm"
                     disabled={busy !== null}
                     onClick={() =>
@@ -337,6 +340,7 @@ export function Forge({
                     <span style={{ font: `${F.small}px ${MONO}`, ...ellipsis }}>{b}</span>
                     <div style={{ flexGrow: 1 }} />
                     <Button
+                      reserve={['消す', '消しています…']}
                       size="sm"
                       disabled={busy !== null}
                       onClick={() =>
@@ -354,6 +358,7 @@ export function Forge({
 
             {pulls?.length === 0 && pushed && branch && (
               <Button
+                reserve={['sandbox で PR を作る', '作っています…']}
                 disabled={busy !== null}
                 kind="primary"
                 onClick={() =>
@@ -410,7 +415,7 @@ export function Forge({
         note={upstreamNote}
       />
       <div style={{ padding: S.lg, display: 'flex', flexDirection: 'column', gap: S.md }}>
-        {!gh?.ok && <Faint>{gh?.detail ?? '読んでいます…'}</Faint>}
+        {!gh?.ok && (gh ? <Faint>{gh.detail}</Faint> : <Loading />)}
         {leaks && leaks.length > 0 && (
           <span style={{ fontSize: F.small, color: C.red, lineHeight: 1.6 }}>
             作業ブランチが Upstream に出ています: {leaks.join(', ')}
@@ -435,6 +440,7 @@ export function Forge({
                   : '差分がありません'}
             </span>
             <Button
+              reserve={['Upstream に PR を作る', '作っています…']}
               disabled={busy !== null || stage !== 'readyForUpstream'}
               kind="primary"
               onClick={() =>
@@ -454,6 +460,7 @@ export function Forge({
             </Button>
             {/* コミット文も会話に頼む。口は前からあったが、釦が無かった（docs/NIMBALYST.md §7 の 2） */}
             <Button
+              reserve={['コミット文を頼む', '頼んでいます…']}
               disabled={busy !== null || sessionId === null}
               onClick={() =>
                 void act('commit', async () => {
@@ -467,6 +474,7 @@ export function Forge({
             </Button>
             {/* **PR を作る前でもレビューは頼める。** 出す前に読むほうが安い */}
             <Button
+              reserve={['差分のレビューを頼む', '頼んでいます…']}
               disabled={busy !== null || !bases.upstream || sessionId === null}
               onClick={() =>
                 void act('review', async () => {

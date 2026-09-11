@@ -159,6 +159,8 @@ export interface IzunaApi {
   setPermissionMode(id: SessionId, mode: PermissionMode): Promise<void>
   setModel(id: SessionId, model?: string): Promise<void>
   interrupt(id: SessionId): Promise<void>
+  /** 承認待ちの数を Dock の badge に出す。0 で消す（docs/ORCA.md §7 の 1） */
+  setBadge(count: number): Promise<void>
   stop(id: SessionId): Promise<void>
   /**
    * 過去のセッション一覧（CLAUDE.md §18）。**保存層は自作していない** ——
@@ -301,6 +303,7 @@ export const CH = {
   setPermissionMode: 'izuna:session:set-permission-mode',
   setModel: 'izuna:session:set-model',
   interrupt: 'izuna:session:interrupt',
+  setBadge: 'izuna:app:badge',
   stop: 'izuna:session:stop',
   event: 'izuna:session:event'
 } as const

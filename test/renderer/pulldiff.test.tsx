@@ -27,8 +27,17 @@ const files = parseUnifiedDiff(
 
 describe('PR の差分', () => {
   it('読んでいるあいだはそう言い、読めたらファイルごとに描いて合計を出す', async () => {
-    const { container } = render(<PullDiff load={async () => files} />)
+    // 読み終わるまで返さない相手。読んでいる印が出るのを見てから返す
+    let finish: (v: typeof files) => void = () => {}
+    const pending = new Promise<typeof files>((r) => {
+      finish = r
+    })
+    const { container } = render(<PullDiff load={() => pending} />)
+    // 100ms 未満では出さない（ui.tsx の Loading）
+    expect(screen.queryByText('差分を読んでいます…')).toBeNull()
+    await new Promise((r) => setTimeout(r, 130))
     expect(screen.getByText('差分を読んでいます…')).toBeTruthy()
+    finish(files)
     await waitFor(() => expect(container.textContent).toContain('2 ファイル'))
     expect(container.textContent).toContain('+2')
     expect(container.textContent).toContain('−1')

@@ -4,7 +4,7 @@ import { canRemove, type Worktree } from '../../../shared/worktree'
 import type { Panel } from '../useSessions'
 import { F, C, MONO, ellipsis, S } from '../theme'
 import { makeCache } from '../remember'
-import { Button, Reload, Result, Tag } from './ui'
+import { Button, Loading, Reload, Result, Tag } from './ui'
 
 /**
  * worktree の一覧（段3 の見える化）。
@@ -108,7 +108,7 @@ export function Worktrees({
       </div>
 
       <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {!rows && <span style={{ color: C.faint, fontSize: F.small }}>読んでいます…</span>}
+        {!rows && <Loading />}
 
         {rows?.map((row) => {
           const blocked = canRemove(row)
@@ -178,6 +178,7 @@ export function Worktrees({
                   </span>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <Button
+                      reserve={['消す', '消しています…']}
                       disabled={busy !== null}
                       kind="primary"
                       onClick={() => void remove(row, unpushed)}

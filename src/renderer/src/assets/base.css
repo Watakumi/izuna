@@ -69,3 +69,21 @@ body {
   background: #14161b;
   color: rgba(255, 255, 245, 0.86);
 }
+
+/*
+ * 釦の幅を先に確保する（ui.tsx の Button の `reserve`）。入れ替わる字を data-r0 / data-r1 に持ち、
+ * 高さ 0 の疑似要素として描く。幅だけが効き、字は DOM に出ない。
+ */
+.reserve::before,
+.reserve::after {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+.reserve::before {
+  content: attr(data-r0);
+}
+.reserve::after {
+  content: attr(data-r1);
+}
