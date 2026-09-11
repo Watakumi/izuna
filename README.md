@@ -5,7 +5,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 **自分の Forgejo を持っている人**のための道具 —— 実行役の荒れる作業は自宅の Forgejo（sandbox）で
 PR にしてまとめて見て、GitHub（upstream）には仕上がったものだけを出す。
 
-- **入れる**: [Releases](https://github.com/Watakumi/izuna/releases) の DMG（Apple Silicon）。署名していないので開き方は [docs/SETUP.md](docs/SETUP.md)
+- **入れる**: `brew tap watakumi/izuna && brew trust watakumi/izuna && brew install --cask izuna`（Apple Silicon。tap は [Watakumi/homebrew-izuna](https://github.com/Watakumi/homebrew-izuna)）。または [Releases](https://github.com/Watakumi/izuna/releases) の DMG。署名していないので開き方は [docs/SETUP.md](docs/SETUP.md)
 - **使うには**: [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo、gh。準備画面が判定する）
 - **何を作るか**: [docs/GOAL.md](docs/GOAL.md)（三本の柱と、やらないこと）
 - **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`（触るファイルに応じて読まれる）、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）

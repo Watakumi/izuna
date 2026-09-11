@@ -14,6 +14,18 @@
 | `gh` CLI にログイン済み                       | upstream（GitHub）の Issue と PR は `gh` に任せる                                 | `brew install gh` → `gh auth login`                                     |
 | `git`                                         | ——                                                                                | Xcode Command Line Tools                                                |
 
+## 入れる
+
+```bash
+brew tap watakumi/izuna
+brew trust watakumi/izuna      # Homebrew 6 は自分以外の tap を信頼するまで読まない
+brew install --cask izuna
+```
+
+tap は https://github.com/Watakumi/homebrew-izuna（`Casks/izuna.rb`。版と DMG の sha256 だけ）。
+Cask は `/Applications/Izuna.app` に置き、`brew info --cask izuna` の caveats に下の開き方を出す。
+DMG を手で入れるなら [Releases](https://github.com/Watakumi/izuna/releases)。
+
 ## DMG を開く（署名していないあいだ）
 
 配布物は Apple の証明書で署名していない（証明書は人が用意する。`.github/workflows/release.yml` は secrets を
