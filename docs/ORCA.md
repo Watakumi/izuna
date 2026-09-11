@@ -198,7 +198,7 @@ Releases を変更履歴にする（Orca「The changelog is the real feature lis
 | 8 | **redactor を 1 段**（済 2026-09-11、この PR） | `observability/redactor.ts` の 8 本の pattern | `run()` の stderr と例外の文面に当てる純粋関数。半日 |
 | 9 | **Esc で覆いを閉じる、アイコン釦に `aria-label`**（済 2026-09-11、#36） | キーバインド 88 手、`aria-label` 1,288 | 準備・新しいセッション・枠の 3 つに Esc。`Reload` に `aria-label`。半日 |
 | 10 | **README に画面を 1 枚と録った日**（済 2026-09-11、#37） | feature wall の `recorded-at.json` | `pnpm walk` の PNG から 1 枚。1 時間 |
-| 11 | **名前の由来を 1 段落**（**未**。作者に聞く） | 書いていないことの反例 | README か GOAL に。30 分 |
+| 11 | **名前の由来を 1 段落**（済 2026-09-11。作者に聞いた: 飯綱使いが管狐を使役するように Claude のエージェントを使役する像。README と README.ja.md） | 書いていないことの反例 | README か GOAL に。30 分 |
 | 12 | **「hook を利用者の設定ファイルに書かない」判断を文書に**（済 2026-09-11、#35） | `hook-settings.ts` が `~/.claude/settings.json` を書く | team.md §12 に 3 行。15 分 |
 | 13 | **GitHub の看板**（済 2026-09-11。description は自己紹介の 1 文、topics 6 個） | topics 18 個、英語 1 行 | description を英語 1 行にし、topics（claude-code / forgejo / electron / worktrees）を付ける。30 分 |
 | 14 | **Homebrew tap**（済 2026-09-11。`Watakumi/homebrew-izuna`。Homebrew 6 は `brew trust` が要る） | `stablyai/homebrew-orca` | `watakumi/homebrew-izuna` に Cask 1 ファイル。`caveats` に `xattr` の手順。1〜2 時間 |

@@ -1,27 +1,27 @@
-# セキュリティ
+# Security
 
-Izuna は手元の `claude` CLI を子プロセスで動かし、Forgejo と GitHub に書き込むデスクトップアプリです。
-守っていることは `.claude/rules/security.md`（§26）に、依存の入口は `supply-chain.md`（§27）にあります。
+Izuna runs your local `claude` CLI as a child process and writes to Forgejo and GitHub.
+What it protects and how is in `.claude/rules/security.md` (§26, in Japanese); the dependency
+policy is in `supply-chain.md` (§27).
 
-## 報告のしかた
+## Reporting
 
-脆弱性を見つけたら、**公開の Issue には書かず**、GitHub の
-[Security Advisories](https://github.com/Watakumi/izuna/security/advisories/new) から非公開で報告してください。
-次のものがあると早く直せます。
+If you find a vulnerability, **do not open a public issue.** Report it privately through GitHub's
+[Security Advisories](https://github.com/Watakumi/izuna/security/advisories/new). These help:
 
-- 再現の手順（どのリポジトリを開いたか、どの操作をしたか）
-- 影響（何が読める・書ける・実行できるか）
-- 環境（macOS の版、`claude --version`、Forgejo の版と置き方）
+- Steps to reproduce (which repository was opened, which action was taken)
+- Impact (what can be read, written, or executed)
+- Environment (macOS version, `claude --version`, Forgejo version and how it is deployed)
 
-## 対応
+## Response
 
-- 受け取りの返事は 7 日以内。
-- 直したら Release の notes に書き、報告者を（望めば）記します。
-- 修正が出るまで公開しないでください。
+- You will hear back within 7 days.
+- Fixes are noted in the Release notes, with credit to the reporter if wanted.
+- Please keep the report private until a fix is released.
 
-## 対象
+## Scope
 
-- Izuna のコード（main / preload / renderer / scripts）
-- 配布物（DMG）の組み立てと設定（`electron-builder.yml`、`build/fuses.mjs`）
+- Izuna's code (main / preload / renderer / scripts)
+- How the distributable (DMG) is built and configured (`electron-builder.yml`, `build/fuses.mjs`)
 
-対象外: Claude Code 自体、Forgejo 自体、依存パッケージそのもの（それぞれの報告先へ）。
+Out of scope: Claude Code itself, Forgejo itself, and third-party packages. Report those upstream.
