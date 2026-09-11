@@ -260,9 +260,9 @@ export function installStub(): void {
       [
         { name: 'verify', description: '型検査とテストを回す', argumentHint: '' },
         {
-          name: 'doc-now-next-later',
+          name: 'izuna-docs:doc-now-next-later',
           description:
-            '資料 — Now / Next / Later のロードマップ。Issue と目標から 3 列に並べる (project)',
+            '(izuna-docs) 資料 — Now / Next / Later のロードマップ。Issue と目標から 3 列に並べる',
           argumentHint: ''
         },
         { name: 'code-review', description: '差分を見る', argumentHint: '[PR]' }

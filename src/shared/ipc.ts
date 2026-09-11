@@ -155,7 +155,7 @@ export interface IzunaApi {
   /** 共有フォルダの場所。renderer は homedir を知らない */
   teamPath(name: string): Promise<string>
   /**
-   * 共有フォルダの盤面（§16）。**`paths` の重なりは実行役を起こす前に見る**。
+   * 共有フォルダの作業（§16）。**`paths` の重なりは実行役を起こす前に見る**。
    * 読むだけ。書くのは札の状態だけで、それも下の 1 本に限る。
    */
   teamBoard(id: SessionId): Promise<TeamBoard | null>

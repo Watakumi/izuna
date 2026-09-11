@@ -156,8 +156,13 @@ async function main(): Promise<void> {
   )
   await shoot(page, '7-files')
 
-  // 共有フォルダの盤面（§16）
-  await page.getByText('盤面', { exact: true }).click()
+  // 資料の skill（§33）。名前が長い（`izuna-docs:doc-…`）ので、欄と釦が潰れないかを見る
+  await page.getByText('資料', { exact: true }).click()
+  check((await page.getByText('頼む').count()) > 0, '資料の skill に「頼む」が出る')
+  await shoot(page, '9-docs')
+
+  // 共有フォルダの作業（§16）
+  await page.getByText('作業', { exact: true }).click()
   await page.waitForTimeout(300)
   check(
     (await page.getByText('同時に走らせてはいけない組があります').count()) > 0,

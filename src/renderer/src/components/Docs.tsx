@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { docRequest, docSkills } from '../../../shared/docs'
 import type { Panel } from '../useSessions'
-import { C, F, MONO, S } from '../theme'
+import { C, ellipsis, F, MONO, S } from '../theme'
 import { Button, Card, Faint, Input } from './ui'
 
 /**
@@ -39,6 +39,16 @@ export function Docs({
         <Card key={s.name}>
           <span style={{ fontSize: F.body, color: C.ink }}>{s.title}</span>
           {s.detail && <Faint>{s.detail}</Faint>}
+          {/*
+            skill の名前は長い（`izuna-docs:doc-…`）。**行を分ける** —— 欄と同じ行に置くと、
+            名前が幅を取って欄が潰れ、釦の字が縦に折れる（2026-09-11 に利用者が見つけた）
+          */}
+          <span
+            style={{ font: `${F.micro}px ${MONO}`, color: C.faint, ...ellipsis }}
+            title={`/${s.name}`}
+          >
+            /{s.name}
+          </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: S.md }}>
             {s.argumentHint && (
               <Input
@@ -49,13 +59,11 @@ export function Docs({
               />
             )}
             {!s.argumentHint && <div style={{ flexGrow: 1 }} />}
-            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
-              /{s.name}
-            </span>
             <Button
               size="sm"
               kind="primary"
               disabled={panel.ended}
+              style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
               onClick={() => onAsk(docRequest(s, args[s.name] ?? ''))}
             >
               頼む

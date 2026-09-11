@@ -5,7 +5,7 @@ import { C, ellipsis, F, MONO, R, S } from '../theme'
 import { Card, Faint, Loading, Reload, Tag } from './ui'
 
 /**
- * 共有フォルダの盤面（§16）。
+ * 共有フォルダの作業（§16）。ブレインと実行役が書いたものを読むだけ。
  *
  * **`paths` が重なる作業を同時に走らせない。** これは申し送りに書いた norm では
  * 守れない —— 書いてある規律は、守られたかどうかを誰も見ていない。
@@ -49,7 +49,7 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
 
       {board.errors.length > 0 && (
         <Card tone="attention">
-          <div style={{ fontSize: F.body, color: C.ink, marginBottom: S.xs }}>読めなかった札</div>
+          <div style={{ fontSize: F.body, color: C.ink, marginBottom: S.xs }}>読めなかった作業</div>
           {board.errors.map((e, i) => (
             <div key={i} style={{ font: `${F.small}px ${MONO}`, color: C.ink2, lineHeight: 1.7 }}>
               {e}
@@ -59,7 +59,7 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
       )}
 
       <Section label={`作業 ${board.tasks.length} 件`} action={<Reload onClick={load} />}>
-        {board.tasks.length === 0 && <Faint>まだ札がありません</Faint>}
+        {board.tasks.length === 0 && <Faint>まだ作業がありません</Faint>}
         {board.tasks.map((t) => (
           <div
             key={t.id}
