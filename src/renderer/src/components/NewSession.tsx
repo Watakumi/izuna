@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { RepoInfo } from '../../../shared/ipc'
 import type { FoundRepo } from '../../../main/repos'
-import type { GitHubIssue } from '../../../main/forge/github'
+import { rolesIn } from '../../../shared/remote'
+import {
+  issuePrompt,
+  mergeIssues,
+  sameIssue,
+  SOURCE_LABEL,
+  unavailable,
+  type SourcedIssue
+} from '../../../shared/issues'
 import { belongsTo, filterSessions, labelOf, type SessionSummary } from '../../../shared/sessions'
 import { C, F, MONO, R, S, ellipsis } from '../theme'
 import { Button, Faint, Input, Loading, TextArea } from './ui'
@@ -44,8 +52,8 @@ export function NewSession({
   const [repo, setRepo] = useState<RepoInfo | null>(null)
   const [repoError, setRepoError] = useState<string | null>(null)
 
-  const [issues, setIssues] = useState<GitHubIssue[] | null>(null)
-  const [issue, setIssue] = useState<GitHubIssue | null>(null)
+  const [issues, setIssues] = useState<SourcedIssue[] | null>(null)
+  const [issue, setIssue] = useState<SourcedIssue | null>(null)
   const [text, setText] = useState('')
 
   const [showAllPast, setShowAllPast] = useState(false)
@@ -98,14 +106,19 @@ export function NewSession({
           setRepo(null)
           setRepoError(String(e).replace(/^Error:\s*/, ''))
         })
-      window.izuna
-        .ghIssues(path)
-        .then((v) => {
-          if (alive) setIssues(v)
-        })
-        .catch(() => {
-          if (alive) setIssues(null)
-        })
+      // Issue は GitHub と Forgejo の両方から。片方だけでも出す（shared/issues.ts）
+      void (async () => {
+        const gh = await window.izuna.ghIssues(path).catch(unavailable('GitHub の Issue'))
+        const rs = (await window.izuna.remotes(path).catch(unavailable('remote'))) ?? []
+        const { sandbox } = rolesIn(rs)
+        const fj =
+          sandbox?.owner && sandbox.repo
+            ? await window.izuna
+                .forgeIssues(sandbox.owner, sandbox.repo)
+                .catch(unavailable('Forgejo の Issue'))
+            : null
+        if (alive) setIssues(mergeIssues(gh, fj))
+      })()
     }, 300)
     return () => {
       alive = false
@@ -118,9 +131,7 @@ export function NewSession({
     return q === '' || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q)
   })
 
-  const prompt = issue
-    ? `GitHub の Issue #${issue.number}「${issue.title}」に取り組んでください。\n${issue.url}`
-    : text.trim()
+  const prompt = issue ? issuePrompt(issue) : text.trim()
 
   // この画面で選んだリポジトリのもの。**worktree のセッションも同じ束**にする
   // このリポジトリのものだけに絞ってから、字で絞る（§18）。
@@ -361,7 +372,8 @@ export function NewSession({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {issues.slice(0, 5).map((i) => (
                     <div
-                      key={i.number}
+                      key={`${i.source}:${i.number}`}
+                      data-issue={`${i.source}:${i.number}`}
                       onClick={() => {
                         setIssue(i)
                         setText('')
@@ -373,8 +385,8 @@ export function NewSession({
                         padding: '8px 12px',
                         borderRadius: 7,
                         cursor: 'pointer',
-                        border: `1px solid ${issue?.number === i.number ? C.amberLine : C.line}`,
-                        background: issue?.number === i.number ? C.amberBg : 'transparent'
+                        border: `1px solid ${sameIssue(issue, i) ? C.amberLine : C.line}`,
+                        background: sameIssue(issue, i) ? C.amberBg : 'transparent'
                       }}
                     >
                       <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>
@@ -383,13 +395,16 @@ export function NewSession({
                       <span style={{ fontSize: F.body, color: C.ink2, ...ellipsis }}>
                         {i.title}
                       </span>
+                      <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                        {SOURCE_LABEL[i.source]}
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
               {issues !== null && issues.length === 0 && <Faint>open な Issue はありません</Faint>}
               {issues === null && cwd.trim() !== '' && (
-                <Faint>GitHub に繋がっていません。下に直接書けます</Faint>
+                <Faint>GitHub にも Forgejo にも繋がっていません。下に直接書けます</Faint>
               )}
 
               <TextArea

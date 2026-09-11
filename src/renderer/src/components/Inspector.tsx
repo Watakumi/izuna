@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
-import type { GitHubIssue } from '../../../main/forge/github'
+import { mergeIssues, SOURCE_LABEL, unavailable, type SourcedIssue } from '../../../shared/issues'
 import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
 import { makeCache } from '../remember'
@@ -20,7 +20,7 @@ import { Loading, Meter } from './ui'
 interface Snapshot {
   status: WorktreeStatus | null
   remotes: RemoteRef[]
-  issues: GitHubIssue[] | null
+  issues: SourcedIssue[] | null
   pushed: boolean | null
   team: string | null
 }
@@ -38,7 +38,7 @@ export function Inspector({
   const [status, setStatus] = useState<WorktreeStatus | null>(seed?.status ?? null)
   // 「まだ読んでいない」を `null` で表す（`[]` だと『無い』と嘘をつく）
   const [remotes, setRemotes] = useState<RemoteRef[] | null>(seed?.remotes ?? null)
-  const [issues, setIssues] = useState<GitHubIssue[] | null>(seed?.issues ?? null)
+  const [issues, setIssues] = useState<SourcedIssue[] | null>(seed?.issues ?? null)
   const [pushed, setPushed] = useState<boolean | null>(seed?.pushed ?? null)
   const [team, setTeam] = useState<string | null>(seed?.team ?? null)
   const [showTeam, setShowTeam] = useState(false)
@@ -66,7 +66,15 @@ export function Inspector({
       if (!alive) return
       setPushed(nextPushed)
 
-      const list = await window.izuna.ghIssues(panel.cwd).catch(() => null)
+      // Issue は GitHub と Forgejo の両方から（shared/issues.ts）
+      const gh = await window.izuna.ghIssues(panel.cwd).catch(unavailable('GitHub の Issue'))
+      const fj =
+        sandbox?.owner && sandbox.repo
+          ? await window.izuna
+              .forgeIssues(sandbox.owner, sandbox.repo)
+              .catch(unavailable('Forgejo の Issue'))
+          : null
+      const list = mergeIssues(gh, fj)
       if (!alive) return
       setIssues(list)
 
@@ -108,16 +116,24 @@ export function Inspector({
 
       <Block title="FORGEJO">
         {issues === null ? (
-          <span style={{ fontSize: F.small, color: C.faint }}>GitHub に繋がっていません</span>
+          <span style={{ fontSize: F.small, color: C.faint }}>
+            GitHub にも Forgejo にも繋がっていません
+          </span>
         ) : issues.length === 0 ? (
           <span style={{ fontSize: F.small, color: C.faint }}>open な Issue はありません</span>
         ) : (
           issues.slice(0, 2).map((i) => (
-            <div key={i.number} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div
+              key={`${i.source}:${i.number}`}
+              style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}
+            >
               <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>
                 #{i.number}
               </span>
               <span style={{ fontSize: F.small, color: C.ink2, ...ellipsis }}>{i.title}</span>
+              <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                {SOURCE_LABEL[i.source]}
+              </span>
             </div>
           ))
         )}

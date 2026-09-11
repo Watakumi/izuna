@@ -9,7 +9,7 @@
   "src/main/terminal.ts": 1,
   "src/renderer/src/components/Forge.tsx": 10,
   "src/renderer/src/components/ForgeSetup.tsx": 3,
-  "src/renderer/src/components/Inspector.tsx": 5,
+  "src/renderer/src/components/Inspector.tsx": 4,
   "src/renderer/src/components/Preview.tsx": 1,
   "src/renderer/src/components/TerminalPane.tsx": 1,
   "src/renderer/src/components/Worktrees.tsx": 1,

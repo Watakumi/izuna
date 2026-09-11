@@ -36,12 +36,14 @@ let remotes: RemoteRef[] = []
 let issues: Array<{ number: number; title: string }> | null = null
 let pushed = false
 let calls: string[] = []
+let forgeIssues: Array<{ number: number; title: string; url: string }> = []
 
 beforeEach(() => {
   remotes = []
   issues = null
   pushed = false
   calls = []
+  forgeIssues = []
   ;(window as unknown as { izuna: unknown }).izuna = {
     worktreeStatus: async () => ({
       changed: 2,
@@ -57,6 +59,7 @@ beforeEach(() => {
       calls.push(`isPushed:${remote}:${branch}`)
       return pushed
     },
+    forgeIssues: async () => forgeIssues,
     ghIssues: async () => {
       if (issues === null) throw new Error('gh: not logged in')
       return issues
@@ -74,7 +77,7 @@ describe('Inspector', () => {
     expect(screen.getByText('+10')).toBeTruthy()
     expect(screen.getByText('↑1')).toBeTruthy()
     expect(screen.getByText('↓3')).toBeTruthy()
-    expect(screen.getByText('GitHub に繋がっていません')).toBeTruthy()
+    expect(screen.getByText('GitHub にも Forgejo にも繋がっていません')).toBeTruthy()
     expect(screen.getByText('remote を用意する')).toBeTruthy()
     expect(screen.getByText('まだ届いていません')).toBeTruthy()
     expect(calls).toEqual([])
@@ -112,5 +115,16 @@ describe('Inspector', () => {
     expect(screen.queryByText('/teams/alpha')).toBeNull()
     fireEvent.click(screen.getByText('共有フォルダ'))
     expect(screen.getByText('/teams/alpha')).toBeTruthy()
+  })
+
+  it('GitHub が無くても、sandbox の Forgejo の Issue が出どころの札つきで出る', async () => {
+    remotes = [remote('forgejo', 'sandbox')]
+    forgeIssues = [
+      { number: 5, title: 'Forgejo の五', url: 'https://sandbox.example/o/r/issues/5' }
+    ]
+    render(<Inspector panel={panel({ cwd: '/p4' })} onOpenForge={() => {}} />)
+    await waitFor(() => expect(screen.getByText('Forgejo の五')).toBeTruthy())
+    expect(screen.getByText('Forgejo')).toBeTruthy()
+    expect(screen.queryByText(/繋がっていません/)).toBeNull()
   })
 })

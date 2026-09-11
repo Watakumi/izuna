@@ -108,3 +108,12 @@ Nimbalyst も同じことをしている（`ClaudeCodeSessionScanner.ts`。コ�
 Izuna で Izuna を作ると、**直したものを見るのに必ず一度アプリを落とす**
 （renderer は HMR、main は入れ替わらない。§7）。セッションが復元できないと
 落とすたびに全部消えるので、dogfood の前提が成立しない。
+
+### Issue は GitHub と Forgejo の両方から（2026-09-11）
+
+それまで `NewSession` と `Inspector` は Issue を `gh`（GitHub）からしか読んでいなかった。GitHub を使わず
+Forgejo だけで回している人には「最初の依頼」に何も出ない —— 対象は「自分の Forgejo を持つ人」なのに、
+入口が GitHub 前提だった（利用者の指摘）。`forgeIssues`（`GET /repos/{o}/{r}/issues?state=open&type=issues`）を
+足し、`shared/issues.ts` の `mergeIssues` が両方を出どころの札つきで並べる（GitHub を先に、番号の降順）。
+片方だけでも出す。両方読めなければ「GitHub にも Forgejo にも繋がっていません」。番号は出どころごとに
+独立なので、選択は `sameIssue`（出どころ + 番号）で比べる。依頼文は `issuePrompt` が出どころを言う。
