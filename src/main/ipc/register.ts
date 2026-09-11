@@ -1,4 +1,6 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
+import { existsSync } from 'node:fs'
+import { pluginPath } from '../../shared/plugin'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { adoptToken, applyFix, gatherFacts, provisionBot } from '../forge/setup'
@@ -85,6 +87,12 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   }
   // emit は h を閉じ込めるが、呼ばれるのは登録より後（constructor は購読を張るだけ）
   const h: SessionHub = new SessionHub(emit)
+  // Izuna が持つ資料の skill を、開いたリポジトリを触らずに渡す（§33。`shared/plugin.ts`）。
+  // 無ければ渡さない —— 配布物の組み方を変えて場所が消えたら、skill が出ないことで気づく
+  {
+    const path = pluginPath(app.getAppPath())
+    h.setPluginPath(existsSync(path) ? path : null)
+  }
   hub = h
   void h.open()
 

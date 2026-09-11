@@ -58,7 +58,7 @@ argument-hint: "[Issue 番号]"
 
 ### 4. 書く
 
-`doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/example-map/`、
+`../doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/example-map/`、
 ファイル名は `<番号>-YYYY-MM-DD.md`（この資料は Issue ごとなので名前に番号を含める）。
 
 ```markdown
@@ -112,7 +112,7 @@ ls docs/plans/example-map/
 
 | 何を知りたいか | 読む |
 | --- | --- |
-| 入力の集め方 | `doc-shared/inputs.md` |
-| 版の付け方（この資料は名前に番号を含める） | `doc-shared/versioning.md` |
-| 書いてはいけないこと、成功の定義 | `doc-shared/writing.md` |
-| なぜこう書いてあるか | `doc-shared/judgement.md` |
+| 入力の集め方 | `../doc-shared/inputs.md` |
+| 版の付け方（この資料は名前に番号を含める） | `../doc-shared/versioning.md` |
+| 書いてはいけないこと、成功の定義 | `../doc-shared/writing.md` |
+| なぜこう書いてあるか | `../doc-shared/judgement.md` |

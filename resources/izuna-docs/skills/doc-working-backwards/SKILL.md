@@ -57,7 +57,7 @@ argument-hint: "[何を出すか]"
 
 ### 4. 置く
 
-`doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/working-backwards/`。
+`../doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/working-backwards/`。
 
 ```markdown
 # <出すもの>（YYYY-MM-DD の下書き）
@@ -114,7 +114,7 @@ ls docs/plans/working-backwards/
 
 | 何を知りたいか | 読む |
 | --- | --- |
-| 入力の集め方 | `doc-shared/inputs.md` |
-| 版の付け方 | `doc-shared/versioning.md` |
-| 書いてはいけないこと（作り話の扱いを含む） | `doc-shared/writing.md` |
-| なぜこう書いてあるか | `doc-shared/judgement.md` |
+| 入力の集め方 | `../doc-shared/inputs.md` |
+| 版の付け方 | `../doc-shared/versioning.md` |
+| 書いてはいけないこと（作り話の扱いを含む） | `../doc-shared/writing.md` |
+| なぜこう書いてあるか | `../doc-shared/judgement.md` |
