@@ -265,3 +265,8 @@ paths:
   `--add-host=host.docker.internal:host-gateway` とは仕組みが違う。「届かない」と書いて Forgejo を
   0.0.0.0 に開かせていたが、測っていない前提だった。runner のために `HTTP_ADDR` を開く必要は無い
   （docs/ACTIONS.md § 壁 2）。
+- **`DISABLE_AUTOUPDATER=1` を rc に書いても、それより前に起動した claude は自分を更新する**（2026-09-11 に踏んだ。
+  2.1.266 → 268）。この設定は環境変数なので、**書いたあとに起動したプロセス**にしか効かない。2026-09-09 に
+  起動したままの Claude Code のセッション（`ps -o lstart`）が 09-11 の朝に更新し、verify の版の門が落ちた。
+  rc に書いたら、動いている claude を全部起動し直すこと。戻すのは今までどおり
+  `ln -sfn ~/.local/share/claude/versions/2.1.266 ~/.local/bin/claude`。

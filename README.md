@@ -1,6 +1,6 @@
 # Izuna
 
-Claude Code を Codex のようにデスクトップから使う macOS アプリ。
+Claude Code を自分の Forgejo と一緒にデスクトップから使う macOS アプリ。
 `claude` CLI をヘッドレスで駆動し、会話・思考・ツール実行・差分・承認を GUI で描く。
 **自分の Forgejo を持っている人**のための道具 —— 実行役の荒れる作業は自宅の Forgejo（sandbox）で
 PR にしてまとめて見て、GitHub（upstream）には仕上がったものだけを出す。

@@ -8,10 +8,14 @@ allowBuilds:
   node-pty: true
   # Windows 向けインストーラ。§8 で Windows は「やらない」ので走らせない。
   electron-winstaller: false
-# **公開から 24 時間経っていない版は入れない。** 乗っ取られたパッケージは
-# 公開直後に見つかって取り下げられることが多い（2026-09-08 に §27 で決めた）。
-# それまで除外リストだけがあって本体の値が無く、効いていなかった。
-minimumReleaseAge: 1440
+# **公開から 3 日経っていない版は入れない。** 乗っ取られたパッケージは
+# 公開直後に見つかって取り下げられることが多い（2026-09-08 に §27 で 24 時間にした。
+# それまで除外リストだけがあって本体の値が無く、効いていなかった）。
+# 2026-09-11 に 3 日に延ばした。Orca が 4320 で、Dependabot の cooldown 7 日とも整合する（docs/ORCA.md §3）。
+minimumReleaseAge: 4320
+# 除外は SDK の platform バイナリだけ。版が CLI と連動し、`pnpm run catchup` が CLI と同じ番号を
+# 入れるため、線を待てない。**解除の条件**: catchup が SDK を熟成の線で待つ運用に変えたとき（§27）。
+# 除外に「いつ消せるか」が無いと永久に残る（Orca の除外は公開日時と解除日時を書いている）。
 minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-agent-sdk-darwin-arm64@0.3.266'
   - '@anthropic-ai/claude-agent-sdk-darwin-x64@0.3.266'
