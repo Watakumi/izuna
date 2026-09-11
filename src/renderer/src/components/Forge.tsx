@@ -43,7 +43,8 @@ export function Forge({
   cwd,
   sessionId,
   onDone,
-  onPreview
+  onPreview,
+  onAsk
 }: {
   cwd: string
   /** レビューを流し込む先。会話が無ければ頼めない */
@@ -51,6 +52,8 @@ export function Forge({
   onDone: () => void
   /** PR の頁を窓の中で見る（§32）。省略なら釦を出さない */
   onPreview?: (url: string) => void
+  /** 差分を指して会話を始める（§34）。省略なら釦を出さない */
+  onAsk?: (path: string) => void
 }): React.JSX.Element {
   /**
    * **「まだ読んでいない」と「読んだ結果、無い」を区別する。**
@@ -316,7 +319,10 @@ export function Forge({
                 </div>
                 {openPull === p.number && sandbox.owner && sandbox.repo && (
                   <div style={{ marginTop: S.md }}>
-                    <PullDiff load={diffLoader(sandbox.owner, sandbox.repo, p.number)} />
+                    <PullDiff
+                      load={diffLoader(sandbox.owner, sandbox.repo, p.number)}
+                      onAsk={onAsk}
+                    />
                   </div>
                 )}
               </Card>

@@ -1,7 +1,8 @@
 import type { Panel } from '../useSessions'
 import { touchedFiles, type Touched } from '../../../shared/touched'
+import { mentionFile } from '../../../shared/mention'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
-import { Faint, Tag } from './ui'
+import { Button, Faint, Tag } from './ui'
 
 /**
  * このセッションでエージェントが触ったファイル。
@@ -12,7 +13,17 @@ import { Faint, Tag } from './ui'
  * 書いたものを上に置く。人がここを開くのは
  * 「差分を見る前に何が変わったかを知るため」だからである。
  */
-export function Files({ panel }: { panel: Panel }): React.JSX.Element {
+export function Files({
+  panel,
+  onOpen,
+  onAsk
+}: {
+  panel: Panel
+  /** 中で読む（§34）。省略なら押せない */
+  onOpen?: (path: string) => void
+  /** 入力欄に足す文。省略なら釦を出さない */
+  onAsk?: (mention: string) => void
+}): React.JSX.Element {
   const files = touchedFiles(panel.transcript, panel.transcript.tasks)
   const wrote = files.filter((f) => f.wrote > 0)
   const read = files.filter((f) => f.wrote === 0)
@@ -28,10 +39,22 @@ export function Files({ panel }: { panel: Panel }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.lg, padding: S.lg }}>
       {wrote.length > 0 && (
-        <Group label={`書き換えた ${wrote.length} 件`} files={wrote} cwd={panel.cwd} />
+        <Group
+          label={`書き換えた ${wrote.length} 件`}
+          files={wrote}
+          cwd={panel.cwd}
+          onOpen={onOpen}
+          onAsk={onAsk}
+        />
       )}
       {read.length > 0 && (
-        <Group label={`読んだだけ ${read.length} 件`} files={read} cwd={panel.cwd} />
+        <Group
+          label={`読んだだけ ${read.length} 件`}
+          files={read}
+          cwd={panel.cwd}
+          onOpen={onOpen}
+          onAsk={onAsk}
+        />
       )}
     </div>
   )
@@ -40,11 +63,15 @@ export function Files({ panel }: { panel: Panel }): React.JSX.Element {
 function Group({
   label,
   files,
-  cwd
+  cwd,
+  onOpen,
+  onAsk
 }: {
   label: string
   files: Touched[]
   cwd: string
+  onOpen?: (path: string) => void
+  onAsk?: (mention: string) => void
 }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
@@ -55,7 +82,7 @@ function Group({
             key={f.path}
             style={{
               display: 'flex',
-              alignItems: 'baseline',
+              alignItems: 'center',
               gap: S.md,
               padding: `${S.sm}px ${S.md}px`,
               border: `1px solid ${C.line}`,
@@ -64,10 +91,12 @@ function Group({
           >
             <span
               title={f.path}
+              onClick={onOpen ? () => onOpen(f.path) : undefined}
               style={{
                 font: `${F.small}px ${MONO}`,
                 color: C.ink2,
                 flexGrow: 1,
+                cursor: onOpen ? 'pointer' : undefined,
                 direction: 'rtl',
                 textAlign: 'left',
                 ...ellipsis
@@ -81,6 +110,12 @@ function Group({
             <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
               {f.wrote > 0 ? `${f.wrote} 回` : `${f.read} 回`}
             </span>
+            {/* 指して頼む（§34）。直すのはエージェント、承認は人 */}
+            {onAsk && (
+              <Button size="sm" onClick={() => onAsk(mentionFile(cwd, f.path))}>
+                話す
+              </Button>
+            )}
           </div>
         ))}
       </div>

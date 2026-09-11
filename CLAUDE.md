@@ -96,13 +96,17 @@ src/shared/links.ts         外に出してよいリンクと、中で見てよ�
 src/shared/prereq.ts        Claude Code の関所の判定（純粋関数）
 src/shared/app-protocol.ts  app:// の URL → 出力ディレクトリの中のパス（純粋関数）
 src/shared/plugin.ts        同梱プラグイン（資料の skill）の置き場（純粋関数。§33）
+src/shared/readfile.ts      中で読むファイルの関所と上限（純粋関数。§34）
+src/shared/mention.ts       対象を指して会話を始める文（純粋関数。§34）
+src/main/readfile.ts        読む口だけ。書く口は作らない（§34）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
 src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
-src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 盤面 / ループ / PR / ブランチ
+src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 盤面 / ループ / PR / ブランチ。
+                            会話の柱の下に、頁（§32）かファイル（§34）のどちらか一方
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）
 scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ

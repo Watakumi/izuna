@@ -132,6 +132,13 @@ export function installStub(): void {
     ipcVersion: async () => IPC_VERSION,
     setBadge: async () => {},
     forgeIssues: async () => [],
+    readFile: async (_cwd: string, path: string) => ({
+      text: path.endsWith('.md')
+        ? '# 見出し\n\n本文。`code` も出る。\n'
+        : 'export function greet(name: string): string {\n  return `hello ${name}`\n}\n',
+      truncated: false,
+      bytes: 64
+    }),
     // 実機の Ghostty の代わり。**ハーネス側から差し替えられる**ようにしておく
     ghosttySkin: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
     listSessions: async () => [

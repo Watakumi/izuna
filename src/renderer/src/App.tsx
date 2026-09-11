@@ -23,6 +23,8 @@ import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Preview } from './components/Preview'
 import { Docs } from './components/Docs'
+import { FileView } from './components/FileView'
+import { appendMention, mentionDiff } from '../../shared/mention'
 import { Inspector } from './components/Inspector'
 import { Worktrees } from './components/Worktrees'
 import { useSessions } from './useSessions'
@@ -42,6 +44,11 @@ function App(): React.JSX.Element {
   const [showTerm, setShowTerm] = useState(false)
   // 中で見ている頁（§32）。無ければ null
   const [preview, setPreview] = useState<string | null>(null)
+  /**
+   * 中で読んでいるファイル（§34）。枠（頁）と同じ場所に出すので、**どちらか一方だけ**。
+   * 両方を積むと会話が押し出される
+   */
+  const [file, setFile] = useState<string | null>(null)
   const [tab, setTab] = useState<'info' | 'files' | 'docs' | 'board' | 'loop' | 'pr' | 'branch'>(
     'info'
   )
@@ -115,6 +122,15 @@ function App(): React.JSX.Element {
       setImages((prev) => [...prev, ...ok])
       setRejected(bad)
     })
+  }
+
+  /**
+   * 指して頼む（§34）。入力欄に足すだけで**送らない** —— 送るのは人（規則 1）。
+   * 打ちかけの文は捨てない（`shared/mention.ts` の `appendMention`）
+   */
+  const mention = (text: string): void => {
+    if (!active) return
+    sessions.update(active.id, (p) => ({ ...p, prompt: appendMention(p.prompt, text) }))
   }
 
   const slash = active ? parseSlashInput(active.prompt) : null
@@ -318,7 +334,11 @@ function App(): React.JSX.Element {
           <div style={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
             <div style={{ flexGrow: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div style={S.body} ref={scroller}>
-                <Conversation items={active.transcript.items} draft={active.transcript.draft} />
+                <Conversation
+                  items={active.transcript.items}
+                  draft={active.transcript.draft}
+                  onAsk={(p) => mention(mentionDiff(active.cwd, p))}
+                />
                 <TaskPanel tasks={active.transcript.tasks} />
                 {active.pending && (
                   <div style={{ padding: '0 24px 24px' }}>
@@ -354,6 +374,26 @@ function App(): React.JSX.Element {
                   }}
                 >
                   <Preview url={preview} onClose={() => setPreview(null)} />
+                </div>
+              )}
+
+              {/* 頁と同じ場所。どちらか一方だけ出す（両方積むと会話が押し出される） */}
+              {file && !preview && (
+                <div
+                  style={{
+                    flexBasis: '58%',
+                    flexShrink: 0,
+                    minHeight: 240,
+                    borderTop: `1px solid ${C.line}`
+                  }}
+                >
+                  <FileView
+                    key={file}
+                    cwd={active.cwd}
+                    path={file}
+                    onAsk={mention}
+                    onClose={() => setFile(null)}
+                  />
                 </div>
               )}
 
@@ -503,7 +543,16 @@ function App(): React.JSX.Element {
               </div>
               <div style={{ flexGrow: 1, minHeight: 0 }}>
                 {tab === 'info' && <Inspector panel={active} onOpenForge={() => setTab('pr')} />}
-                {tab === 'files' && <Files panel={active} />}
+                {tab === 'files' && (
+                  <Files
+                    panel={active}
+                    onOpen={(p) => {
+                      setPreview(null)
+                      setFile(p)
+                    }}
+                    onAsk={mention}
+                  />
+                )}
                 {tab === 'board' && <Board panel={active} />}
                 {tab === 'loop' && <Loop panel={active} />}
                 {tab === 'docs' && (
@@ -514,7 +563,11 @@ function App(): React.JSX.Element {
                     cwd={active.cwd}
                     sessionId={active.id}
                     onDone={() => setTab('info')}
-                    onPreview={setPreview}
+                    onAsk={(p) => mention(mentionDiff(active.cwd, p))}
+                    onPreview={(url) => {
+                      setFile(null)
+                      setPreview(url)
+                    }}
                   />
                 )}
                 {tab === 'branch' && (

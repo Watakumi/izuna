@@ -13,7 +13,14 @@ const STATE: Record<Tool['state'], { label: string; color: string }> = {
   denied: { label: '拒否しました', color: C.amber }
 }
 
-export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
+export function ToolBlock({
+  block,
+  onAsk
+}: {
+  block: Tool
+  /** 差分を指して会話を始める（§34）。省略なら釦を出さない */
+  onAsk?: (path: string) => void
+}): React.JSX.Element {
   const diff = diffFromToolInput(block.name, block.input)
   // 差分のあるものは開いて出す。承認したものを畳んで隠さない
   const [open, setOpen] = useState(diff !== null)
@@ -67,7 +74,7 @@ export function ToolBlock({ block }: { block: Tool }): React.JSX.Element {
       {open && (
         <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           {diff ? (
-            <DiffView diff={diff} />
+            <DiffView diff={diff} onAsk={onAsk} />
           ) : (
             <pre
               style={{
