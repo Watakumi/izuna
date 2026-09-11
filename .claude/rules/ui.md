@@ -828,3 +828,7 @@ skill の description は「資料 — 枠組み。説明」の形で書く約�
 
 skill が `supportedCommands()` に出ることは 2026-09-11 に測った（Izuna の cwd で 56 件、うち `doc-` 4 件。
 description の末尾に「(project)」が付く）。他のリポジトリで使うには `.claude/skills/` に置く（FRAMEWORKS.md の手順）。
+
+**タブに出すのは説明の 1 文だけ**（同日に直した）。skill の description は後半に「〜したい、といった依頼で使う」という
+**起動の言葉**を持つ —— エージェントが skill を選ぶためのもので、人が読むものではない。`docSkills` は
+最初の 1 文だけを札に出す。skill の書き方そのものは docs/FRAMEWORKS.md の「書き方」にある。

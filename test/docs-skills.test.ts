@@ -39,4 +39,17 @@ describe('docSkills', () => {
     expect(docRequest(s, ' 12 ')).toBe('/doc-example-map 12')
     expect(docRequest(s, '')).toBe('/doc-example-map')
   })
+
+  it('**画面に出すのは 1 文だけ。** description の後半は skill を選ぶための言葉で、人には出さない', () => {
+    const [got] = docSkills([
+      {
+        name: 'doc-now-next-later',
+        description:
+          '資料 — Now / Next / Later のロードマップ。open な Issue を 3 列に並べる。期日は切らない。順番を整理したい、といった依頼で使う',
+        argumentHint: ''
+      }
+    ])
+    expect(got.title).toBe('Now / Next / Later のロードマップ')
+    expect(got.detail).toBe('open な Issue を 3 列に並べる')
+  })
 })

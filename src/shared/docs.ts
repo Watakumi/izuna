@@ -12,7 +12,7 @@ export interface DocSkill {
   name: string
   /** 枠組みの名前（「資料 — 」と末尾の「(project)」を落としたもの） */
   title: string
-  /** 何をするか */
+  /** 何をするか。1 文だけ（description の残りは、skill を選ぶための言葉で、人が読むものではない） */
   detail: string
   argumentHint: string
 }
@@ -28,10 +28,12 @@ export function docSkills(commands: SlashCommand[]): DocSkill[] {
         .replace(/^資料\s*[—-]\s*/, '')
         .trim()
       const [title, ...rest] = desc.split('。')
+      // description の後半は「〜したい、といった依頼で使う」という**起動の言葉**で、
+      // エージェントが skill を選ぶためにある。画面に出すのは何をするかの 1 文だけ
       return {
         name: c.name,
         title: title.trim() || c.name,
-        detail: rest.join('。').trim(),
+        detail: rest[0]?.trim() ?? '',
         argumentHint: c.argumentHint ?? ''
       }
     })
