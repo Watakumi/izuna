@@ -252,6 +252,12 @@ export function installStub(): void {
     slashCommands: async () =>
       [
         { name: 'verify', description: '型検査とテストを回す', argumentHint: '' },
+        {
+          name: 'doc-now-next-later',
+          description:
+            '資料 — Now / Next / Later のロードマップ。Issue と目標から 3 列に並べる (project)',
+          argumentHint: ''
+        },
         { name: 'code-review', description: '差分を見る', argumentHint: '[PR]' }
       ] as never,
     send: async () => undefined,

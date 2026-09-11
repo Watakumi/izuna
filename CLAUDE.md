@@ -10,6 +10,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 - リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （2026-09-09 に履歴を書き換えて作り直し、**public** にした・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）。**外に向く文書は英語**（README、SETUP、SECURITY）、内に向く文書は日本語（DECISIONS §20）
+- 資料（PdM との会話、PJ の今後）を作る skill と、他の枠組みの選択肢は [docs/FRAMEWORKS.md](docs/FRAMEWORKS.md)（2026-09-11。§33）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - Orca と何が違い、何を取り何を取らないかは [docs/ORCA.md](docs/ORCA.md)（2026-09-11。5 つの観点）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
@@ -99,7 +100,7 @@ src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで�
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
 src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
-src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 盤面 / ループ / PR / ブランチ
+src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 盤面 / ループ / PR / ブランチ
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）
 scripts/record-fixture.ts   実セッションの NDJSON を fixture として録る。実 API を呼ぶ

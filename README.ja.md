@@ -36,6 +36,7 @@ Claude Code（ログイン済み）、自分の Forgejo、`gh`。準備画面が
 - **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）
 - **他の道具との違い**: [docs/NIMBALYST.md](docs/NIMBALYST.md)、[docs/ORCA.md](docs/ORCA.md)
 - **CI（自宅 Forgejo Actions）**: [docs/ACTIONS.md](docs/ACTIONS.md)
+- **資料を作る skill**（Now / Next / Later、Impact Mapping、Example Mapping、Working Backwards）と他の枠組み: [docs/FRAMEWORKS.md](docs/FRAMEWORKS.md)
 
 ## 動かす
 
