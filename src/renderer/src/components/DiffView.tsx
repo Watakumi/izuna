@@ -1,8 +1,18 @@
 import type { FileDiff } from '../../../shared/diff'
 import { F, C, MONO, ellipsis } from '../theme'
+import { Button } from './ui'
 
 /** ツールが宣言した変更をそのまま出す。承認の材料 */
-export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }): React.JSX.Element {
+export function DiffView({
+  diff,
+  max = 400,
+  onAsk
+}: {
+  diff: FileDiff
+  max?: number
+  /** この差分を指して会話を始める（§34）。省略なら釦を出さない */
+  onAsk?: (path: string) => void
+}): React.JSX.Element {
   const shown = diff.lines.slice(0, max)
   const hidden = diff.lines.length - shown.length
 
@@ -32,6 +42,12 @@ export function DiffView({ diff, max = 400 }: { diff: FileDiff; max?: number }):
         <span style={{ font: `${F.small}px ${MONO}`, color: C.teal }}>+{diff.added}</span>
         <span style={{ font: `${F.small}px ${MONO}`, color: C.red }}>−{diff.removed}</span>
         {diff.whole && <span style={{ fontSize: F.micro, color: C.faint }}>新規／全文</span>}
+        {/* 差分を指して頼む（§34）。hunk ではなくファイル単位 —— どの版かは会話の文脈にある */}
+        {onAsk && (
+          <Button size="sm" onClick={() => onAsk(diff.path)}>
+            話す
+          </Button>
+        )}
       </div>
       <div style={{ overflowX: 'auto', maxHeight: 340, overflowY: 'auto' }}>
         {shown.map((l, i) => (

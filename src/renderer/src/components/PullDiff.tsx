@@ -11,7 +11,14 @@ import { Faint, Loading } from './ui'
  * 承認で使っている `DiffView` をそのまま使う。**Izuna は読むだけ**で、
  * accept / reject はしない（判断は PR のマージで人がする）。
  */
-export function PullDiff({ load }: { load: () => Promise<FileDiff[]> }): React.JSX.Element {
+export function PullDiff({
+  load,
+  onAsk
+}: {
+  load: () => Promise<FileDiff[]>
+  /** 差分を指して会話を始める（§34）。省略なら釦を出さない */
+  onAsk?: (path: string) => void
+}): React.JSX.Element {
   const [files, setFiles] = useState<FileDiff[] | null | undefined>(undefined)
   const [failure, setFailure] = useState<string | null>(null)
 
@@ -47,7 +54,7 @@ export function PullDiff({ load }: { load: () => Promise<FileDiff[]> }): React.J
         <span style={{ color: C.red }}>−{removed}</span>
       </span>
       {files.map((f) => (
-        <DiffView key={f.path} diff={f} max={200} />
+        <DiffView key={f.path} diff={f} max={200} onAsk={onAsk} />
       ))}
     </div>
   )

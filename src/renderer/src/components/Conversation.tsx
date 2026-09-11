@@ -43,7 +43,13 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
   )
 }
 
-function ItemView({ item }: { item: Item }): React.JSX.Element | null {
+function ItemView({
+  item,
+  onAsk
+}: {
+  item: Item
+  onAsk?: (path: string) => void
+}): React.JSX.Element | null {
   if (item.kind === 'user') {
     return (
       <div
@@ -99,7 +105,7 @@ function ItemView({ item }: { item: Item }): React.JSX.Element | null {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {item.blocks.map((b, i) => {
         if (b.kind === 'thinking') return <Thinking key={i} text={b.text} />
-        if (b.kind === 'tool') return <ToolBlock key={i} block={b} />
+        if (b.kind === 'tool') return <ToolBlock key={i} block={b} onAsk={onAsk} />
         return (
           // **確定した本文だけ markdown にする。** 途中の draft は下で素のまま出す
           <div key={i} style={{ color: C.ink2 }}>
@@ -143,10 +149,13 @@ function Dots(): React.JSX.Element {
 
 export function Conversation({
   items,
-  draft
+  draft,
+  onAsk
 }: {
   items: Item[]
   draft: Draft | null
+  /** 差分を指して会話を始める（§34）。省略なら釦を出さない */
+  onAsk?: (path: string) => void
 }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '24px 24px' }}>
@@ -157,6 +166,7 @@ export function Conversation({
         <ItemView
           key={item.kind === 'assistant' ? item.id : `${item.kind}-${item.id}`}
           item={item}
+          onAsk={onAsk}
         />
       ))}
       {draft && <DraftView draft={draft} />}

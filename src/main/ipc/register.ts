@@ -1,6 +1,7 @@
 import { app, ipcMain, type BrowserWindow } from 'electron'
 import { existsSync } from 'node:fs'
 import { pluginPath } from '../../shared/plugin'
+import { readRepoFile } from '../readfile'
 import { access } from 'node:fs/promises'
 import { teamPathFor } from '../team'
 import { adoptToken, applyFix, gatherFacts, provisionBot } from '../forge/setup'
@@ -152,6 +153,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     ghStatus: (cwd) => gh.ghStatus(cwd),
     ghIssues: (cwd) => gh.listIssues(cwd),
     forgeIssues: async (owner, repo) => listIssues(await forgeRoot(), owner, repo),
+    // 読む口だけ。書く口は作らない（§34）。根は作業ディレクトリ 1 つ
+    readFile: (cwd, path) => readRepoFile([cwd], path),
     ghPulls: (cwd) => gh.listPulls(cwd),
     ghCreatePull: (cwd, input) => gh.createPull(cwd, input),
 

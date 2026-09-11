@@ -110,6 +110,11 @@ export interface IzunaApi {
   /** 出口（GitHub · gh に任せる） */
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
+  /**
+   * 中で読むためにファイルを読む（§34）。**読むだけ。** 作業ディレクトリの外は読まない
+   * （`shared/readfile.ts`）。上限で切ったら `truncated`
+   */
+  readFile(cwd: string, path: string): Promise<{ text: string; truncated: boolean; bytes: number }>
   /** sandbox（Forgejo）の open な Issue。GitHub を使わない人の入口（shared/issues.ts） */
   forgeIssues(owner: string, repo: string): Promise<ForgejoIssue[]>
   ghPulls(cwd: string): Promise<GitHubPull[]>
@@ -264,6 +269,7 @@ export const CH = {
   ghStatus: 'izuna:gh:status',
   ghIssues: 'izuna:gh:issues',
   forgeIssues: 'izuna:forge:issues',
+  readFile: 'izuna:file:read',
   ghPulls: 'izuna:gh:pulls',
   ghCreatePull: 'izuna:gh:create-pull',
   remotes: 'izuna:git:remotes',
