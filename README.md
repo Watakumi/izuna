@@ -63,6 +63,7 @@ pnpm install          # also installs git hooks and rebuilds native modules for 
 pnpm dev              # renderer hot-reloads; the main process needs a restart (CLAUDE.md §7)
 pnpm verify           # typecheck, lint, tests with coverage floors. Nothing merges unless green
 pnpm run catchup      # after claude updates: align the SDK, re-record fixtures, bump the measured version
+pnpm run upstream     # what is newer upstream (claude, Forgejo) and what changed. Reads only
 pnpm shots            # render the real renderer against a synthetic window.izuna and screenshot it (§22)
 pnpm e2e              # launch the real Electron app and call every IPC endpoint (§30). Needs a build and Forgejo
 pnpm walk             # walk the seven v1 steps against real services (§31). Writes to GitHub and Forgejo

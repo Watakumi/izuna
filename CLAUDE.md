@@ -110,6 +110,7 @@ scripts/e2e.ts              本物の Electron を起動して口を叩く（§3
 scripts/walk.ts             v1 の 7 手を本物で通し、docs/v1-walk/ に撮る（§31）。実 API を呼ぶ
 scripts/probe-team.ts       実行役 2 つを並走させて hook と worktree を測る（§12）。実 API を呼ぶ
 scripts/catchup.mjs         claude が上がったら SDK・fixture・版を揃える（pnpm run catchup。§10）
+scripts/upstream.mjs        claude と Forgejo の最新と測った版の差、CHANGELOG を出す（pnpm run upstream。§10）。読むだけ
 
 test/docs.test.ts           **文書と実装のズレの門**（§24）
 test/surface.test.ts        renderer に出す面・HTML の注入口・execFile の呼び手の門（§26–27）

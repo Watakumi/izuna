@@ -111,6 +111,12 @@ pnpm dev                            # 足場の起動確認（UI はテンプレ
 越えていなければ、いつ越えるかを言って止まる。`--check` は言うだけで何も変えない。
 **定数だけ先に上げると、検査は緑になるが中身は測っていないことになる**ので、手でやらない。
 
+**最新を追う口は `pnpm run upstream`**（2026-09-11。道具の性質上、claude と Forgejo の最新は追うと決めた）。
+測った版と npm の最新（SDK 0.3.N ↔ CLI 2.1.N）を比べ、間の CHANGELOG（anthropics/claude-code）を出し、
+SDK が熟成の線を越える日を言う。Forgejo は Codeberg の releases から同じ系列の最新と全体の最新。
+週 1 回 CI でも回す（`.github/workflows/upstream.yml`）。**読むだけで何も変えない** —— 上げるのは人。
+読んで Izuna に効くものがあれば、docs/ORCA.md と同じ形で「取る／取らない」を書いてから入れる。
+
 ---
 
 ## 11. 検証の土台（2026-09-07 に入れた）
