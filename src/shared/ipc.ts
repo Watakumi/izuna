@@ -9,7 +9,13 @@ import type { Worktree } from './worktree'
 import type { ForgeFacts } from './forge'
 import type { ClaudeFacts } from './prereq'
 import type { FixId } from '../main/forge/setup'
-import type { ForgejoPull, ForgejoRepo, ForgejoRun, ForgejoToken } from '../main/forge/client'
+import type {
+  ForgejoPull,
+  ForgejoRepo,
+  ForgejoRun,
+  ForgejoToken,
+  ForgejoIssue
+} from '../main/forge/client'
 import type { GitHubIssue, GitHubPull } from '../main/forge/github'
 import type { RemoteRef } from './remote'
 import type { FoundRepo } from '../main/repos'
@@ -104,6 +110,8 @@ export interface IzunaApi {
   /** 出口（GitHub · gh に任せる） */
   ghStatus(cwd: string): Promise<{ ok: boolean; detail: string }>
   ghIssues(cwd: string): Promise<GitHubIssue[]>
+  /** sandbox（Forgejo）の open な Issue。GitHub を使わない人の入口（shared/issues.ts） */
+  forgeIssues(owner: string, repo: string): Promise<ForgejoIssue[]>
   ghPulls(cwd: string): Promise<GitHubPull[]>
   ghCreatePull(
     cwd: string,
@@ -255,6 +263,7 @@ export const CH = {
   forgeProvisionBot: 'izuna:forge:provision-bot',
   ghStatus: 'izuna:gh:status',
   ghIssues: 'izuna:gh:issues',
+  forgeIssues: 'izuna:forge:issues',
   ghPulls: 'izuna:gh:pulls',
   ghCreatePull: 'izuna:gh:create-pull',
   remotes: 'izuna:git:remotes',

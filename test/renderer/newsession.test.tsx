@@ -23,12 +23,16 @@ let sessions: SessionSummary[] = []
 let issues: Array<{ number: number; title: string; url: string }> | null = null
 let started: StartInput[] = []
 let failWith: string | null = null
+let remotes: Array<Record<string, unknown>> = []
+let forgeIssues: Array<{ number: number; title: string; url: string }> = []
 
 beforeEach(() => {
   sessions = []
   issues = null
   started = []
   failWith = null
+  remotes = []
+  forgeIssues = []
   ;(window as unknown as { izuna: unknown }).izuna = {
     findRepos: async () => [
       { path: '/repos/a', name: 'alpha', group: 'work' },
@@ -43,7 +47,9 @@ beforeEach(() => {
       if (issues === null) throw new Error('gh: not logged in')
       return issues
     },
-    pickDirectory: async () => '/picked'
+    pickDirectory: async () => '/picked',
+    remotes: async () => remotes,
+    forgeIssues: async () => forgeIssues
   }
 })
 
@@ -79,7 +85,9 @@ describe('NewSession', () => {
   it('GitHub に繋がらなくても直接書ける。空なら何も送らずに開く', async () => {
     render(<NewSession initialCwd="/repos/a" onCancel={() => {}} onStart={onStart} />)
     await waitFor(() =>
-      expect(screen.getByText('GitHub に繋がっていません。下に直接書けます')).toBeTruthy()
+      expect(
+        screen.getByText('GitHub にも Forgejo にも繋がっていません。下に直接書けます')
+      ).toBeTruthy()
     )
     expect(screen.getByText('そのまま開きます。依頼は会話で伝えられます')).toBeTruthy()
     fireEvent.change(screen.getByPlaceholderText('依頼を書く（後で会話でも伝えられます）'), {
@@ -134,7 +142,9 @@ describe('NewSession', () => {
       <NewSession initialCwd="/repos/a" onCancel={() => cancelled.push(1)} onStart={onStart} />
     )
     await waitFor(() =>
-      expect(screen.getByText('GitHub に繋がっていません。下に直接書けます')).toBeTruthy()
+      expect(
+        screen.getByText('GitHub にも Forgejo にも繋がっていません。下に直接書けます')
+      ).toBeTruthy()
     )
     fireEvent.click(screen.getByText('開く'))
     await waitFor(() => expect(screen.getByText('claude が見つかりません')).toBeTruthy())
@@ -151,5 +161,59 @@ describe('NewSession', () => {
     fireEvent.click(screen.getByText('開く'))
     await waitFor(() => expect(started.length).toBe(1))
     expect(started[0].cwd).toBe('/picked')
+  })
+
+  it('Forgejo だけの人にも Issue が出る。出どころの札が付き、依頼文は Forgejo と言う', async () => {
+    remotes = [
+      {
+        name: 'forgejo',
+        url: 'http://localhost:4649/izuna/a.git',
+        host: 'localhost',
+        owner: 'izuna',
+        repo: 'a',
+        role: 'sandbox'
+      }
+    ]
+    forgeIssues = [
+      { number: 2, title: 'Forgejo の二', url: 'http://localhost:4649/izuna/a/issues/2' }
+    ]
+    render(<NewSession initialCwd="/repos/a" onCancel={() => {}} onStart={onStart} />)
+    await waitFor(() => expect(screen.getByText('Forgejo の二')).toBeTruthy())
+    expect(screen.getByText('Forgejo')).toBeTruthy()
+    expect(screen.queryByText(/繋がっていません/)).toBeNull()
+    fireEvent.click(screen.getByText('Forgejo の二'))
+    fireEvent.click(screen.getByText('開く'))
+    await waitFor(() => expect(started.length).toBe(1))
+    expect(started[0].initialPrompt).toContain('Forgejo の Issue #2「Forgejo の二」')
+    expect(started[0].initialPrompt).toContain('http://localhost:4649/izuna/a/issues/2')
+  })
+
+  it('GitHub と Forgejo の両方があれば GitHub を先に並べ、同じ番号でも別物として選べる', async () => {
+    issues = [{ number: 2, title: 'GitHub の二', url: 'https://github.com/o/r/issues/2' }]
+    remotes = [
+      {
+        name: 'forgejo',
+        url: 'http://localhost:4649/izuna/a.git',
+        host: 'localhost',
+        owner: 'izuna',
+        repo: 'a',
+        role: 'sandbox'
+      }
+    ]
+    forgeIssues = [
+      { number: 2, title: 'Forgejo の二', url: 'http://localhost:4649/izuna/a/issues/2' }
+    ]
+    const { container } = render(
+      <NewSession initialCwd="/repos/a" onCancel={() => {}} onStart={onStart} />
+    )
+    await waitFor(() => expect(screen.getByText('Forgejo の二')).toBeTruthy())
+    const rows = [...container.querySelectorAll('[data-issue]')].map((e) =>
+      e.getAttribute('data-issue')
+    )
+    expect(rows).toEqual(['github:2', 'forgejo:2'])
+    fireEvent.click(screen.getByText('Forgejo の二'))
+    fireEvent.click(screen.getByText('開く'))
+    await waitFor(() => expect(started.length).toBe(1))
+    expect(started[0].initialPrompt).toContain('Forgejo の Issue #2')
   })
 })
