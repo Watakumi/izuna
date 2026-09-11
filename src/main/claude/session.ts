@@ -77,6 +77,17 @@ export interface SessionOptions {
   /** 既定のシステムプロンプトに足す申し送り */
   appendSystemPrompt?: string
   /**
+   * Izuna が持ち込むプラグイン。資料の skill（`.claude/skills/doc-*`）をここから渡す。
+   *
+   * **開いたリポジトリの `.claude/` を書き換えない。** skill を使わせるために利用者のリポジトリに
+   * ファイルを置くと、Izuna を消しても残る。SDK の `plugins` は `--plugin-dir` として渡るだけなので、
+   * 相手のリポジトリには何も足さない（2026-09-11 に測った。§33）。
+   *
+   * リポジトリ自身が持ち込む hook / MCP とは別で、**こちらは §26 の関所を通らない** ——
+   * Izuna 自身が同梱するものだから。
+   */
+  plugins?: Array<{ type: 'local'; path: string }>
+  /**
    * プロセス内の MCP サーバ。自律ループの `izuna_progress` を渡すのに使う。
    *
    * **別プロセスを建てない。** SDK が `createSdkMcpServer` を持っているので、
@@ -201,6 +212,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         settingSources: this.options.settingSources,
         ...(this.options.mcpServers ? { mcpServers: this.options.mcpServers } : {}),
         ...(this.options.hooks ? { hooks: this.options.hooks } : {}),
+        ...(this.options.plugins?.length ? { plugins: this.options.plugins } : {}),
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
         canUseTool: (toolName, input, opts) => this.#ask(toolName, input, opts)

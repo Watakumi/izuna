@@ -817,7 +817,7 @@ Izuna の口に無い（ボットのトークンに権限を持たせない。§
 ## 33. 資料タブ（2026-09-11）
 
 PdM との会話や PJ の今後を決める資料を、Izuna から作れるようにした（docs/FRAMEWORKS.md）。**製品の機能ではなく skill**
-（`.claude/skills/doc-now-next-later/SKILL.md` ほか 4 本）で、claude が実行し、出来た資料は `docs/plans/<資料名>/` に
+（`resources/izuna-docs/skills/doc-now-next-later/SKILL.md` ほか 4 本）で、claude が実行し、出来た資料は `docs/plans/<資料名>/` に
 日付つきの版として置かれ、いつもどおり承認と差分と PR を通る。
 
 右パネルの「資料」タブ（`components/Docs.tsx`、`shared/docs.ts`）は**入口を見えるようにするだけ**。`/` パレットでも
@@ -827,7 +827,15 @@ skill の description は「資料 — 枠組み。説明」の形で書く約�
 利用者の「コマンドで呼ぶのではなく別の呼び方があると UX が上がる」から（2026-09-11）。
 
 skill が `supportedCommands()` に出ることは 2026-09-11 に測った（Izuna の cwd で 56 件、うち `doc-` 4 件。
-description の末尾に「(project)」が付く）。他のリポジトリで使うには `.claude/skills/` に置く（FRAMEWORKS.md の手順）。
+description の末尾に「(project)」が付く）。
+
+**Izuna が同梱して持ち込む**（2026-09-11 に利用者が決めた）。`resources/izuna-docs/` をプラグインとして
+SDK の `plugins` に渡すので、**開いたリポジトリの `.claude/` を触らない** —— 置く形だと、Izuna を消しても
+相手にファイルが残る。場所は `shared/plugin.ts` が `app.getAppPath()` から出し（配布物では
+`app.asar.unpacked/` 側を指す。asar の中を渡すと claude が読めない）、`ipc/register.ts` が
+`SessionHub.setPluginPath()` に渡す。**駆動部は Electron を知らない**ので、hub では解かない（§4）。
+名前は `izuna-docs:doc-…` になり、`docSkills` は前置きを落として札に出し、送るのは全体の名前。
+`.claude/` を持たないよそのリポジトリで 4 本が出ることを実測した。
 
 **タブに出すのは説明の 1 文だけ**（同日に直した）。skill の description は後半に「〜したい、といった依頼で使う」という
 **起動の言葉**を持つ —— エージェントが skill を選ぶためのもので、人が読むものではない。`docSkills` は

@@ -32,7 +32,7 @@ description: 資料 — Impact Mapping。目標 → 誰 → どう変わる → 
 
 ### 1. 入力を集める
 
-`doc-shared/inputs.md` のとおり。要るのは 3 つ。
+`../doc-shared/inputs.md` のとおり。要るのは 3 つ。
 
 - 目標。`docs/GOAL.md`（無ければ `README.md`）から取る。**測れる形で 1 行**
 - `gh issue list --state open --limit 100 --json number,title,body`
@@ -58,7 +58,7 @@ description: 資料 — Impact Mapping。目標 → 誰 → どう変わる → 
 
 ### 4. 書く
 
-`doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/impact-map/`。
+`../doc-shared/versioning.md` のとおり版を足す。置き場は `docs/plans/impact-map/`。
 図と表の**両方**を置く —— 図は読み、表は検索する。
 
 ````markdown
@@ -116,7 +116,7 @@ ls docs/plans/impact-map/
 
 | 何を知りたいか | 読む |
 | --- | --- |
-| 入力の集め方、集まらないときの畳み方 | `doc-shared/inputs.md` |
-| 版の付け方 | `doc-shared/versioning.md` |
-| 書いてはいけないこと、成功の定義 | `doc-shared/writing.md` |
-| なぜこう書いてあるか | `doc-shared/judgement.md` |
+| 入力の集め方、集まらないときの畳み方 | `../doc-shared/inputs.md` |
+| 版の付け方 | `../doc-shared/versioning.md` |
+| 書いてはいけないこと、成功の定義 | `../doc-shared/writing.md` |
+| なぜこう書いてあるか | `../doc-shared/judgement.md` |

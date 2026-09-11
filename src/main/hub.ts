@@ -57,6 +57,17 @@ export class SessionHub {
   readonly #wakeups: Wakeups
   readonly #emit: (event: SessionEvent) => void
 
+  /**
+   * Izuna が同梱する資料の skill の場所（`shared/plugin.ts`）。**electron をここで読まない** ——
+   * 駆動部は Electron を知らない（§4）ので、場所は口の表（`ipc/register.ts`）から渡す。
+   * null なら渡さない。配布物の組み方を変えて場所が消えたとき、黙って落ちるのを防ぐ
+   */
+  #plugin: string | null = null
+
+  setPluginPath(path: string | null): void {
+    this.#plugin = path
+  }
+
   constructor(emit: (event: SessionEvent) => void, wakeups = new Wakeups()) {
     this.#emit = emit
     this.#wakeups = wakeups
@@ -113,7 +124,10 @@ export class SessionHub {
       // 自律ループが進捗を申告するための口。**ループでなくても渡してよい**
       // （呼ばれなければ何も起きない）
       mcpServers: { izuna: progressServer(team) },
-      hooks: this.#teammateHooks(id, team)
+      hooks: this.#teammateHooks(id, team),
+      // Izuna が持つ資料の skill（§33）。相手のリポジトリには何も置かない。
+      // 無ければ渡さない（配布物の組み方を変えたときに、黙って落ちるのを防ぐ）
+      ...(this.#plugin ? { plugins: [{ type: 'local' as const, path: this.#plugin }] } : {})
     })
 
     session.on('message', (message) => this.#emit({ kind: 'message', id, message }))

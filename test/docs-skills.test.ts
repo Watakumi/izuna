@@ -52,4 +52,18 @@ describe('docSkills', () => {
     expect(got.title).toBe('Now / Next / Later のロードマップ')
     expect(got.detail).toBe('open な Issue を 3 列に並べる')
   })
+
+  it('プラグインとして持ち込むと `izuna-docs:doc-…` で来る。札は後ろだけ、送るのは全体の名前', () => {
+    const [got] = docSkills([
+      {
+        name: 'izuna-docs:doc-now-next-later',
+        description: '(izuna-docs) 資料 — Now / Next / Later のロードマップ。3 列に並べる',
+        argumentHint: ''
+      }
+    ])
+    expect(got.name).toBe('izuna-docs:doc-now-next-later')
+    expect(got.title).toBe('Now / Next / Later のロードマップ')
+    expect(got.detail).toBe('3 列に並べる')
+    expect(docRequest(got, '')).toBe('/izuna-docs:doc-now-next-later')
+  })
 })

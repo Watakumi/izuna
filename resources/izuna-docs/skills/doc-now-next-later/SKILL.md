@@ -32,7 +32,7 @@ open な Issue を 3 列に振り、**順番を話す土台**を作る。期日�
 
 ### 1. 入力を集める
 
-`doc-shared/inputs.md` の表のとおりに集める。要るのは 4 つ。
+`../doc-shared/inputs.md` の表のとおりに集める。要るのは 4 つ。
 
 - `docs/GOAL.md`（無ければ `README.md`）の目標と「やらないこと」
 - `gh issue list --state open --limit 100 --json number,title,labels,body`
@@ -66,7 +66,7 @@ Issue を 1 件 1 枚として、次の条件で振る。**条件は観測でき
 
 ### 4. 書く
 
-`doc-shared/versioning.md` のとおりに版を足す。置き場は `docs/plans/now-next-later/`。
+`../doc-shared/versioning.md` のとおりに版を足す。置き場は `docs/plans/now-next-later/`。
 
 ```markdown
 # Now / Next / Later（YYYY-MM-DD）
@@ -91,7 +91,7 @@ Issue を 1 件 1 枚として、次の条件で振る。**条件は観測でき
 - **当てはまらなくなる条件**:
   - Issue を使っていないリポジトリ（貼ってもらうしかない。手順としては通る）
   - 期日が契約で決まっている仕事（この資料は期日を扱わない。別の形が要る）
-  - Issue が数百件ある場合（絞り方を測っていない。`doc-shared/judgement.md` の不採用を見ること）
+  - Issue が数百件ある場合（絞り方を測っていない。`../doc-shared/judgement.md` の不採用を見ること）
 - **確かめた環境**: Izuna のリポジトリ、`gh` ログイン済み、2026-09-11
 
 ## 実行後に確かめる
@@ -106,7 +106,7 @@ git log --oneline -1 -- docs/plans/now-next-later/
 - 入力にあった Issue が、3 列と「置かない」を合わせて**ちょうど 1 度ずつ**出る（数が合う）
 - 根拠の無い行が 0 行
 - 「決めてほしいこと」の件数が、本文で未決としたものの数と一致する
-- 表が 20 行を超えていない（超えたら畳む。`doc-shared/writing.md`）
+- 表が 20 行を超えていない（超えたら畳む。`../doc-shared/writing.md`）
 
 ## 受け取る側が得るもの
 
@@ -120,8 +120,8 @@ git log --oneline -1 -- docs/plans/now-next-later/
 
 | 何を知りたいか | 読む |
 | --- | --- |
-| 入力の集め方、集まらないときの畳み方 | `doc-shared/inputs.md` |
-| 版の付け方、置き場、確かめ方 | `doc-shared/versioning.md` |
-| 書いてはいけないこと、成功の定義、長さ | `doc-shared/writing.md` |
-| なぜこう書いてあるか（判定の記録） | `doc-shared/judgement.md` |
+| 入力の集め方、集まらないときの畳み方 | `../doc-shared/inputs.md` |
+| 版の付け方、置き場、確かめ方 | `../doc-shared/versioning.md` |
+| 書いてはいけないこと、成功の定義、長さ | `../doc-shared/writing.md` |
+| なぜこう書いてあるか（判定の記録） | `../doc-shared/judgement.md` |
 | 実例 | `docs/plans/now-next-later/`（Izuna の場合。2026-09-11 が最初の版） |

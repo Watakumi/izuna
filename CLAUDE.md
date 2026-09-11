@@ -10,7 +10,8 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 - リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （2026-09-09 に履歴を書き換えて作り直し、**public** にした・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
 - 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）。**外に向く文書は英語**（README、SETUP、SECURITY）、内に向く文書は日本語（DECISIONS §20）
-- 資料（PdM との会話、PJ の今後）を作る skill と、他の枠組みの選択肢は [docs/FRAMEWORKS.md](docs/FRAMEWORKS.md)（2026-09-11。§33）
+- 資料（PdM との会話、PJ の今後）を作る skill と、他の枠組みの選択肢は [docs/FRAMEWORKS.md](docs/FRAMEWORKS.md)（2026-09-11。§33）。
+  実体は `resources/izuna-docs/`（Izuna が同梱して持ち込む。開いたリポジトリは触らない）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - Orca と何が違い、何を取り何を取らないかは [docs/ORCA.md](docs/ORCA.md)（2026-09-11。5 つの観点）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
@@ -94,6 +95,7 @@ src/shared/hooks.ts         リポジトリが持ち込む hook / MCP の検出�
 src/shared/links.ts         外に出してよいリンクと、中で見てよい頁の判定（純粋関数）
 src/shared/prereq.ts        Claude Code の関所の判定（純粋関数）
 src/shared/app-protocol.ts  app:// の URL → 出力ディレクトリの中のパス（純粋関数）
+src/shared/plugin.ts        同梱プラグイン（資料の skill）の置き場（純粋関数。§33）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む

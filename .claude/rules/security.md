@@ -117,6 +117,7 @@ Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこ
 | Electron の設定の診断 | `security.yml` | Doyensec の electronegativity。指摘は artifact。門にはしない（誤検出が多い） |
 | Claude Code の関所 | `shared/prereq.ts`、`main/claude/status.ts` | 入っているか・ログイン済みかを準備画面の先頭に出す。`claude auth status --json` の email / orgId は画面に持ち出さない |
 | 貼られたトークン | `main/forge/setup.ts` の `adoptToken` | 通るか・ボット `izuna` のものかを聞いてから保管する。人の鍵は断る |
+| 同梱プラグインは関所を通らない | `shared/plugin.ts`、`main/hub.ts`（2026-09-11） | 資料の skill は Izuna 自身が持ち込むので、リポジトリが持ち込む hook / MCP を数える関所（上）は通さない。**中身は版管理に入っていて、利用者が読める**（`resources/izuna-docs/`）。相手のリポジトリには何も置かないので、Izuna を消せば消える |
 | 文面の鍵を伏せる | `shared/redact.ts`（2026-09-11） | `run()` の stderr と Forgejo の応答の本文に混ざった鍵の形（`sk-ant-`、`gh*_`、Authorization の値、JWT、PEM、URL の userinfo、`.env` の行）だけを伏せる。§27「stderr を捨てない」の逆側の穴。Orca の redactor の 1 段だけ（docs/ORCA.md §3） |
 | 管理者のパスワードで作る | `main/forge/setup.ts` の `provisionBot`（2026-09-10） | CLI が無い構成でボットとトークンを API から作る。パスワードは 2 回の要求に載せて捨てる —— 保管せず、ログにも失敗の文面にも出さない。「人の鍵を置かない」は置かないことで、その場で使うことは Homebrew の形で CLI が管理者として動くのと同じ権限 |
 | renderer を `app://` で配る | `shared/app-protocol.ts`、`main/protocol.ts` | `file://` で読むと file スキームに余計な権限が付く。独自スキーム（standard・secure）で出力ディレクトリの中だけを配り、fuse の `GrantFileProtocolExtraPrivileges` を切った。`isOwnPage` は `app:` を host で比べる |

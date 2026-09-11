@@ -1,6 +1,7 @@
 # 資料の枠組み
 
-PdM との会話や PJ の今後を決めるための資料を、Izuna から作る。**製品の機能ではなく skill**（`.claude/skills/doc-*`）で、
+PdM との会話や PJ の今後を決めるための資料を、Izuna から作る。**製品の機能ではなく skill** で、
+**Izuna 自身が同梱して持ち込む**（`resources/izuna-docs/`。2026-09-11 に利用者が決めた）。
 右パネルの「資料」タブか `/` パレットから頼む。出来た資料は `docs/plans/` に置かれ、sandbox の PR になり、
 Forgejo の頁で PdM が読んでコメントできる（二段の流れに資料が乗る）。
 
@@ -14,7 +15,7 @@ Forgejo の頁で PdM が読んでコメントできる（二段の流れに資�
 2. **集めた記述を 3 つに仕分ける。** 一般ルール（裏づけ・矛盾なし・環境非依存の 3 条件を満たす）／
    範囲つきの例（環境非依存の根拠が無い。範囲を明記して残す）／不採用（書かない。判断だけ記録する）
 3. **ファイルに配置する。** 本体は 7 項目（起動条件・手順の形式・実行できる指示・適用範囲・検証の方法・
-   出力の約束・読み込みの順序）で 120〜130 行、裏づけは参照ファイル（`.claude/skills/doc-shared/`）へ
+   出力の約束・読み込みの順序）で 120〜130 行、裏づけは参照ファイル（`resources/izuna-docs/skills/doc-shared/`）へ
 
 第 1 段階で測ったもの（`doc-shared/judgement.md` に全部ある）:
 
@@ -47,7 +48,7 @@ Forgejo の頁で PdM が読んでコメントできる（二段の流れに資�
 Issue は `gh` で読み、通らなければ人に貼ってもらう（Forgejo の Issue は Izuna の画面には出るが、skill からは
 ボットのトークンに触れないので、貼ってもらう。Issue #52）。
 
-4 本が共有する参照ファイルは `.claude/skills/doc-shared/` にある。
+4 本が共有する参照ファイルは `resources/izuna-docs/skills/doc-shared/` にある。
 
 | ファイル | 中身 |
 | --- | --- |
@@ -79,16 +80,15 @@ Issue は `gh` で読み、通らなければ人に貼ってもらう（Forgejo 
 
 ## 他のリポジトリで使うには
 
-skill は project スコープで読まれる（claude-cli.md §13）。使うリポジトリの `.claude/skills/` にこの 4 つを置く
-（コピーかシンボリックリンク）。準備画面から入れる釦はまだ無い。
+**何もしなくてよい。** Izuna が同梱するプラグイン（`resources/izuna-docs/`）として持ち込むので、
+どのリポジトリを開いても「資料」タブに出る。**相手のリポジトリには何も置かない** ——
+`.claude/skills/` に入れる形だと、Izuna を消しても相手にファイルが残る。
 
-**`doc-shared` も一緒に入れる。** 4 本の本体がそこを参照している。
+仕組みは SDK の `plugins`（`--plugin-dir` として渡る。`shared/plugin.ts` が場所を出し、
+`ipc/register.ts` が `SessionHub` に渡す）。skill の名前は `izuna-docs:doc-…` の形になり、
+`/` パレットにもその名前で出る。2026-09-11 に、`.claude/` を持たないよそのリポジトリで
+4 本が出ることを測った。
 
-```bash
-mkdir -p .claude/skills
-for s in doc-shared doc-now-next-later doc-impact-map doc-example-map doc-working-backwards; do
-  ln -s ~/work/personal/izuna/.claude/skills/$s .claude/skills/$s
-done
-```
-
+Izuna を使わずに同じ skill を使いたいなら、`resources/izuna-docs` を `--plugin-dir` に渡すか、
+`skills/` の中身をそのリポジトリの `.claude/skills/` にコピーする。
 `doc-shared` は `SKILL.md` を持たないので skill としては走査されない（2026-09-11 に確かめた）。
