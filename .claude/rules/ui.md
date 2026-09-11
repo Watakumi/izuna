@@ -811,6 +811,12 @@ Izuna の口に無い（ボットのトークンに権限を持たせない。§
 
 ### やっていない
 
+- **同じ div に `overflowY: auto` と `display: flex; flexDirection: column` を付けない**（2026-09-11）。
+  高さが足りないとき、子は**縮む**（`flex-shrink` の既定は 1）。縮んでもスクロールは働かず、
+  縮んだ子の中身は箱の外に描かれて窓の下に出る。**スクロールする箱と、並べる箱を分ける** ——
+  外に `overflow`、中に `flex`。`pnpm e2e` が「sandbox 1 件」を押せずに見つけた
+  （行は y=897、窓は 828。`document.elementFromPoint` が null を返した）。
+  `maxHeight` を付けただけでは直らない。実際、前の版で `maxHeight: 84vh` を足したあとも残っていた
 - 開発中のアプリ（dev サーバ）を映す。行き先を `localhost` の任意の port に広げる判断が要る
 - 頁の中の遷移を枠の URL 欄に反映する（main → renderer の口が要る）
 
