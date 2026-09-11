@@ -220,14 +220,18 @@ describe('自己紹介は 1 文', () => {
   const description = (
     JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { description: string }
   ).description
+  /** 日本語の 1 文。英語と同じことを言う。変えるときは両方を変える（DECISIONS §20） */
+  const JA = 'Claude Code を自分の Forgejo と一緒にデスクトップから使う macOS アプリ'
 
-  it('package.json と README と CLAUDE.md が同じ文', () => {
+  it('英語: package.json の description と README の 1 行目が同じ文', () => {
     expect(description.length).toBeGreaterThan(10)
     expect(firstLineAfterTitle(readFileSync(join(ROOT, 'README.md'), 'utf8'))).toBe(
-      `${description}。`
+      `${description}.`
     )
-    expect(firstLineAfterTitle(readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8'))).toBe(
-      `${description}。`
-    )
+  })
+
+  it('日本語: README.ja.md と CLAUDE.md の 1 行目が同じ文', () => {
+    expect(firstLineAfterTitle(readFileSync(join(ROOT, 'README.ja.md'), 'utf8'))).toBe(`${JA}。`)
+    expect(firstLineAfterTitle(readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8'))).toBe(`${JA}。`)
   })
 })

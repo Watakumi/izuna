@@ -5,7 +5,7 @@
   "engines": {
     "node": ">=24"
   },
-  "description": "Claude Code を自分の Forgejo と一緒にデスクトップから使う macOS アプリ",
+  "description": "A macOS app for using Claude Code together with your own Forgejo",
   "main": "./out/main/index.js",
   "author": "watakumi",
   "scripts": {

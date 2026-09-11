@@ -1,48 +1,85 @@
 # Izuna
 
-Claude Code を自分の Forgejo と一緒にデスクトップから使う macOS アプリ。
-`claude` CLI をヘッドレスで駆動し、会話・思考・ツール実行・差分・承認を GUI で描く。
-**自分の Forgejo を持っている人**のための道具 —— 実行役の荒れる作業は自宅の Forgejo（sandbox）で
-PR にしてまとめて見て、GitHub（upstream）には仕上がったものだけを出す。
+A macOS app for using Claude Code together with your own Forgejo.
+It drives the `claude` CLI headlessly and draws the conversation, thinking, tool calls, diffs, and
+approvals in a GUI. It is a tool for **people who run their own Forgejo**: the executors' messy work
+becomes pull requests on your Forgejo (the sandbox), you review them there, and only finished work
+goes to GitHub (the upstream). Approvals stay with a person.
 
-- **入れる**: `brew tap watakumi/izuna && brew trust watakumi/izuna && brew install --cask izuna`（Apple Silicon。tap は [Watakumi/homebrew-izuna](https://github.com/Watakumi/homebrew-izuna)）。または [Releases](https://github.com/Watakumi/izuna/releases) の DMG。署名していないので開き方は [docs/SETUP.md](docs/SETUP.md)
-- **使うには**: [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo、gh。準備画面が判定する）
-- **何を作るか**: [docs/GOAL.md](docs/GOAL.md)（三本の柱と、やらないこと）
-- **どう作るか**: [CLAUDE.md](CLAUDE.md)（入口）と `.claude/rules/*.md`（触るファイルに応じて読まれる）、[docs/DECISIONS.md](docs/DECISIONS.md)（背景）
-- **Nimbalyst との違い**: [docs/NIMBALYST.md](docs/NIMBALYST.md)。**Orca との違い**: [docs/ORCA.md](docs/ORCA.md)
+日本語の README は [README.ja.md](README.ja.md)。
 
-![会話・承認・右パネル（作り物の window.izuna で描いた画面。2026-09-10 に撮った）](docs/readme/conversation.png)
+## The name
 
-画面は `pnpm shots` の作り物の記録で描いたもの（実 API は呼んでいない）。撮った日を書いてあるのは、
-画面が変わっても画像だけ古いまま残るのを見つけるため（docs/ORCA.md §7 の 10）。
-- **CI（自宅 Forgejo Actions）**: [docs/ACTIONS.md](docs/ACTIONS.md)
+*Izuna* (飯綱, also 管狐 *kuda-gitsune*) is a fox-like spirit animal in Japanese folklore. An
+*izuna-tsukai* commands these spirits to work for them; the practice appears in medieval Shugendō
+and in ninjutsu lore. The app is named after that image: you command Claude's agents, and they work
+for you. The icon is the spirit's face, drawn as one shape.
 
-## 動かす
+## Install
 
 ```bash
-brew install gitleaks # pre-push の門（秘密の走査）。無いと push できない
-pnpm install          # git hook と Electron 向けの再ビルドもここで
-pnpm dev              # 開発。renderer は HMR、main は再起動が要る（CLAUDE.md §7）
-pnpm verify           # 型検査・lint・検査（カバレッジの線つき）。緑でなければ進まない
-pnpm run catchup      # claude が上がったら、SDK と fixture と版を揃える（熟成の線を越えるまでは止まる）
-pnpm shots            # 実 renderer を作り物の window.izuna で撮る（§22）
-pnpm e2e              # 本物の Electron を起動して口を叩く（§30）。要 build と Forgejo
-pnpm walk             # v1 の 7 手を本物で通して撮る（§31）。実 API を呼び、GitHub と Forgejo に書く
-pnpm build:mac        # DMG を作る。署名と公証は証明書があるときだけ（.github/workflows/release.yml）
+brew tap watakumi/izuna
+brew trust watakumi/izuna      # Homebrew 6 refuses third-party taps until you trust them
+brew install --cask izuna
 ```
 
-`claude` は PATH かログインシェルから探す。無ければ `~/.izuna/config.json` の
-`claudePath` で指す（CLAUDE.md §15）。
+Apple Silicon only. The tap is [Watakumi/homebrew-izuna](https://github.com/Watakumi/homebrew-izuna).
+You can also download the DMG from [Releases](https://github.com/Watakumi/izuna/releases).
+The app is **not signed** with an Apple certificate, so macOS blocks it the first time; how to open
+it is in [docs/SETUP.md](docs/SETUP.md).
 
-## 守っていること
+## What you need
 
-- 承認は人が持つ。ブレインにも自動にも渡さない
-- 保存層を持たない。`~/.claude/projects/` が真実
-- 信頼していないリポジトリの hook と `.mcp.json` は、開く前に止める
-- Forgejo の鍵はボットのもの。平文で LAN を通る経路には送らない
-- 本文は木で描き、HTML を作らない（例外は mermaid の 1 か所だけ）
+- **Claude Code** (`claude`), logged in. Izuna runs your local `claude` as a child process and never
+  uses an API key.
+- **Your own Forgejo.** Homebrew on this Mac, Docker, or another machine over https.
+- **`gh`**, logged in, for GitHub issues and pull requests.
 
-- 埋めた頁（PR のプレビュー）は Forgejo と GitHub だけ。node を切って sandbox
-- 秘密は gitleaks が pre-push と CI で走査し、依存は osv-scanner が見る
+The setup screen in the app checks all of this and tells you what is missing. Details:
+[docs/SETUP.md](docs/SETUP.md).
 
-詳しくは `.claude/rules/security.md`（§26）と `supply-chain.md`（§27）。
+![Conversation, approval bar, and the right panel. Rendered from a synthetic window.izuna by the
+screenshot harness, captured 2026-09-10.](docs/readme/conversation.png)
+
+The screenshot is drawn from recorded fixtures (`pnpm shots`), not from a live API call. The capture
+date is written down so that an outdated picture is noticed when the screen changes.
+
+## Documents
+
+Documents that face outward (this README, `docs/SETUP.md`, `SECURITY.md`) are in English. Documents
+that face inward, for the author and for the agents that work on this repository, are in Japanese:
+
+- **What it builds**: [docs/GOAL.md](docs/GOAL.md) (the three pillars, and what it will not do)
+- **How it is built**: [CLAUDE.md](CLAUDE.md) (the entry point), `.claude/rules/*.md` (loaded by the
+  files you touch), [docs/DECISIONS.md](docs/DECISIONS.md) (background)
+- **Compared with other tools**: [docs/NIMBALYST.md](docs/NIMBALYST.md), [docs/ORCA.md](docs/ORCA.md)
+- **CI on your own Forgejo Actions**: [docs/ACTIONS.md](docs/ACTIONS.md)
+
+## Developing
+
+```bash
+brew install gitleaks # pre-push gate (secret scan). Without it you cannot push
+pnpm install          # also installs git hooks and rebuilds native modules for Electron
+pnpm dev              # renderer hot-reloads; the main process needs a restart (CLAUDE.md §7)
+pnpm verify           # typecheck, lint, tests with coverage floors. Nothing merges unless green
+pnpm run catchup      # after claude updates: align the SDK, re-record fixtures, bump the measured version
+pnpm shots            # render the real renderer against a synthetic window.izuna and screenshot it (§22)
+pnpm e2e              # launch the real Electron app and call every IPC endpoint (§30). Needs a build and Forgejo
+pnpm walk             # walk the seven v1 steps against real services (§31). Writes to GitHub and Forgejo
+pnpm build:mac        # build the DMG. Signing and notarization only run when a certificate is present
+```
+
+`claude` is found on PATH or through your login shell. If it lives elsewhere, set `claudePath` in
+`~/.izuna/config.json` (CLAUDE.md §15).
+
+## What it keeps
+
+- Approvals stay with a person. Never delegated to the orchestrating agent or automated.
+- No storage layer. `~/.claude/projects/` is the source of truth.
+- Hooks and `.mcp.json` in an untrusted repository are stopped before the repository is opened.
+- The Forgejo token belongs to a bot, never to a person, and never travels over plain http on a LAN.
+- Markdown is rendered as a tree, never as HTML (the single exception is mermaid).
+- Embedded pages (PR previews) are limited to Forgejo and GitHub, with Node disabled and a sandbox.
+- gitleaks scans for secrets before every push and in CI; osv-scanner watches dependencies.
+
+Details: `.claude/rules/security.md` (§26) and `supply-chain.md` (§27).

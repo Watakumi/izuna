@@ -9,7 +9,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 
 - リポジトリ: `~/work/personal/izuna` / upstream は https://github.com/Watakumi/izuna （2026-09-09 に履歴を書き換えて作り直し、**public** にした・§20）
 - **何を作るかは [docs/GOAL.md](docs/GOAL.md)。** このファイルは*どう*作るかを書く
-- 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）
+- 他人の環境で動かすには [docs/SETUP.md](docs/SETUP.md)（Claude Code、Forgejo の 3 つの置き方、gh）。**外に向く文書は英語**（README、SETUP、SECURITY）、内に向く文書は日本語（DECISIONS §20）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - Orca と何が違い、何を取り何を取らないかは [docs/ORCA.md](docs/ORCA.md)（2026-09-11。5 つの観点）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）

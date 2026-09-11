@@ -200,3 +200,18 @@ private の範囲には収まっているが、**履歴に入っている**も�
 **fixture を先回りして加工しない。** §11 で「加工した時点で観測ではなく解釈になる」
 と決めてある。private のうちは触らないほうが原則に合う。
 公開するなら、そのとき fixture を**録り直す**（削るのではなく）。
+
+### 文書の言語（2026-09-11）
+
+**外に向く文書は英語、内に向く文書は日本語。** 利用者の指摘（「README などは OSS のように英語準拠で
+書いた方がいい」）で決めた。
+
+| 向き | 何 | 言語 |
+| --- | --- | --- |
+| 外（配る相手が読む） | `README.md`、`docs/SETUP.md`、`SECURITY.md`、GitHub の description、Cask の desc、tap の README | 英語 |
+| 内（作者とエージェントが読む） | `CLAUDE.md`、`.claude/rules/*.md`、`docs/GOAL.md`、`docs/DECISIONS.md`、`docs/NIMBALYST.md`、`docs/ORCA.md`、`docs/ACTIONS.md` | 日本語 |
+| 画面 | renderer の文言 | 日本語（ui.md §17.4。訳すと画面と文書が食い違う） |
+
+`README.ja.md` は英語の README の日本語版で、英語が正。自己紹介の 1 文は英語（package.json、README、
+GitHub）と日本語（README.ja.md、CLAUDE.md）の 2 本を `test/docs.test.ts` が見る。docs/ACTIONS.md は
+runner を回す人向けだが、判断の記録が多いので内側に置く。
