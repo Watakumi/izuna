@@ -1,0 +1,17 @@
+{
+  "src/main/claude/locate.ts": 1,
+  "src/main/claude/status.ts": 1,
+  "src/main/forge/client.ts": 1,
+  "src/main/forge/setup.ts": 2,
+  "src/main/git/remote.ts": 5,
+  "src/main/git/worktree.ts": 1,
+  "src/main/ipc/register.ts": 6,
+  "src/main/terminal.ts": 1,
+  "src/renderer/src/components/Forge.tsx": 10,
+  "src/renderer/src/components/ForgeSetup.tsx": 3,
+  "src/renderer/src/components/Inspector.tsx": 5,
+  "src/renderer/src/components/Preview.tsx": 1,
+  "src/renderer/src/components/TerminalPane.tsx": 1,
+  "src/renderer/src/components/Worktrees.tsx": 1,
+  "src/renderer/src/useSessions.ts": 2
+}

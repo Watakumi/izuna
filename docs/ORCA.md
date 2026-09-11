@@ -202,7 +202,7 @@ Releases を変更履歴にする（Orca「The changelog is the real feature lis
 | 12 | **「hook を利用者の設定ファイルに書かない」判断を文書に** | `hook-settings.ts` が `~/.claude/settings.json` を書く | team.md §12 に 3 行。15 分 |
 | 13 | **GitHub の看板** | topics 18 個、英語 1 行 | description を英語 1 行にし、topics（claude-code / forgejo / electron / worktrees）を付ける。30 分 |
 | 14 | **Homebrew tap** | `stablyai/homebrew-orca` | `watakumi/homebrew-izuna` に Cask 1 ファイル。`caveats` に `xattr` の手順。1〜2 時間 |
-| 15 | **Releases を変更履歴にする** | 「The changelog is the real feature list」 | 版を上げるとき `.claude/rules` の差分を Release note に写す。1 版 10 分 |
+| 15 | **Releases を変更履歴にする**（保留） | 「The changelog is the real feature list」 | 版を上げるとき `.claude/rules` の差分を Release note に写す。**保留（2026-09-11、利用者）**: 規則の差分をどう書くか、規則の記述方針そのものが決まっていない。決めてから |
 
 小さいもの: `shouldOpenOutside` に `file:` を理由つきで明示的に拒む行、Forgejo の `/pulls` は
 head では絞れず同時に叩くと小さな Forgejo が落ちる（Orca #8807）ので一覧を 1 本に coalesce する

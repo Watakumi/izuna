@@ -1,6 +1,6 @@
 # Izuna
 
-Claude Code を Codex のようにデスクトップから使う macOS アプリ。
+Claude Code を自分の Forgejo と一緒にデスクトップから使う macOS アプリ。
 
 このファイルは**入口**である。会話履歴を持たないエージェントがこれを読み、
 触るファイルに応じて `.claude/rules/*.md` が足される（`paths` で決まる。2026-09-08 に分けた。

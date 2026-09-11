@@ -248,6 +248,14 @@ Izuna は library ではない。**外部の利用者という逃げ道が無い
 上流の CLI が変わったとき壊れる範囲を読み違える。
 **置き場所そのものが、誰が依存しているかの申告**になっている。
 
+### 2026-09-11 に足した門（docs/ORCA.md §7）
+
+| 門 | どこ | 落とすもの |
+| --- | --- | --- |
+| 自己紹介は 1 文 | `test/docs.test.ts` | package.json の description、README と CLAUDE.md の 1 行目が違う（3 通りに割れていた） |
+| 画面の言葉 | `test/copy.test.ts` | ui.md §17.4 で消した語が renderer と shared の文言に戻る。註は見ない |
+| 握りつぶした例外 | `test/ratchet.test.ts` | `.catch(() => null)` と空の `catch {}` が `test/fixtures/swallowed-catches.json` より増える。減ったら baseline を下げるまで落ちる（Orca の ratchet と同じ形） |
+
 ### 直せなかった種類のズレ
 
 この門はパスと識別子しか見ない。**説明文の正しさは見ていない。**

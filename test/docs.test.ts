@@ -203,3 +203,31 @@ describe('「やらない」と書いたことが守られている', () => {
     expect(leaks.map(([f]) => f)).toEqual([])
   })
 })
+
+/**
+ * **自己紹介は 1 文で、置き場が 3 つある。** package.json の description、README の 1 行目、
+ * CLAUDE.md の 1 行目。Orca は 8 通りに割れていた（docs/ORCA.md §6）。Izuna も 3 通りに割れて
+ * いたので（2026-09-11）、置き場を数えて同じであることを門にする。GitHub の description は
+ * ここでは見られない（人が `gh repo edit` で揃える）。
+ */
+describe('自己紹介は 1 文', () => {
+  const firstLineAfterTitle = (text: string): string =>
+    text
+      .split('\n')
+      .slice(1)
+      .map((l) => l.trim())
+      .find((l) => l !== '') ?? ''
+  const description = (
+    JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { description: string }
+  ).description
+
+  it('package.json と README と CLAUDE.md が同じ文', () => {
+    expect(description.length).toBeGreaterThan(10)
+    expect(firstLineAfterTitle(readFileSync(join(ROOT, 'README.md'), 'utf8'))).toBe(
+      `${description}。`
+    )
+    expect(firstLineAfterTitle(readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8'))).toBe(
+      `${description}。`
+    )
+  })
+})

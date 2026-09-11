@@ -298,6 +298,13 @@ Bash / Write / Edit が全部 host（人）に `agentID` 付きで来た（walk 
 セッションでは、人は 1 回ごとの操作を見ない。`default` / `acceptEdits` なら実行役の分も人に来る。
 ブレインという別のエージェントに実行役の要求を許可させる形（Nimbalyst の `agent-verified`）は作らない。
 
+### hook を利用者の設定ファイルに書かない（2026-09-11）
+
+Orca は Claude の状態を取るために `~/.claude/settings.json` に 9 種の managed hook を書き込み、
+curl で自分の HTTP サーバに POST させる（docs/ORCA.md §2）。Izuna は SDK の `hooks` オプションで
+`SubagentStart` / `SubagentStop` を受けるので（上）、**利用者の全体設定を触らない**。
+利用者が Izuna を消しても、`~/.claude/` に Izuna の痕が残らない。
+
 ### まだ測っていないこと
 
 - `TeammateIdle` / `TaskCreated` / `TaskCompleted` が鳴る条件（`teammateMode` で
