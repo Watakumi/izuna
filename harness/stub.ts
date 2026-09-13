@@ -141,6 +141,12 @@ export function installStub(): void {
     }),
     // 実機の Ghostty の代わり。**ハーネス側から差し替えられる**ようにしておく
     ghosttySkin: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
+    // 配色の選び方（§37）。実機の一覧の代わりに、名前だけ何件か出す
+    themes: async () => ({
+      current: { kind: 'ghostty' as const },
+      available: ['notion', 'catppuccin-mocha', 'nord']
+    }),
+    setTheme: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
     listSessions: async () => [
       {
         id: 'aaaaaaaa-1111-2222-3333-444444444444',

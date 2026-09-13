@@ -300,10 +300,10 @@ describe('自律ループ（§23）', () => {
   it('人が止めれば、次の反復に入らずに止まる', async () => {
     const { hub, id, s, events } = await started()
     hub.startLoop(id, 5)
-    await tick()
+    await until(() => s.sent.length >= 1)
     hub.stopLoop(id)
     s.emit('message', { type: 'result' })
-    await tick()
+    await until(() => events.some((e) => e.kind === 'loopStopped'))
     expect(events.find((e) => e.kind === 'loopStopped')).toMatchObject({
       stop: { reason: 'stopped' }
     })
@@ -313,7 +313,7 @@ describe('自律ループ（§23）', () => {
   it('claude が壊れたら反復は失敗として数える（黙って待ち続けない）', async () => {
     const { hub, id, s } = await started()
     hub.startLoop(id, 5)
-    await tick()
+    await until(() => s.sent.length >= 1)
     s.emit('error', new Error('落ちた'))
     await tick()
     // 失敗しても即座には諦めない（shared/loop.ts）。ここでは待ち続けていないことだけ見る

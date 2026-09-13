@@ -105,12 +105,19 @@ function Group({
       {label !== '' && <span style={{ fontSize: F.small, color: C.dim2 }}>{label}</span>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
         {files.map((f) => (
+          /**
+           * **2 行にする**（2026-09-14、利用者の「話すが縦になってる」）。
+           *
+           * パス・名札・回数・釦を 1 行に並べていたので、360px では釦の字が
+           * 縦に折れ、名札が長いとパスが `bui…` まで潰れた。**幅の奪い合いを
+           * やめる** —— パスは 1 行を丸ごと使い、その下に名札・回数・釦を置く。
+           */
           <div
             key={f.path}
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: S.md,
+              flexDirection: 'column',
+              gap: S.xs,
               padding: `${S.sm}px ${S.md}px`,
               border: `1px solid ${C.line}`,
               borderRadius: R.md
@@ -122,25 +129,37 @@ function Group({
               style={{
                 font: `${F.small}px ${MONO}`,
                 color: C.ink2,
-                flexGrow: 1,
                 cursor: onOpen ? 'pointer' : undefined,
                 ...ellipsis
               }}
             >
               {displayPath(cwd, f.path)}
             </span>
-            {f.by.map((who) => (
-              <Tag key={who}>{who}</Tag>
-            ))}
-            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
-              {f.wrote > 0 ? `${f.wrote} 回` : `${f.read} 回`}
-            </span>
-            {/* 指して頼む（§34）。直すのはエージェント、承認は人 */}
-            {onAsk && (
-              <Button size="sm" onClick={() => onAsk(mentionFile(cwd, f.path))}>
-                話す
-              </Button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: S.sm, minWidth: 0 }}>
+              {f.by.map((who) => (
+                <Tag key={who}>{who}</Tag>
+              ))}
+              <span
+                style={{
+                  font: `${F.micro}px ${MONO}`,
+                  color: C.faint,
+                  flexGrow: 1,
+                  ...ellipsis
+                }}
+              >
+                {f.wrote > 0 ? `${f.wrote} 回` : `${f.read} 回`}
+              </span>
+              {/* 指して頼む（§34）。直すのはエージェント、承認は人。**釦は縮めない** */}
+              {onAsk && (
+                <Button
+                  size="sm"
+                  onClick={() => onAsk(mentionFile(cwd, f.path))}
+                  style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                >
+                  話す
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>

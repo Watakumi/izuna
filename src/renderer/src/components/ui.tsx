@@ -468,3 +468,72 @@ export function Section({
     </div>
   )
 }
+
+/**
+ * 色を選ぶ（§37）。**生の `<input type="color">` を画面に書かない**（§17）——
+ * 素で書くと、塗り忘れがそのまま既定（＝明るい）になる。
+ */
+export function ColorInput({
+  value,
+  onChange
+}: {
+  value: string
+  onChange: (hex: string) => void
+}): React.JSX.Element {
+  return (
+    <input
+      type="color"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="色"
+      style={{
+        width: 32,
+        height: 22,
+        padding: 0,
+        border: `1px solid ${C.line2}`,
+        borderRadius: R.sm,
+        background: 'transparent',
+        cursor: 'pointer'
+      }}
+    />
+  )
+}
+
+/** 一覧から 1 つ選ぶ。同じ理由で `ui.tsx` に置く（§17） */
+export function Select({
+  value,
+  onChange,
+  options,
+  placeholder,
+  label
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+  /** 何も選んでいないときの行 */
+  placeholder: string
+  label: string
+}): React.JSX.Element {
+  return (
+    <select
+      value={value}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        padding: `${S.sm}px ${S.md}px`,
+        borderRadius: R.md,
+        border: `1px solid ${C.line2}`,
+        background: C.raised,
+        color: C.ink2,
+        fontSize: F.small
+      }}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
+  )
+}

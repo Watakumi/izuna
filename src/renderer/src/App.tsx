@@ -17,6 +17,7 @@ import { PermissionBar } from './components/PermissionBar'
 import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
+import { Settings } from './components/Settings'
 import { Forge } from './components/Forge'
 import { Board } from './components/Board'
 import { Files } from './components/Files'
@@ -47,6 +48,7 @@ function App(): React.JSX.Element {
   const { active } = sessions
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
   // 中で見ている頁（§32）。無ければ null
   const [preview, setPreview] = useState<string | null>(null)
@@ -71,7 +73,7 @@ function App(): React.JSX.Element {
   }, [sessions.waiting.length])
 
   /**
-   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 準備 の順に、いちばん上のものだけ。
+   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 設定 → 準備 の順に、いちばん上のものだけ。
    * 入力欄の中でも効く —— 覆いを閉じたいときに入力欄から出る手間を要らなくする（docs/ORCA.md §7 の 9）
    */
   useEffect(() => {
@@ -79,13 +81,14 @@ function App(): React.JSX.Element {
       if (e.key !== 'Escape' || e.isComposing) return
       if (preview) setPreview(null)
       else if (showNew) setShowNew(false)
+      else if (showSettings) setShowSettings(false)
       else if (showSetup) setShowSetup(false)
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [preview, showNew, showSetup])
+  }, [preview, showNew, showSetup, showSettings])
 
   useEffect(() => {
     void window.izuna
@@ -327,6 +330,13 @@ function App(): React.JSX.Element {
             </button>
             <button
               style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+              onClick={() => setShowSettings(true)}
+              title="配色を選ぶ"
+            >
+              設定
+            </button>
+            <button
+              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
               onClick={() => setShowSetup(true)}
               title="Forgejo と設定の準備"
             >
@@ -346,13 +356,22 @@ function App(): React.JSX.Element {
             <button style={S.btn} onClick={() => setShowNew(true)}>
               新しいセッションを開く
             </button>
-            <button
-              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
-              onClick={() => setShowSetup(true)}
-              title="Forgejo と設定の準備"
-            >
-              準備
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+                onClick={() => setShowSetup(true)}
+                title="Forgejo と設定の準備"
+              >
+                準備
+              </button>
+              <button
+                style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+                onClick={() => setShowSettings(true)}
+                title="配色を選ぶ"
+              >
+                設定
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
@@ -626,6 +645,8 @@ function App(): React.JSX.Element {
           </div>
         )}
       </div>
+
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
 
       {showSetup && (
         <ForgeSetup

@@ -178,6 +178,17 @@ async function main(): Promise<void> {
   check((await page.getByText('止める').count()) === 0, '回っていないのに止める釦が出ている')
   await page.locator('[data-tab="status"]').click()
 
+  // 設定（§37）。配色の選び方と、自分で決めるときの 5 つの色
+  await page.getByText('設定', { exact: true }).first().click()
+  await page.waitForTimeout(300)
+  check((await page.getByText('Ghostty に合わせる').count()) > 0, '配色の選び方が出ていない')
+  await page.getByText('自分で決める').click()
+  await page.waitForTimeout(300)
+  check((await page.getByText('人の判断待ち').count()) > 0, '自分で決める色が出ていない')
+  await shoot(page, '10-settings')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(200)
+
   // ターミナル
   await page.getByText('ターミナル', { exact: true }).first().click()
   await page.waitForSelector('canvas', { timeout: 20_000 })

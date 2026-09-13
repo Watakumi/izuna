@@ -431,3 +431,88 @@ export function terminalTheme(c: GhosttyColors): Record<string, string> {
   ANSI.forEach((name, i) => put(name, c.palette[i]))
   return out
 }
+
+/**
+ * **どの配色で描くか**（§37。2026-09-14 に利用者が求めた）。
+ *
+ * 元は「Ghostty に合わせる」の 1 通りしか無かった。選べるようにしたが、
+ * **作る仕組みは増やしていない** —— どの選び方も最後は `GhosttyColors` を 1 つ作って
+ * `skinFrom()` に渡すだけである。段の作り方・コントラストの床（§21）は共通のまま。
+ */
+export type ThemeChoice =
+  | { kind: 'ghostty' }
+  | { kind: 'builtin' }
+  | { kind: 'named'; name: string }
+  | { kind: 'custom'; colors: CustomColors }
+
+/**
+ * 自分で決めるときに触る色。**5 つだけ。**
+ *
+ * `skinFrom()` が読む番号だけを開ける（地・文字・palette 11 / 14 / 9）。
+ * 16 色を全部開けても、Izuna が使うのはこの 5 つで、残りは触っても何も変わらない ——
+ * **変わらないものを触らせない。**
+ */
+export interface CustomColors {
+  /** 地 */
+  background: string
+  /** 文字 */
+  foreground: string
+  /** 人の判断待ち（palette 11） */
+  amber: string
+  /** 済んだこと（palette 14） */
+  teal: string
+  /** 壊れたこと・消すこと（palette 9） */
+  red: string
+}
+
+export const DEFAULT_CUSTOM: CustomColors = {
+  background: '#14161b',
+  foreground: '#cfcecc',
+  amber: '#e8a33d',
+  teal: '#4fc4b0',
+  red: '#e06c75'
+}
+
+export const CUSTOM_LABEL: Record<keyof CustomColors, string> = {
+  background: '地',
+  foreground: '文字',
+  amber: '人の判断待ち',
+  teal: '済んだこと',
+  red: '壊れたこと'
+}
+
+/** 5 つの色を、`skinFrom()` が読む番号に置く */
+export function colorsOf(c: CustomColors): GhosttyColors {
+  const out = empty()
+  out.background = normalizeHex(c.background)
+  out.foreground = normalizeHex(c.foreground)
+  out.palette[11] = normalizeHex(c.amber)
+  out.palette[14] = normalizeHex(c.teal)
+  out.palette[9] = normalizeHex(c.red)
+  return out
+}
+
+/**
+ * 設定から読む。**形が違えば null**（呼び手が既定に倒す）。
+ * 色が 1 つでも読めなければカスタムごと落とす —— 半端に当てると、
+ * 直したつもりの色が効かない理由が分からなくなる（§17 の「黙って既定に倒さない」）。
+ */
+export function parseThemeChoice(raw: unknown): ThemeChoice | null {
+  if (raw === null || typeof raw !== 'object') return null
+  const o = raw as { kind?: unknown; name?: unknown; colors?: unknown }
+  if (o.kind === 'ghostty' || o.kind === 'builtin') return { kind: o.kind }
+  if (o.kind === 'named')
+    return typeof o.name === 'string' && o.name.trim() !== ''
+      ? { kind: 'named', name: o.name.trim() }
+      : null
+  if (o.kind !== 'custom' || o.colors === null || typeof o.colors !== 'object') return null
+  const src = o.colors as Record<string, unknown>
+  const colors = {} as CustomColors
+  for (const key of Object.keys(DEFAULT_CUSTOM) as Array<keyof CustomColors>) {
+    const v = src[key]
+    const hex = typeof v === 'string' ? normalizeHex(v) : null
+    if (!hex) return null
+    colors[key] = hex
+  }
+  return { kind: 'custom', colors }
+}
