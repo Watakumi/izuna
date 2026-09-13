@@ -121,7 +121,8 @@ const JA_DOCS = [
     .filter((f) => f.endsWith('.md'))
     .map((f) => join(ROOT, 'docs', f)),
   join(ROOT, 'CLAUDE.md'),
-  join(ROOT, 'README.ja.md')
+  join(ROOT, 'README.ja.md'),
+  join(ROOT, '.claude', 'feedback.md')
 ]
 
 describe('表記のゆれ', () => {
