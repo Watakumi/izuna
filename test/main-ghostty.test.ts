@@ -2,7 +2,8 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { loadGhosttySkin } from '../src/main/ghostty'
+import { listThemes, loadGhosttySkin, loadSkin } from '../src/main/ghostty'
+import { DEFAULT_CUSTOM } from '../src/shared/ghostty'
 
 /**
  * Ghostty の設定を探して読む（CLAUDE.md §21）。
@@ -121,5 +122,91 @@ describe('書体と端末', () => {
       red: '#c4554d',
       brightWhite: '#ffffff'
     })
+  })
+})
+
+/**
+ * 配色の選び方（§37）。**どの選び方も最後は `skinFrom` に渡すだけ**なので、
+ * 見るのは「どこから色を取ったか」と「書体は借りたままか」の 2 つ。
+ */
+describe('配色を選ぶ', () => {
+  const CONFIG = [
+    'theme = mine',
+    'font-family = "JetBrainsMono Nerd Font"',
+    'font-family = "BIZ UDGothic"',
+    'font-size = 14'
+  ].join('\n')
+
+  beforeEach(() => {
+    write('ghostty/config', CONFIG)
+    write('ghostty/themes/mine', 'background = #101014\nforeground = #d0d0d0\n')
+    write('ghostty/themes/other', 'background = #201010\nforeground = #e0d0d0\n')
+  })
+
+  it('Ghostty に合わせるのは、いままでと同じ', async () => {
+    const g = await loadSkin({ kind: 'ghostty' })
+    expect(g?.source).toEqual({ config: 'mine', theme: 'mine' })
+    expect(g?.skin.bg).toBe('#101014')
+  })
+
+  it('Izuna の既定は null（既定の色で出る）', async () => {
+    expect(await loadSkin({ kind: 'builtin' })).toBeNull()
+  })
+
+  it('**テーマを選んでも書体は Ghostty から借りる**（配色だけ差し替える）', async () => {
+    const g = await loadSkin({ kind: 'named', name: 'other' })
+    expect(g?.skin.bg).toBe('#201010')
+    expect(g?.source.theme).toBe('other')
+    expect(g?.mono[0]).toContain('JetBrainsMono')
+    expect(g?.terminalFontSize).toBe(14)
+  })
+
+  it('無いテーマを選んだら既定に倒す（半端に当てない）', async () => {
+    expect(await loadSkin({ kind: 'named', name: 'いない' })).toBeNull()
+  })
+
+  it('自分で決めた 5 色から段を作る', async () => {
+    const g = await loadSkin({
+      kind: 'custom',
+      colors: {
+        background: '#000010',
+        foreground: '#eeeeee',
+        amber: '#ffcc00',
+        teal: '#00cc99',
+        red: '#ff4444'
+      }
+    })
+    expect(g?.skin.bg).toBe('#000010')
+    expect(g?.skin.amber).toBe('#ffcc00')
+    // 読む字は床を割らない（§21 の規律がそのまま効く）
+    expect(g?.skin.ink).toBe('#eeeeee')
+  })
+
+  it('Ghostty が無くても、自分で決めた配色は出る', async () => {
+    rmSync(join(home, 'ghostty'), { recursive: true, force: true })
+    const g = await loadSkin({ kind: 'custom', colors: DEFAULT_CUSTOM })
+    expect(g?.skin.bg).toBe(DEFAULT_CUSTOM.background)
+    expect(g?.mono).toEqual([])
+  })
+})
+
+describe('テーマの一覧', () => {
+  it('利用者の置き場のものが名前順で出る。隠しファイルは出さない', async () => {
+    write('ghostty/themes/zulu', 'background = #111111\n')
+    write('ghostty/themes/alpha', 'background = #111111\n')
+    write('ghostty/themes/.DS_Store', '')
+    const names = await listThemes()
+    // **同梱の置き場は実機のものなので、数を固定しない**（入っている機械と
+    // 入っていない機械の両方で通る形にする）
+    expect(names).toContain('alpha')
+    expect(names).toContain('zulu')
+    expect(names).not.toContain('.DS_Store')
+    expect(names.indexOf('alpha')).toBeLessThan(names.indexOf('zulu'))
+  })
+
+  it('置き場が無くても落ちない（Ghostty を入れていないだけ）', async () => {
+    const names = await listThemes()
+    expect(Array.isArray(names)).toBe(true)
+    expect(names).not.toContain('alpha')
   })
 })
