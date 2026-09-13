@@ -1,11 +1,12 @@
+import { useState } from 'react'
 import type { Panel } from '../useSessions'
 import { touchedFiles, type Touched } from '../../../shared/touched'
-import { mentionFile } from '../../../shared/mention'
+import { displayPath, mentionFile } from '../../../shared/mention'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
 import { Button, Faint, Tag } from './ui'
 
 /**
- * このセッションでエージェントが触ったファイル。
+ * このセッションで**自分のリポジトリの何が変わったか**（§35 の「変更」）。
  *
  * **保存層は無い。** 会話そのものから導く（`shared/touched.ts`）ので、
  * 会話と食い違うことがない。
@@ -25,8 +26,17 @@ export function Files({
   onAsk?: (mention: string) => void
 }): React.JSX.Element {
   const files = touchedFiles(panel.transcript, panel.transcript.tasks)
-  const wrote = files.filter((f) => f.wrote > 0)
-  const read = files.filter((f) => f.wrote === 0)
+  /**
+   * **worktree の中だけを出す**（§35。利用者の判断）。エージェントは作業ディレクトリの外も触る
+   * （scratchpad、`~/.claude/`、一時ディレクトリ）が、それは「自分のリポジトリの何が変わったか」の
+   * 答えではない。外のものは**数だけ出して畳む** —— 黙って消すと、触ったことに気づけない
+   */
+  const base = panel.cwd.endsWith('/') ? panel.cwd : `${panel.cwd}/`
+  const inside = files.filter((f) => f.path.startsWith(base))
+  const outside = files.filter((f) => !f.path.startsWith(base))
+  const wrote = inside.filter((f) => f.wrote > 0)
+  const read = inside.filter((f) => f.wrote === 0)
+  const [showOutside, setShowOutside] = useState(false)
 
   if (files.length === 0) {
     return (
@@ -56,6 +66,23 @@ export function Files({
           onAsk={onAsk}
         />
       )}
+
+      {inside.length === 0 && <Faint>このリポジトリの中は、まだ読み書きしていません</Faint>}
+
+      {/* 外は数だけ。**捨てはしない** —— 開けば見える（§35） */}
+      {outside.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
+          <span
+            onClick={() => setShowOutside((v) => !v)}
+            style={{ fontSize: F.small, color: C.dim2, cursor: 'pointer' }}
+          >
+            {showOutside ? '▾' : '▸'} このリポジトリの外 {outside.length} 件
+          </span>
+          {showOutside && (
+            <Group label="" files={outside} cwd={panel.cwd} onOpen={onOpen} onAsk={onAsk} />
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -75,7 +102,7 @@ function Group({
 }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
-      <span style={{ fontSize: F.small, color: C.dim2 }}>{label}</span>
+      {label !== '' && <span style={{ fontSize: F.small, color: C.dim2 }}>{label}</span>}
       <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>
         {files.map((f) => (
           <div
@@ -97,12 +124,10 @@ function Group({
                 color: C.ink2,
                 flexGrow: 1,
                 cursor: onOpen ? 'pointer' : undefined,
-                direction: 'rtl',
-                textAlign: 'left',
                 ...ellipsis
               }}
             >
-              {relative(f.path, cwd)}
+              {displayPath(cwd, f.path)}
             </span>
             {f.by.map((who) => (
               <Tag key={who}>{who}</Tag>
@@ -121,13 +146,4 @@ function Group({
       </div>
     </div>
   )
-}
-
-/**
- * 作業ディレクトリからの相対で出す。**外のファイルは絶対のまま** ——
- * `../../` を並べると、どこを触ったのか読み取れなくなる。
- */
-function relative(path: string, cwd: string): string {
-  const base = cwd.endsWith('/') ? cwd : cwd + '/'
-  return path.startsWith(base) ? path.slice(base.length) : path
 }

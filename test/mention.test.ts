@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendMention,
+  displayPath,
   mentionDiff,
   mentionFile,
   mentionLines,
@@ -40,5 +41,28 @@ describe('appendMention', () => {
 
   it('末尾の空白は畳む（行が増え続けない）', () => {
     expect(appendMention('直して\n\n', 'a.ts について: ')).toBe('直して\na.ts について: ')
+  })
+})
+
+describe('displayPath', () => {
+  it('短ければそのまま。作業ディレクトリからの相対', () => {
+    expect(displayPath('/w', '/w/src/a.ts')).toBe('src/a.ts')
+  })
+
+  it('**`/` の区切りで切る。** 末尾に余計な `/` を出さない', () => {
+    const got = displayPath(
+      '/w',
+      '/tmp/claude-501/-Users-x-work/4fe775/scratchpad/orca-security.md'
+    )
+    expect(got.startsWith('…/')).toBe(true)
+    expect(got.endsWith('/')).toBe(false)
+    expect(got).toContain('orca-security.md')
+    expect(got.length).toBeLessThanOrEqual(39)
+  })
+
+  it('名前だけで上限を超えるときは、末尾を切って出す', () => {
+    const got = displayPath('/w', `/w/${'a'.repeat(60)}.ts`)
+    expect(got.startsWith('…')).toBe(true)
+    expect(got.length).toBeLessThanOrEqual(38)
   })
 })
