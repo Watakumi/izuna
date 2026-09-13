@@ -75,9 +75,9 @@ function copyOf(file: string): Array<{ line: number; text: string }> {
   return out
 }
 
-describe('画面の言葉（§17.4）', () => {
-  const all = FILES.flatMap((f) => copyOf(f).map((c) => ({ file: relative(ROOT, f), ...c })))
+const all = FILES.flatMap((f) => copyOf(f).map((c) => ({ file: relative(ROOT, f), ...c })))
 
+describe('画面の言葉（§17.4）', () => {
   it('文言を拾えている（拾えなければ門が空回りしている）', () => {
     expect(all.length).toBeGreaterThan(150)
   })
@@ -86,6 +86,67 @@ describe('画面の言葉（§17.4）', () => {
     const hits = all.flatMap(({ file, line, text }) =>
       FORBIDDEN.filter(([w]) => text.includes(w)).map(
         ([w, instead]) => `${file}:${line} 「${text}」に「${w}」。代わりに: ${instead}`
+      )
+    )
+    expect(hits, hits.join('\n')).toEqual([])
+  })
+})
+
+/**
+ * 表記のゆれ（2026-09-14）。**文書と画面の両方**を見る。
+ *
+ * textlint の日本語技術文書の規則を 30 本に当てて測ったところ、220 件のうち約 84% が
+ * この repo の書き方（行を折る、コードと表と引用が混ざる）に対する誤検出だった。
+ * 本物のゆれは**この 2 組だけ**だったので、道具を入れずに門へ足す。
+ *
+ * 足すときは**測ってから**。数えもせずに並べた禁止語は、守るものが無いまま増える。
+ *
+ * **`` ` `` で囲んだところは見ない。** 規則を説明する文書は、間違った形を名指しできなければ
+ * 書けない（この門を入れた 2026-09-14、`.claude/rules/testing.md` が自分の説明で落ちた）。
+ */
+/** `` ` `` で囲んだ語を落とす。例として名指しした間違った形を、間違いとして数えない */
+const withoutCode = (line: string): string => line.replace(/`[^`]*`/g, '')
+
+const VARIANTS: Array<[RegExp, string]> = [
+  [/ユーザ(?!ー)/, 'ユーザー（長音を付ける）'],
+  [/一つ/, '1 つ（数えられるものは算用数字）']
+]
+
+/** 日本語の文書。外に向く英語の文書（README.md・SETUP・SECURITY）は見ない（DECISIONS §20） */
+const JA_DOCS = [
+  ...readdirSync(join(ROOT, '.claude', 'rules'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => join(ROOT, '.claude', 'rules', f)),
+  ...readdirSync(join(ROOT, 'docs'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => join(ROOT, 'docs', f)),
+  join(ROOT, 'CLAUDE.md'),
+  join(ROOT, 'README.ja.md')
+]
+
+describe('表記のゆれ', () => {
+  it('文書を拾えている（拾えなければ門が空回りしている）', () => {
+    expect(JA_DOCS.length).toBeGreaterThan(10)
+  })
+
+  it('日本語の文書にゆれが無い', () => {
+    const hits = JA_DOCS.flatMap((f) =>
+      readFileSync(f, 'utf8')
+        .split('\n')
+        .flatMap((line, i) =>
+          VARIANTS.filter(([re]) => re.test(withoutCode(line))).map(
+            ([, instead]) =>
+              `${relative(ROOT, f)}:${i + 1} 「${line.trim().slice(0, 40)}」→ ${instead}`
+          )
+        )
+    )
+    expect(hits, hits.join('\n')).toEqual([])
+  })
+
+  it('画面の文言にもゆれが無い', () => {
+    const hits = all.flatMap(({ file, line, text }) =>
+      VARIANTS.filter(([re]) => re.test(withoutCode(text))).map(
+        ([, instead]) => `${file}:${line} 「${text}」→ ${instead}`
       )
     )
     expect(hits, hits.join('\n')).toEqual([])
