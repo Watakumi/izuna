@@ -25,6 +25,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
   次は runner を回すかの判断（docs/ACTIONS.md）と、`docs/NIMBALYST.md` §7 の保留 2 件
 - **`pnpm verify` は緑**（1,090件）。壊したら直してから進むこと
 - **失敗の記録は [.claude/agent-mistakes.md](.claude/agent-mistakes.md)。作業を始める前に読む**
+- **利用者の指摘は [.claude/feedback.md](.claude/feedback.md)。**「何を言われたか」と、繰り返し出ている 4 つの型。同じく先に読む
 - 最終更新の根拠となった CLI: `claude 2.1.266`（2026-09-10 に 2.1.263 から上げ、fixture を録り直した）/ macOS 26.4.1 / Node 24.15 / pnpm 11.22
 
 ---

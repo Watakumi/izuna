@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { docRequest, docSkills } from '../../../shared/docs'
 import type { Panel } from '../useSessions'
 import { C, ellipsis, F, MONO, S } from '../theme'
-import { Button, Card, Faint, Input, Section } from './ui'
+import { Button, Card, Faint, Input, Result, Section } from './ui'
 
 /**
  * 右パネルの「資料」タブ。資料を作る skill を説明つきで並べ、「頼む」で会話に送る。
@@ -21,6 +21,11 @@ export function Docs({
 }): React.JSX.Element {
   const skills = docSkills(panel.commands)
   const [args, setArgs] = useState<Record<string, string>>({})
+  /**
+   * 頼んだことを、その場に出す（§35）。会話は別の柱にあるので、ここに何も出ないと
+   * 「押したのに何も起きない」に見える（2026-09-14 に利用者が踏んだ）
+   */
+  const [sent, setSent] = useState<{ text: string; bad: boolean; at: number } | null>(null)
 
   if (skills.length === 0) {
     return (
@@ -65,7 +70,10 @@ export function Docs({
                 kind="primary"
                 disabled={panel.ended}
                 style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                onClick={() => onAsk(docRequest(s, args[s.name] ?? ''))}
+                onClick={() => {
+                  onAsk(docRequest(s, args[s.name] ?? ''))
+                  setSent({ text: `${s.title} を頼みました`, bad: false, at: Date.now() })
+                }}
               >
                 頼む
               </Button>
@@ -73,6 +81,11 @@ export function Docs({
           </Card>
         ))}
       </Section>
+      {sent && (
+        <div style={{ paddingTop: S.lg }}>
+          <Result {...sent} />
+        </div>
+      )}
     </div>
   )
 }

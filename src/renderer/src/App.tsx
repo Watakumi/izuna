@@ -129,6 +129,14 @@ function App(): React.JSX.Element {
   const mention = (text: string): void => {
     if (!active) return
     sessions.update(active.id, (p) => ({ ...p, prompt: appendMention(p.prompt, text) }))
+    // **押した結果を、押した人に見せる**（§35）。入力欄は別の柱にあるので、
+    // 焦点を移さないと「押したのに何も起きない」に見える。続けて打てる位置でもある
+    queueMicrotask(() => {
+      const el = box.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    })
   }
 
   const slash = active ? parseSlashInput(active.prompt) : null
