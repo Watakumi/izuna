@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
 import type { Panel } from '../useSessions'
 import { makeCache } from '../remember'
+import { limitLabel, stale } from '../../../shared/transcript'
 import { F, C, MONO } from '../theme'
 import { Meter } from './ui'
 
@@ -31,6 +32,15 @@ export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
   const [status, setStatus] = useState<WorktreeStatus | null>(seed?.status ?? null)
   const [team, setTeam] = useState<string | null>(seed?.team ?? null)
   const [showTeam, setShowTeam] = useState(false)
+  /**
+   * いまの時刻。**描く途中で `Date.now()` を呼ばない**（描画は純粋に保つ）。
+   * 1 分ごとに進めれば、窓が空いた境目を跨いだことは分かる。
+   */
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(t)
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -72,11 +82,27 @@ export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
       </Block>
 
       <Block title="上限">
+        {/*
+          **返ってきた窓を全部出す。** 2 つだけ取り出していたので、上流が増やした
+          「今週の Fable」（100%）が落ちていた —— 一番効いている制約が見えていなかった。
+          空く時刻を過ぎている窓は、前の窓の数字であると言う（`rate_limit_event` は
+          ターンが走っているあいだしか来ないので、止まっていると古びる）
+        */}
         {limits ? (
-          <>
-            <Meter label="5時間" value={limits.fiveHour} />
-            <Meter label="7日" value={limits.sevenDay} />
-          </>
+          limits.map((w) => (
+            <Meter
+              key={w.key}
+              label={limitLabel(w.key)}
+              value={w.utilization}
+              note={
+                stale(w, now)
+                  ? '空いたあとの数字はまだ来ていません（前の窓のもの）'
+                  : w.resetsAt
+                    ? `${new Date(w.resetsAt).toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit', month: 'numeric', day: 'numeric' })} に空きます`
+                    : undefined
+              }
+            />
+          ))
         ) : (
           <span style={{ fontSize: F.small, color: C.faint }}>まだ届いていません</span>
         )}

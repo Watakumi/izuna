@@ -76,6 +76,44 @@ export interface Draft {
   toolName: string | null
 }
 
+/**
+ * 枠の窓 1 つ（§14）。名前は上流のまま持つ —— 訳すと、上流が増やしたときに
+ * 名前を当て直す作業が発生し、当て忘れると黙って落ちる（§17.4）。
+ */
+export interface RateWindow {
+  /** 上流の鍵。`five_hour` / `seven_day` など */
+  key: string
+  /** 0..1。上限に対する割合 */
+  utilization: number
+  /** いつ空くか（ミリ秒）。**過ぎていれば、この数字は前の窓のもの** */
+  resetsAt: number | null
+}
+
+/**
+ * 窓の名前。**知らない鍵は上流の字のまま出す**（§17.4「名前は訳さない」）。
+ *
+ * `five_hour` を「現在のセッション」と訳さないのは、Izuna の画面に既に
+ * 「セッション」（左の一覧の 1 件）があって衝突するからである。
+ * 上流の `/usage` と突き合わせたい人のために、空く時刻を隣に出す。
+ */
+export function limitLabel(key: string): string {
+  if (key === 'five_hour') return '5時間'
+  if (key === 'seven_day') return '7日'
+  return key
+}
+
+/**
+ * **この数字は前の窓のものか。**
+ *
+ * `rate_limit_event` はターンが走っているあいだしか来ない。窓が空いたあと
+ * 何も送っていないセッションは、**空く前の数字を出し続ける**
+ * （2026-09-14 に利用者が見つけた。`/usage` が 1%、Izuna が 21%）。
+ * 空く時刻を過ぎていれば、それは前の窓の数字である。
+ */
+export function stale(w: RateWindow, now: number): boolean {
+  return w.resetsAt !== null && w.resetsAt <= now
+}
+
 export interface Transcript {
   items: Item[]
   draft: Draft | null
@@ -104,7 +142,15 @@ export interface Transcript {
    * サブスクリプションの枠の使用率（0..1）。**こちらが実際の制約**。
    * ターミナルの Claude Code と同じ窓を共有するので、並列で走らせると効く。
    */
-  limits: { fiveHour: number; sevenDay: number } | null
+  /**
+   * 枠の窓（§14）。**返ってきたものを全部持つ。**
+   *
+   * 以前は `five_hour` と `seven_day` の 2 つだけを取り出していたので、
+   * 上流が窓を増やしても黙って落ちた（2026-09-14 に利用者が見つけた ——
+   * `/usage` が「今週の Fable 100%」を出しているのに、Izuna は出していなかった。
+   * **一番効いている窓が見えていなかった**）。
+   */
+  limits: RateWindow[] | null
   /** message_start で覚えた直近の id。draft を紐づけるためだけに持つ */
   streamingMessageId: string | null
   /**
@@ -214,17 +260,26 @@ export function applyMessage(t: Transcript, m: SDKMessage): Transcript {
     case 'rate_limit_event': {
       const w = (
         m as unknown as {
-          rate_limit_info?: { unifiedWindows?: Record<string, { utilization?: number }> }
+          rate_limit_info?: {
+            unifiedWindows?: Record<string, { utilization?: number; resetsAt?: number }>
+          }
         }
       ).rate_limit_info?.unifiedWindows
       if (!w) return t
-      return {
-        ...t,
-        limits: {
-          fiveHour: w.five_hour?.utilization ?? t.limits?.fiveHour ?? 0,
-          sevenDay: w.seven_day?.utilization ?? t.limits?.sevenDay ?? 0
-        }
-      }
+      const incoming = Object.entries(w).map(([key, v]) => ({
+        key,
+        utilization: typeof v?.utilization === 'number' ? v.utilization : 0,
+        // 上流は秒で返す（fixture で実測）
+        resetsAt: typeof v?.resetsAt === 'number' ? v.resetsAt * 1000 : null
+      }))
+      if (incoming.length === 0) return t
+      /**
+       * **鍵ごとに重ねる。** 片方しか来ない回があっても、もう片方を落とさない。
+       * 知らない鍵は足す —— 上流が窓を増やしたら、そのまま出る。
+       */
+      const byKey = new Map((t.limits ?? []).map((x) => [x.key, x]))
+      for (const x of incoming) byKey.set(x.key, x)
+      return { ...t, limits: [...byKey.values()] }
     }
 
     case 'result':

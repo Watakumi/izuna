@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PermissionMode, PermissionResult, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
-import { appendUserText, markDenied, setPermissionMode } from '../../shared/transcript'
+import {
+  appendUserText,
+  limitLabel,
+  markDenied,
+  setPermissionMode,
+  type RateWindow
+} from '../../shared/transcript'
 import { F, applySkin, C, MONO, READ, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { ModeSwitch } from './components/ModeSwitch'
@@ -139,6 +145,14 @@ function App(): React.JSX.Element {
     })
   }
 
+  /**
+   * 帯に出す窓は**一番詰まっているもの**（§14）。
+   * 5 時間だけを出していたので、週の窓が尽きていても余裕があるように見えた。
+   */
+  const tightest = (active?.transcript.limits ?? []).reduce<RateWindow | null>(
+    (best, w) => (best === null || w.utilization > best.utilization ? w : best),
+    null
+  )
   const slash = active ? parseSlashInput(active.prompt) : null
   const results = active && slash && !dismissed ? filterCommands(slash.name, active.commands) : []
   const paletteOpen = !!active && slash !== null && !dismissed && active.commands.length > 0
@@ -265,20 +279,24 @@ function App(): React.JSX.Element {
                 承認待ち {sessions.waiting.length}
               </span>
             )}
-            {active.transcript.limits && (
+            {tightest && (
               // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
               // 実際の制約はサブスクリプションの上限のほう。
               //
               // **「使用量」とも書かない。** 「使用料」と一字しか違わず、金額を
               // 出していると読める。金額は §14 で消したのに、言葉のほうで
               // 戻してしまっていた。
+              //
+              // **出すのは一番詰まっている窓**（2026-09-14）。以前は 5 時間だけを
+              // 出していたので、週の窓が尽きていても帯は余裕があるように見えた。
+              // 全部は `Status` に出る
               <span
                 style={S.note}
-                title="5 時間ごとの上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
+                title="いま一番詰まっている上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
               >
-                5時間{' '}
-                <span style={{ color: C.ink2 }}>
-                  {Math.round(active.transcript.limits.fiveHour * 100)}%
+                {limitLabel(tightest.key)}{' '}
+                <span style={{ color: tightest.utilization >= 1 ? C.red : C.ink2 }}>
+                  {Math.round(tightest.utilization * 100)}%
                 </span>
               </span>
             )}

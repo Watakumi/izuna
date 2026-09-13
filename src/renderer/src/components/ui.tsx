@@ -402,13 +402,26 @@ export function Tag({
 
 /** 一行に収まらない文字を切る。UI 全体で同じ切り方にする */
 /** 使用率のメーター。7 割を超えたら注意の色に変わる */
-export function Meter({ label, value }: { label: string; value: number }): React.JSX.Element {
+export function Meter({
+  label,
+  value,
+  note
+}: {
+  label: string
+  value: number
+  /** 数字だけでは読めないこと（いつ空くか、前の窓のものか）。無ければ出さない */
+  note?: string
+}): React.JSX.Element {
   const pct = Math.round(value * 100)
+  // 尽きた窓は赤。**そこが効いている制約**なので、7 割と同じ色では読み落とす
+  const color = pct >= 100 ? C.red : pct > 70 ? C.amber : C.teal
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: F.small }}>
         <span style={{ color: C.dim }}>{label}</span>
-        <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2 }}>{pct}%</span>
+        <span style={{ font: `${F.small}px ${MONO}`, color: pct >= 100 ? C.red : C.ink2 }}>
+          {pct}%
+        </span>
       </div>
       <div style={{ height: 3, background: C.raised, borderRadius: R.sm }}>
         <div
@@ -416,10 +429,11 @@ export function Meter({ label, value }: { label: string; value: number }): React
             width: `${Math.min(pct, 100)}%`,
             height: 3,
             borderRadius: R.sm,
-            background: pct > 70 ? C.amber : C.teal
+            background: color
           }}
         />
       </div>
+      {note && <span style={{ fontSize: F.micro, color: C.faint }}>{note}</span>}
     </div>
   )
 }

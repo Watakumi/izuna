@@ -82,11 +82,26 @@ describe('Inspector', () => {
   it('上限は割合で出し、共有フォルダは畳んである', async () => {
     render(
       <Inspector
-        panel={panel({ cwd: '/p3', team: 'alpha' }, { limits: { fiveHour: 0.31, sevenDay: 0.5 } })}
+        panel={panel(
+          { cwd: '/p3', team: 'alpha' },
+          {
+            limits: [
+              { key: 'five_hour', utilization: 0.31, resetsAt: Date.now() + 3_600_000 },
+              { key: 'seven_day', utilization: 0.5, resetsAt: Date.now() + 86_400_000 },
+              // 上流が増やした窓も出る。**一番効いている制約を落とさない**
+              { key: 'seven_day_fable', utilization: 1, resetsAt: Date.now() - 1 }
+            ]
+          }
+        )}
       />
     )
     await waitFor(() => expect(screen.getByText('31%')).toBeTruthy())
     expect(screen.getByText('50%')).toBeTruthy()
+    // 知らない鍵は上流の字のまま、尽きた窓は 100%
+    expect(screen.getByText('seven_day_fable')).toBeTruthy()
+    expect(screen.getByText('100%')).toBeTruthy()
+    // 空く時刻を過ぎている窓は、前の窓の数字だと言う
+    expect(screen.getByText('空いたあとの数字はまだ来ていません（前の窓のもの）')).toBeTruthy()
     expect(screen.queryByText('/teams/alpha')).toBeNull()
     fireEvent.click(screen.getByText('共有フォルダ'))
     expect(screen.getByText('/teams/alpha')).toBeTruthy()
