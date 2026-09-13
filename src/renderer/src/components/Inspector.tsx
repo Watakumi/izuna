@@ -1,101 +1,58 @@
 import { useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
-import { mergeIssues, SOURCE_LABEL, unavailable, type SourcedIssue } from '../../../shared/issues'
-import { rolesIn, type RemoteRef } from '../../../shared/remote'
 import type { Panel } from '../useSessions'
 import { makeCache } from '../remember'
-import { F, C, MONO, ellipsis } from '../theme'
-import { Loading, Meter } from './ui'
+import { F, C, MONO } from '../theme'
+import { Meter } from './ui'
 
 /**
- * 右ペインの「情報」タブ。
+ * `Status` タブの上半分（§35）。**どこで作業しているか**と**あと何回頼めるか**。
  *
- * **並べる順は「作業中に目をやる頻度」。** どこで作業しているか →
- * 次に何を出すか → 残りどれだけ走らせられるか、の順に置く。
+ * **同じ事実を 2 か所に出さない**（§35 の規律）。ここから 2 つ落とした。
  *
- * 会話の下に出ているもの（実行役 = TaskPanel）はここに重ねない。
- * 同じ情報が 2 箇所にあると、狭いほうを見る理由が無くなる。
+ * | 落とした | いまどこにあるか |
+ * | --- | --- |
+ * | sandbox に push 済みか、PR を作る釦 | `PR` タブ（`Forge`）。あちらが push も PR も持つ |
+ * | open な Issue の 2 件 | 新しいセッションの画面。Issue は「次に何を始めるか」で、`Status` の問いではない |
+ *
+ * 走っている実行役は会話の柱（`TaskPanel`）に出ているので、ここには重ねない。
+ * ここに残るのは共有フォルダ由来のもの（`Board`）だけである。
  */
 /** 覚えておく中身。鍵は作業ディレクトリ */
 interface Snapshot {
   status: WorktreeStatus | null
-  remotes: RemoteRef[]
-  issues: SourcedIssue[] | null
-  pushed: boolean | null
   team: string | null
 }
 const remembered = makeCache<Snapshot>()
 
-export function Inspector({
-  panel,
-  onOpenForge
-}: {
-  panel: Panel
-  onOpenForge: () => void
-}): React.JSX.Element {
+export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
   // 一度読んだものは覚えておく（`remember.ts` の註）
   const seed = remembered.get(panel.cwd)
   const [status, setStatus] = useState<WorktreeStatus | null>(seed?.status ?? null)
-  // 「まだ読んでいない」を `null` で表す（`[]` だと『無い』と嘘をつく）
-  const [remotes, setRemotes] = useState<RemoteRef[] | null>(seed?.remotes ?? null)
-  const [issues, setIssues] = useState<SourcedIssue[] | null>(seed?.issues ?? null)
-  const [pushed, setPushed] = useState<boolean | null>(seed?.pushed ?? null)
   const [team, setTeam] = useState<string | null>(seed?.team ?? null)
   const [showTeam, setShowTeam] = useState(false)
 
   useEffect(() => {
     let alive = true
     void (async () => {
-      const [st, rs, tp] = await Promise.all([
+      const [st, tp] = await Promise.all([
         window.izuna.worktreeStatus(panel.cwd).catch(() => null),
-        window.izuna.remotes(panel.cwd).catch(() => []),
         window.izuna.teamPath(panel.team).catch(() => null)
       ])
       if (!alive) return
       setStatus(st)
-      setRemotes(rs)
       setTeam(tp)
-
-      const { sandbox } = rolesIn(rs)
-      let nextPushed: boolean | null = null
-      if (sandbox && st?.branch) {
-        nextPushed = await window.izuna
-          .isPushed(panel.cwd, sandbox.name, st.branch)
-          .catch(() => false)
-      }
-      if (!alive) return
-      setPushed(nextPushed)
-
-      // Issue は GitHub と Forgejo の両方から（shared/issues.ts）
-      const gh = await window.izuna.ghIssues(panel.cwd).catch(unavailable('GitHub の Issue'))
-      const fj =
-        sandbox?.owner && sandbox.repo
-          ? await window.izuna
-              .forgeIssues(sandbox.owner, sandbox.repo)
-              .catch(unavailable('Forgejo の Issue'))
-          : null
-      const list = mergeIssues(gh, fj)
-      if (!alive) return
-      setIssues(list)
-
-      remembered.set(panel.cwd, {
-        status: st,
-        remotes: rs,
-        issues: list,
-        pushed: nextPushed,
-        team: tp
-      })
+      remembered.set(panel.cwd, { status: st, team: tp })
     })()
     return () => {
       alive = false
     }
   }, [panel.cwd, panel.team, panel.transcript.state])
 
-  const { sandbox, upstream } = rolesIn(remotes ?? [])
   const limits = panel.transcript.limits
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       <Block title="WORKTREE">
         <span style={{ font: `${F.body}px ${MONO}`, color: C.ink }}>
           {status?.branch ?? panel.branch ?? '(不明)'}
@@ -112,71 +69,6 @@ export function Inspector({
             {status.behind > 0 && <span style={{ color: C.dim2 }}>↓{status.behind}</span>}
           </div>
         )}
-      </Block>
-
-      <Block title="FORGEJO">
-        {issues === null ? (
-          <span style={{ fontSize: F.small, color: C.faint }}>
-            GitHub にも Forgejo にも繋がっていません
-          </span>
-        ) : issues.length === 0 ? (
-          <span style={{ fontSize: F.small, color: C.faint }}>open な Issue はありません</span>
-        ) : (
-          issues.slice(0, 2).map((i) => (
-            <div
-              key={`${i.source}:${i.number}`}
-              style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}
-            >
-              <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexShrink: 0 }}>
-                #{i.number}
-              </span>
-              <span style={{ fontSize: F.small, color: C.ink2, ...ellipsis }}>{i.title}</span>
-              <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
-                {SOURCE_LABEL[i.source]}
-              </span>
-            </div>
-          ))
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 2 }}>
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              flexShrink: 0,
-              background: pushed ? C.teal : 'transparent',
-              border: pushed ? 'none' : `1.5px solid ${C.faint}`
-            }}
-          />
-          <span style={{ fontSize: F.small, color: C.dim2 }}>
-            {/* 読み終わるまで断定しない。`[]` を「無い」と読むと一瞬だけ嘘が出る */}
-            {remotes === null ? (
-              <Loading />
-            ) : !sandbox ? (
-              'sandbox 未設定'
-            ) : pushed ? (
-              'sandbox に push 済み'
-            ) : (
-              'push していません'
-            )}
-          </span>
-        </div>
-
-        <button
-          onClick={onOpenForge}
-          style={{
-            padding: '8px 0',
-            borderRadius: 7,
-            border: `1px solid ${C.line2}`,
-            background: 'transparent',
-            color: C.ink2,
-            fontSize: F.body,
-            cursor: 'pointer'
-          }}
-        >
-          {remotes === null ? '…' : upstream ? 'PR を作る' : 'remote を用意する'}
-        </button>
       </Block>
 
       <Block title="上限">

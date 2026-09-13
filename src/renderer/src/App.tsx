@@ -550,7 +550,7 @@ function App(): React.JSX.Element {
                 {/* Status: どこで、何が動いていて、あと何回頼めるか。読むだけ */}
                 {tab === 'status' && (
                   <div style={{ height: '100%', overflowY: 'auto' }}>
-                    <Inspector panel={active} onOpenForge={() => setTab('pr')} />
+                    <Inspector panel={active} />
                     <Board panel={active} />
                   </div>
                 )}

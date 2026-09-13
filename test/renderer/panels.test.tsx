@@ -143,6 +143,24 @@ describe('盤面', () => {
     await waitFor(() => expect(screen.getByText('共有フォルダがありません')).toBeTruthy())
   })
 
+  it('**中身が無ければ節を出さず、何が起きたら出るかを 1 行で言う**（§35）', async () => {
+    // 実行役を使わないセッションでも、共有フォルダには Izuna 自身の起動が 1 行入る。
+    // それを「中身がある」と数えると、見出しだけの節が常に出る
+    izuna(
+      board({
+        log: [{ at: '', from: 'izuna', to: 'brain', kind: 'start', target: '/w', note: '' }]
+      })
+    )
+    const { container } = render(<Board panel={panel()} />)
+    await waitFor(() =>
+      expect(screen.getByText('ブレインが共有フォルダに作業を書くと、ここに出ます')).toBeTruthy()
+    )
+    const text = container.textContent ?? ''
+    expect(text).not.toContain('作業 0 件')
+    expect(text).not.toContain('記録 1 行')
+    expect(text).not.toContain('start')
+  })
+
   it('**重なる組と読めなかった作業を目立たせる**', async () => {
     izuna(
       board({
@@ -190,6 +208,11 @@ describe('盤面', () => {
     expect(text).toContain('先に読む')
     expect(text).not.toContain('詳細')
     expect(text).toContain('blocked')
+    // 記録は畳んである（§35）。行数は見えるが中身は開くまで出ない
+    expect(text).toContain('記録 1 行')
+    expect(text).not.toContain('/w')
+    fireEvent.click(screen.getByText('▸ 記録 1 行'))
+    expect(screen.getByText(/新規/)).toBeTruthy()
   })
 })
 
