@@ -13,12 +13,15 @@ import {
   type SettingSource,
   type McpServerConfig,
   type HookEvent,
-  type HookCallbackMatcher
+  type HookCallbackMatcher,
+  type HookInput,
+  type HookJSONOutput
 } from '@anthropic-ai/claude-agent-sdk'
 import { settle } from '../../shared/wait'
 import type { Attachment } from '../../shared/image'
 import { locateClaude, refreshLoginShellEnv } from './locate'
 import { withoutBillingKeys } from '../../shared/billing'
+import { createMasker, hasMark, type Masker } from '../../shared/mask'
 
 /**
  * claude との 1 会話。
@@ -100,6 +103,13 @@ export interface SessionOptions {
    * Izuna 自身が張るものだから。
    */
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>
+  /**
+   * 鍵を API に出さない覆い（security.md §36）。既定は**掛ける**。
+   *
+   * ツールの結果から鍵を札に替えてモデルに渡し、モデルが札を書き戻したら実値に戻す。
+   * 切るのは利用者が `~/.izuna/config.json` で決めたときだけ。
+   */
+  mask?: boolean
 }
 
 type Events = {
@@ -107,6 +117,8 @@ type Events = {
   permission: [PermissionRequest]
   /** 誰も答えないまま期限が来た承認要求。画面から消すために使う */
   permissionExpired: [string]
+  /** 鍵を覆った。**数だけ**を渡す —— 実値は渡さない（security.md §36） */
+  masked: [number]
   error: [Error]
   done: []
 }
@@ -157,6 +169,13 @@ export class ClaudeSession extends EventEmitter<Events> {
   #sessionId?: string
   #pending = new Map<string, (result: PermissionResult) => void>()
   #running = false
+  /**
+   * 鍵の覆い（security.md §36）。**セッションに 1 つ。**
+   *
+   * `null` なら掛けない。掛けるときは、ツールの結果を `PostToolUse` で替え、
+   * 実行する入力を承認の返しで戻す。**対応表はここにしか無く、ディスクに書かない。**
+   */
+  #masker: Masker | null = null
 
   constructor(private readonly options: SessionOptions) {
     super()
@@ -187,6 +206,8 @@ export class ClaudeSession extends EventEmitter<Events> {
         `[izuna] 環境の ${removed.join(', ')} は claude に渡しません（課金の経路を変えないため）`
       )
 
+    // 鍵の覆いはここで 1 つ作る（§36）。呼び手の hook と合流させる
+    const hooks = this.#hooks()
     this.#query = query({
       prompt: this.#input,
       options: {
@@ -211,7 +232,7 @@ export class ClaudeSession extends EventEmitter<Events> {
         forwardSubagentText: true,
         settingSources: this.options.settingSources,
         ...(this.options.mcpServers ? { mcpServers: this.options.mcpServers } : {}),
-        ...(this.options.hooks ? { hooks: this.options.hooks } : {}),
+        ...(hooks ? { hooks } : {}),
         ...(this.options.plugins?.length ? { plugins: this.options.plugins } : {}),
         pathToClaudeCodeExecutable,
         env: env as Record<string, string>,
@@ -334,6 +355,49 @@ export class ClaudeSession extends EventEmitter<Events> {
     }
   }
 
+  /**
+   * CLI に渡す hook。呼び手のもの（実行役の節目。§12）に、鍵の覆いを足す。
+   *
+   * **書き換える hook は 1 つだけにする。** SDK の註に「hook は元の出力に対して並行に走り、
+   * 書き換えは最後に返したものが勝つ」とあるので、2 つが書き換えると片方の伏せ字が消える。
+   * 覆うのは Izuna のこの 1 つだけで、呼び手の hook は見るだけである。
+   */
+  #hooks(): Partial<Record<HookEvent, HookCallbackMatcher[]>> | undefined {
+    const given = this.options.hooks
+    if (this.options.mask === false) return given
+    this.#masker = createMasker()
+    const mine: HookCallbackMatcher = {
+      hooks: [
+        async (input: HookInput): Promise<HookJSONOutput> => {
+          if (input.hook_event_name !== 'PostToolUse' || !this.#masker) return {}
+          const before = (input as { tool_response?: unknown }).tool_response
+          const after = this.#masker.mask(before)
+          // 同じものなら何も返さない。**恒等の書き換えを返さない** ——
+          // 並行に走る別の hook の書き換えを最後に上書きして消してしまう（SDK の註）
+          if (after === before) return {}
+          this.emit('masked', this.#masker.size)
+          return {
+            hookSpecificOutput: { hookEventName: 'PostToolUse', updatedToolOutput: after }
+          }
+        }
+      ]
+    }
+    return { ...given, PostToolUse: [...(given?.PostToolUse ?? []), mine] }
+  }
+
+  /**
+   * 実行する直前に札を実値へ戻す（security.md §36 の「戻す側」）。
+   *
+   * 人が見る承認の札は**札のまま**にしておく（§26。鍵を画面に出さない）。
+   * 戻すのはツールの境界の 1 か所だけで、ここ以外に `unmask` の呼び手を作らない。
+   */
+  #restore(input: Record<string, unknown>, result: PermissionResult): PermissionResult {
+    if (result.behavior !== 'allow' || !this.#masker) return result
+    const next = result.updatedInput ?? input
+    if (!hasMark(next)) return result
+    return { ...result, updatedInput: this.#masker.unmask(next) as Record<string, unknown> }
+  }
+
   #ask(
     toolName: string,
     input: Record<string, unknown>,
@@ -368,7 +432,7 @@ export class ClaudeSession extends EventEmitter<Events> {
 
       const settle = (result: PermissionResult): void => {
         clearTimeout(timer)
-        resolve(result)
+        resolve(this.#restore(input, result))
       }
       this.#pending.set(id, settle)
 

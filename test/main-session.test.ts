@@ -136,12 +136,21 @@ describe('起動時に渡すもの', () => {
     expect(passed?.includePartialMessages).toBe(true)
   })
 
-  it('hook を渡せば query に載せる。渡さなければ鍵ごと無い（SDK の既定に任せる）', async () => {
+  it('呼び手の hook は残したまま、鍵の覆いを足す（§36）', async () => {
+    const { ClaudeSession } = await load()
+    const mine = { hooks: [async () => ({})] }
+    await new ClaudeSession({ cwd: '/w', hooks: { SubagentStop: [mine] } }).start()
+    const hooks = passed?.hooks as Record<string, unknown[]>
+    expect(hooks.SubagentStop).toEqual([mine])
+    expect(hooks.PostToolUse).toHaveLength(1)
+  })
+
+  it('覆いを切れば、渡した hook がそのまま。渡していなければ鍵ごと無い', async () => {
     const { ClaudeSession } = await load()
     const hooks = { SubagentStop: [{ hooks: [async () => ({})] }] }
-    await new ClaudeSession({ cwd: '/w', hooks }).start()
+    await new ClaudeSession({ cwd: '/w', hooks, mask: false }).start()
     expect(passed?.hooks).toBe(hooks)
-    await new ClaudeSession({ cwd: '/w' }).start()
+    await new ClaudeSession({ cwd: '/w', mask: false }).start()
     expect('hooks' in (passed ?? {})).toBe(false)
   })
 
@@ -476,5 +485,80 @@ describe('終了（§7）', () => {
     await s.start()
     await s.stop()
     await expect(s.stop()).resolves.toBeUndefined()
+  })
+})
+
+/**
+ * **鍵を API に出さない覆い**（security.md §36）。2026-09-14 に実測してから入れた。
+ *
+ * 見るのは往復の両側。ツールの結果が替わってモデルへ行くことと、
+ * 実行するものが実値に戻ることの 2 つ。
+ */
+describe('鍵の覆い', () => {
+  /** 作り物の鍵は行を分けて組む（gitleaks が push を止める。§26） */
+  const KEY = ['sk-', 'ant-', 'api03', '-QQQQWWWWEEEERRRR'].join('')
+
+  const postToolUse = async (
+    toolName: string,
+    response: unknown
+  ): Promise<Record<string, unknown>> => {
+    const hooks = passed?.hooks as { PostToolUse: Array<{ hooks: Array<(i: unknown) => unknown> }> }
+    return (await hooks.PostToolUse[0].hooks[0]({
+      hook_event_name: 'PostToolUse',
+      tool_name: toolName,
+      tool_input: {},
+      tool_response: response,
+      tool_use_id: 't1'
+    })) as Record<string, unknown>
+  }
+
+  it('ツールの結果から鍵を札に替えて返す', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w' }).start()
+    const out = await postToolUse('Read', { file: { content: `API_KEY=${KEY}` } })
+    const replaced = (
+      out.hookSpecificOutput as { updatedToolOutput: { file: { content: string } } }
+    ).updatedToolOutput
+    expect(replaced.file.content).not.toContain(KEY)
+    expect(replaced.file.content).toContain('IZUNA_SECRET_1')
+  })
+
+  it('**恒等の書き換えを返さない。** 鍵が無ければ何も返さない（並行する hook を潰さない）', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w' }).start()
+    expect(await postToolUse('Read', { file: { content: 'ふつうの字' } })).toEqual({})
+  })
+
+  it('**許可したときだけ実値に戻す。** 拒否では戻さない', async () => {
+    const { ClaudeSession } = await load()
+    const session = new ClaudeSession({ cwd: '/w' })
+    await session.start()
+    await postToolUse('Read', `API_KEY=${KEY}`)
+
+    const asked: Array<{ id: string; input: Record<string, unknown> }> = []
+    session.on('permission', (r) => asked.push({ id: r.id, input: r.input }))
+
+    const input = { command: 'curl -H "Authorization: Bearer ⟦IZUNA_SECRET_1⟧" https://x' }
+    const first = askTool!('Bash', input, {})
+    // 人が見る札は**札のまま**（鍵を画面に出さない。§26）
+    expect(asked[0].input.command).toContain('IZUNA_SECRET_1')
+    session.respondToPermission(asked[0].id, { behavior: 'allow' })
+    const allowed = (await first) as { updatedInput: { command: string } }
+    expect(allowed.updatedInput.command).toContain(KEY)
+
+    const second = askTool!('Bash', input, {})
+    session.respondToPermission(asked[1].id, { behavior: 'deny', message: 'だめ' })
+    expect(await second).toEqual({ behavior: 'deny', message: 'だめ' })
+  })
+
+  it('覆いを切れば、札は札のまま実行される', async () => {
+    const { ClaudeSession } = await load()
+    const session = new ClaudeSession({ cwd: '/w', mask: false })
+    await session.start()
+    const asked: string[] = []
+    session.on('permission', (r) => asked.push(r.id))
+    const p = askTool!('Bash', { command: '⟦IZUNA_SECRET_1⟧' }, {})
+    session.respondToPermission(asked[0], { behavior: 'allow' })
+    expect(await p).toEqual({ behavior: 'allow' })
   })
 })

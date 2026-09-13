@@ -28,6 +28,13 @@ export interface IzunaConfig {
    * 既定は空 —— **信頼は書いた人だけが足す**（§26）
    */
   trustedRepos: string[]
+  /**
+   * 鍵を API に出さない覆い（security.md §36）。**既定は掛ける。**
+   *
+   * 切ると、ツールが読んだ `.env` や `gcloud` のトークンがそのまま API へ行く。
+   * 切るのは、覆いが邪魔をして仕事にならないと**人が判断したとき**だけ。
+   */
+  maskSecrets: boolean
 }
 
 /** `~` は main 側で homedir に展開する。ここでは文字列のまま扱う */
@@ -39,7 +46,8 @@ export const DEFAULTS: IzunaConfig = {
   repoDepth: 3,
   claudePath: null,
   settingSources: ['project', 'local'],
-  trustedRepos: []
+  trustedRepos: [],
+  maskSecrets: true
 }
 
 export interface MergeResult {
@@ -82,6 +90,7 @@ export function mergeConfig(raw: unknown): MergeResult {
   take('forgejoWorkPaths', strings)
   take('repoRoots', strings)
   take('trustedRepos', (v) => (Array.isArray(v) && v.length === 0 ? [] : strings(v)))
+  take('maskSecrets', (v) => (typeof v === 'boolean' ? v : null))
   take('forgejoUrl', (v) =>
     v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null
   )

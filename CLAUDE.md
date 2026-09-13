@@ -60,6 +60,9 @@ GUI で描くデスクトップアプリ。ターミナルの中で TUI を動�
    信頼は `~/.izuna/config.json` の `trustedRepos` に書く。
 5. **鍵は人のものを持たない。** Forgejo はボット `izuna` のトークン。平文で LAN を通る
    経路には送らない。URL にも引数にも埋めない（§26、§7）。
+   **ツールが読んだ鍵は、モデルに渡す前に覆う**（§36）。替えるのは `PostToolUse`、
+   戻すのは承認の返しの 1 か所だけ。**恒等の書き換えを返さない。**
+
 6. **外の道具は `src/main/exec.ts` の `run()` から呼ぶ。** シェルを通さない。
    stderr を捨てない（§27）。
 7. **口を足したら `shared/ipc.ts` の `CH` に書く。** preload と `IPC_VERSION` はそこから導かれる。
@@ -98,6 +101,7 @@ src/shared/prereq.ts        Claude Code の関所の判定（純粋関数）
 src/shared/app-protocol.ts  app:// の URL → 出力ディレクトリの中のパス（純粋関数）
 src/shared/plugin.ts        同梱プラグイン（資料の skill）の置き場（純粋関数。§33）
 src/shared/readfile.ts      中で読むファイルの関所と上限（純粋関数。§34）
+src/shared/mask.ts          鍵を API に出さない覆い。替えて戻す（純粋関数。§36）
 src/shared/mention.ts       対象を指して会話を始める文（純粋関数。§34）
 src/main/readfile.ts        読む口だけ。書く口は作らない（§34）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
@@ -117,6 +121,7 @@ scripts/shots.ts            実 renderer を作り物の window.izuna で撮る�
 scripts/e2e.ts              本物の Electron を起動して口を叩く（§30）。起動は scripts/lib/electron.ts
 scripts/walk.ts             v1 の 7 手を本物で通し、docs/v1-walk/ に撮る（§31）。実 API を呼ぶ
 scripts/probe-team.ts       実行役 2 つを並走させて hook と worktree を測る（§12）。実 API を呼ぶ
+scripts/probe-mask.ts       ツールの結果を差し替えられるかを測る（§36）。実 API を呼ぶ
 scripts/catchup.mjs         claude が上がったら SDK・fixture・版を揃える（pnpm run catchup。§10）
 scripts/upstream.mjs        claude と Forgejo の最新と測った版の差、CHANGELOG を出す（pnpm run upstream。§10）。読むだけ
 
@@ -176,7 +181,7 @@ Windows / Linux、複数エージェント対応。
 | `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29, §32 |
 | `.claude/rules/sessions.md` | セッションの保存と復元 | §18 |
 | `.claude/rules/loop.md` | 自律ループと起床 | §23 |
-| `.claude/rules/security.md` | セキュリティ | §26 |
+| `.claude/rules/security.md` | セキュリティ | §26, §36 |
 | `.claude/rules/supply-chain.md` | 重複の整理とサプライチェーン | §27 |
 | `docs/DECISIONS.md` | 設計の背景。なぜこの構成か、技術スタック、未決事項、公開範囲 | §2, §3, §9, §19, §20 |
 
