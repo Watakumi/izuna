@@ -49,7 +49,7 @@ function App(): React.JSX.Element {
    * 両方を積むと会話が押し出される
    */
   const [file, setFile] = useState<string | null>(null)
-  const [tab, setTab] = useState<'state' | 'changes' | 'pr' | 'ask'>('state')
+  const [tab, setTab] = useState<'status' | 'changes' | 'pr' | 'run'>('status')
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
@@ -498,7 +498,7 @@ function App(): React.JSX.Element {
             </div>
             <div
               style={{
-                width: tab === 'state' ? 288 : 360,
+                width: tab === 'status' ? 288 : 360,
                 flexShrink: 0,
                 background: C.panel,
                 borderLeft: `1px solid ${C.line}`,
@@ -511,7 +511,7 @@ function App(): React.JSX.Element {
                   **タブは問いで分ける**（§35）。機能ごとに 1 枚ずつ足していたら 7 枚になり、
                   空のものが常設され、同じ事実が 2 か所に出ていた。名前は名詞（§17.4）
                 */}
-                {(['state', 'changes', 'pr', 'ask'] as const).map((t) => (
+                {(['status', 'changes', 'pr', 'run'] as const).map((t) => (
                   <div
                     key={t}
                     data-tab={t}
@@ -527,19 +527,25 @@ function App(): React.JSX.Element {
                       borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                     }}
                   >
-                    {t === 'state' ? '状態' : t === 'changes' ? '変更' : t === 'pr' ? 'PR' : '依頼'}
+                    {t === 'status'
+                      ? 'Status'
+                      : t === 'changes'
+                        ? 'Changes'
+                        : t === 'pr'
+                          ? 'PR'
+                          : 'Run'}
                   </div>
                 ))}
               </div>
               <div style={{ flexGrow: 1, minHeight: 0 }}>
-                {/* 状態: どこで、何が動いていて、あと何回頼めるか。読むだけ */}
-                {tab === 'state' && (
+                {/* Status: どこで、何が動いていて、あと何回頼めるか。読むだけ */}
+                {tab === 'status' && (
                   <div style={{ height: '100%', overflowY: 'auto' }}>
                     <Inspector panel={active} onOpenForge={() => setTab('pr')} />
                     <Board panel={active} />
                   </div>
                 )}
-                {/* 変更: 自分のリポジトリの何が変わったか。読むだけ */}
+                {/* Changes: 自分のリポジトリの何が変わったか。読むだけ */}
                 {tab === 'changes' && (
                   <Files
                     panel={active}
@@ -556,7 +562,7 @@ function App(): React.JSX.Element {
                     <Forge
                       cwd={active.cwd}
                       sessionId={active.id}
-                      onDone={() => setTab('state')}
+                      onDone={() => setTab('status')}
                       onAsk={(p) => mention(mentionDiff(active.cwd, p))}
                       onPreview={(url) => {
                         setFile(null)
@@ -578,8 +584,8 @@ function App(): React.JSX.Element {
                     />
                   </div>
                 )}
-                {/* 依頼: 人が始める操作 */}
-                {tab === 'ask' && (
+                {/* Run: 人が始める操作（skill・自律ループ・起床の予約） */}
+                {tab === 'run' && (
                   <div style={{ height: '100%', overflowY: 'auto' }}>
                     <Docs
                       panel={active}

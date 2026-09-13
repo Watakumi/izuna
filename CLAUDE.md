@@ -105,7 +105,7 @@ src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで�
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
 src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
-src/renderer/src/App.tsx    画面。右パネルは問いで 4 枚（状態 / 変更 / PR / 依頼。§35）。
+src/renderer/src/App.tsx    画面。右パネルは問いで 4 枚（Status / Changes / PR / Run。§35）。
                             会話の柱の下に、頁（§32）かファイル（§34）のどちらか一方
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）

@@ -157,12 +157,12 @@ async function main(): Promise<void> {
   await shoot(page, '7-files')
 
   // 資料の skill（§33）。名前が長い（`izuna-docs:doc-…`）ので、欄と釦が潰れないかを見る
-  await page.locator('[data-tab="ask"]').click()
+  await page.locator('[data-tab="run"]').click()
   check((await page.getByText('頼む').count()) > 0, '資料の skill に「頼む」が出る')
   await shoot(page, '9-docs')
 
   // 状態（§35）。実行役と worktree と上限
-  await page.locator('[data-tab="state"]').click()
+  await page.locator('[data-tab="status"]').click()
   await page.waitForTimeout(300)
   check(
     (await page.getByText('同時に走らせてはいけない組があります').count()) > 0,
@@ -171,12 +171,12 @@ async function main(): Promise<void> {
   await shoot(page, '8-board')
 
   // 自律ループ（§23）。「依頼」の下半分にある
-  await page.locator('[data-tab="ask"]').click()
+  await page.locator('[data-tab="run"]').click()
   await page.waitForTimeout(400)
   await shoot(page, '5-loop')
   check((await page.getByText('始める').count()) > 0, 'ループを始める釦が無い')
   check((await page.getByText('止める').count()) === 0, '回っていないのに止める釦が出ている')
-  await page.locator('[data-tab="state"]').click()
+  await page.locator('[data-tab="status"]').click()
 
   // ターミナル
   await page.getByText('ターミナル', { exact: true }).first().click()
