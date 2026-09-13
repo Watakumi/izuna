@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Panel } from '../useSessions'
 import type { TeamBoard } from '../../../main/team'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
-import { Card, Faint, Loading, Reload, Tag } from './ui'
+import { Card, Faint, Loading, Reload, Section, Tag } from './ui'
 
 /**
  * 共有フォルダの作業（§16）。ブレインと実行役が書いたものを読むだけ。
@@ -138,26 +138,6 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
             ))}
         </Section>
       )}
-    </div>
-  )
-}
-
-function Section({
-  label,
-  action,
-  children
-}: {
-  label: string
-  action?: React.ReactNode
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: F.small, color: C.dim2 }}>{label}</span>
-        {action}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>{children}</div>
     </div>
   )
 }
