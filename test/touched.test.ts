@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { touchedFiles } from '../src/shared/touched'
+import { touchedFiles, byLabel, BY_MAX } from '../src/shared/touched'
 import type { Block, TaskRun, Transcript } from '../src/shared/transcript'
 
 /**
@@ -132,5 +132,25 @@ describe('触ったファイル', () => {
 
   it('何も触っていなければ空', () => {
     expect(touchedFiles(t([]))).toEqual([])
+  })
+})
+
+describe('実行役の名札', () => {
+  it('役の名があればそれ。無ければ依頼文の 1 行目を切る', () => {
+    expect(byLabel('general-purpose', '長い依頼文')).toBe('general-purpose')
+    expect(byLabel(null, '短い依頼')).toBe('短い依頼')
+  })
+
+  it('**依頼文をそのまま名札にしない。** 行の幅を全部取って、パスも釦も押し出される', () => {
+    const prompt = 'あなたは読み取り専用の分析役です。ファイルを書き換えないでください。\n次の行'
+    const got = byLabel(null, prompt)
+    expect(got.length).toBe(BY_MAX + 1)
+    expect(got.endsWith('…')).toBe(true)
+    expect(got).not.toContain('\n')
+  })
+
+  it('空なら「実行役」。誰かは分かる', () => {
+    expect(byLabel(null, '')).toBe('実行役')
+    expect(byLabel('  ', '   ')).toBe('実行役')
   })
 })

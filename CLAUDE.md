@@ -17,7 +17,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
-  セッションの一覧と resume・画像・mermaid・作業・自律ループ）。
+  セッションの一覧と resume・画像・mermaid・実行役の作業・自律ループ）。
   2026-09-08 にセキュリティ（§26）・重複と依存（§27）・検査の範囲（§28）を見直し、
   `docs/NIMBALYST.md` §3 の 7 件を入れた。2026-09-09 に features ページの 3 件（§7）、
   `pnpm e2e`（§30）、**v1 の 7 手の通し**（`pnpm walk`。§31、`docs/v1-walk/`）を入れた。
@@ -105,7 +105,7 @@ src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで�
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
 src/shared/ci.ts            Forgejo Actions の実行を ok / ng / running / none に畳む（純粋関数）
 src/shared/markdown.ts      本文の解釈。木を返して HTML を作らない（例外は Mermaid.tsx だけ）
-src/renderer/src/App.tsx    画面。右パネルに 情報 / ファイル / 資料 / 作業 / ループ / PR / ブランチ。
+src/renderer/src/App.tsx    画面。右パネルは問いで 4 枚（Status / Changes / PR / Run。§35）。
                             会話の柱の下に、頁（§32）かファイル（§34）のどちらか一方
 
 scripts/protocol.ts         stream-json のワイヤ型。**アプリは使わない**（下記）

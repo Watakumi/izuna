@@ -143,8 +143,8 @@ async function main(): Promise<void> {
   )
   await shoot(page, '6-mermaid')
 
-  // 触ったファイル
-  await page.getByText('ファイル', { exact: true }).click()
+  // 変更（§35）。worktree の中だけ
+  await page.locator('[data-tab="changes"]').click()
   await page.waitForTimeout(300)
   check(
     (await page.getByText('書き換えた', { exact: false }).count()) > 0,
@@ -157,12 +157,12 @@ async function main(): Promise<void> {
   await shoot(page, '7-files')
 
   // 資料の skill（§33）。名前が長い（`izuna-docs:doc-…`）ので、欄と釦が潰れないかを見る
-  await page.getByText('資料', { exact: true }).click()
+  await page.locator('[data-tab="run"]').click()
   check((await page.getByText('頼む').count()) > 0, '資料の skill に「頼む」が出る')
   await shoot(page, '9-docs')
 
-  // 共有フォルダの作業（§16）
-  await page.getByText('作業', { exact: true }).click()
+  // 状態（§35）。実行役と worktree と上限
+  await page.locator('[data-tab="status"]').click()
   await page.waitForTimeout(300)
   check(
     (await page.getByText('同時に走らせてはいけない組があります').count()) > 0,
@@ -170,13 +170,13 @@ async function main(): Promise<void> {
   )
   await shoot(page, '8-board')
 
-  // 自律ループ（§23）
-  await page.getByText('ループ', { exact: true }).click()
+  // 自律ループ（§23）。「依頼」の下半分にある
+  await page.locator('[data-tab="run"]').click()
   await page.waitForTimeout(400)
   await shoot(page, '5-loop')
   check((await page.getByText('始める').count()) > 0, 'ループを始める釦が無い')
   check((await page.getByText('止める').count()) === 0, '回っていないのに止める釦が出ている')
-  await page.getByText('情報', { exact: true }).click()
+  await page.locator('[data-tab="status"]').click()
 
   // ターミナル
   await page.getByText('ターミナル', { exact: true }).first().click()

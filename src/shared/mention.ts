@@ -11,6 +11,26 @@ export function relativeTo(cwd: string, path: string): string {
   return path.startsWith(base) ? path.slice(base.length) : path
 }
 
+/**
+ * 画面に出すパス。**`direction: rtl` で切らない** —— 末尾に余計な `/` が現れて読めなくなる
+ * （2026-09-13 に画面で見た。`…333/scratchpad/orca-security.md/` のように出ていた）。
+ * 後ろの区切りから数えて、入るところまで出す。
+ */
+export function displayPath(cwd: string, path: string, max = 38): string {
+  const rel = relativeTo(cwd, path)
+  if (rel.length <= max) return rel
+  const parts = rel.split('/')
+  const out: string[] = []
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const next = [parts[i], ...out].join('/')
+    if (next.length + 1 > max) break
+    out.unshift(parts[i])
+  }
+  // 1 つも入らなければ、末尾だけを切って出す（名前が長い 1 ファイル）
+  if (out.length === 0) return `…${rel.slice(-(max - 1))}`
+  return `…/${out.join('/')}`
+}
+
 /** ファイル全体を指す */
 export function mentionFile(cwd: string, path: string): string {
   return `${relativeTo(cwd, path)} について: `

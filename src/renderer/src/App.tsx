@@ -49,9 +49,7 @@ function App(): React.JSX.Element {
    * 両方を積むと会話が押し出される
    */
   const [file, setFile] = useState<string | null>(null)
-  const [tab, setTab] = useState<'info' | 'files' | 'docs' | 'board' | 'loop' | 'pr' | 'branch'>(
-    'info'
-  )
+  const [tab, setTab] = useState<'status' | 'changes' | 'pr' | 'run'>('status')
   const [stale, setStale] = useState(false)
 
   // 利用者の Ghostty のテーマを借りる。無ければ既定のまま（§21）
@@ -500,7 +498,7 @@ function App(): React.JSX.Element {
             </div>
             <div
               style={{
-                width: tab === 'info' ? 288 : 360,
+                width: tab === 'status' ? 288 : 360,
                 flexShrink: 0,
                 background: C.panel,
                 borderLeft: `1px solid ${C.line}`,
@@ -509,7 +507,11 @@ function App(): React.JSX.Element {
               }}
             >
               <div style={{ display: 'flex', flexShrink: 0, borderBottom: `1px solid ${C.line}` }}>
-                {(['info', 'files', 'docs', 'board', 'loop', 'pr', 'branch'] as const).map((t) => (
+                {/*
+                  **タブは問いで分ける**（§35）。機能ごとに 1 枚ずつ足していたら 7 枚になり、
+                  空のものが常設され、同じ事実が 2 か所に出ていた。名前は名詞（§17.4）
+                */}
+                {(['status', 'changes', 'pr', 'run'] as const).map((t) => (
                   <div
                     key={t}
                     data-tab={t}
@@ -525,25 +527,26 @@ function App(): React.JSX.Element {
                       borderBottom: `2px solid ${tab === t ? C.amber : 'transparent'}`
                     }}
                   >
-                    {t === 'info'
-                      ? '情報'
-                      : t === 'files'
-                        ? 'ファイル'
-                        : t === 'docs'
-                          ? '資料'
-                          : t === 'board'
-                            ? '作業'
-                            : t === 'loop'
-                              ? 'ループ'
-                              : t === 'pr'
-                                ? 'PR'
-                                : 'ブランチ'}
+                    {t === 'status'
+                      ? 'Status'
+                      : t === 'changes'
+                        ? 'Changes'
+                        : t === 'pr'
+                          ? 'PR'
+                          : 'Run'}
                   </div>
                 ))}
               </div>
               <div style={{ flexGrow: 1, minHeight: 0 }}>
-                {tab === 'info' && <Inspector panel={active} onOpenForge={() => setTab('pr')} />}
-                {tab === 'files' && (
+                {/* Status: どこで、何が動いていて、あと何回頼めるか。読むだけ */}
+                {tab === 'status' && (
+                  <div style={{ height: '100%', overflowY: 'auto' }}>
+                    <Inspector panel={active} onOpenForge={() => setTab('pr')} />
+                    <Board panel={active} />
+                  </div>
+                )}
+                {/* Changes: 自分のリポジトリの何が変わったか。読むだけ */}
+                {tab === 'changes' && (
                   <Files
                     panel={active}
                     onOpen={(p) => {
@@ -553,36 +556,43 @@ function App(): React.JSX.Element {
                     onAsk={mention}
                   />
                 )}
-                {tab === 'board' && <Board panel={active} />}
-                {tab === 'loop' && <Loop panel={active} />}
-                {tab === 'docs' && (
-                  <Docs panel={active} onAsk={(text) => void window.izuna.send(active.id, text)} />
-                )}
+                {/* PR: 次にどこへ出すか、何を片付けるか */}
                 {tab === 'pr' && (
-                  <Forge
-                    cwd={active.cwd}
-                    sessionId={active.id}
-                    onDone={() => setTab('info')}
-                    onAsk={(p) => mention(mentionDiff(active.cwd, p))}
-                    onPreview={(url) => {
-                      setFile(null)
-                      setPreview(url)
-                    }}
-                  />
+                  <div style={{ height: '100%', overflowY: 'auto' }}>
+                    <Forge
+                      cwd={active.cwd}
+                      sessionId={active.id}
+                      onDone={() => setTab('status')}
+                      onAsk={(p) => mention(mentionDiff(active.cwd, p))}
+                      onPreview={(url) => {
+                        setFile(null)
+                        setPreview(url)
+                      }}
+                    />
+                    <Worktrees
+                      cwd={active.cwd}
+                      panels={sessions.panels}
+                      onOpen={(w) =>
+                        void sessions.open({
+                          cwd: w.path,
+                          label: w.branch ?? w.path,
+                          branch: w.branch,
+                          team: active.team,
+                          initialPrompt: ''
+                        })
+                      }
+                    />
+                  </div>
                 )}
-                {tab === 'branch' && (
-                  <Worktrees
-                    cwd={active.cwd}
-                    panels={sessions.panels}
-                    onOpen={(w) =>
-                      void sessions.open({
-                        cwd: w.path,
-                        label: w.branch ?? w.path,
-                        branch: w.branch,
-                        team: w.branch ?? 'default'
-                      })
-                    }
-                  />
+                {/* Run: 人が始める操作（skill・自律ループ・起床の予約） */}
+                {tab === 'run' && (
+                  <div style={{ height: '100%', overflowY: 'auto' }}>
+                    <Docs
+                      panel={active}
+                      onAsk={(text) => void window.izuna.send(active.id, text)}
+                    />
+                    <Loop panel={active} />
+                  </div>
                 )}
               </div>
             </div>

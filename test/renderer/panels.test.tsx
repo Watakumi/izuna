@@ -43,7 +43,7 @@ describe('触ったファイル', () => {
     expect(screen.getByText('まだファイルを読み書きしていません')).toBeTruthy()
   })
 
-  it('書いたものを上に、作業ディレクトリからの相対で出す。外は絶対のまま', () => {
+  it('**worktree の中だけ出す。** 書いたものが上、外は数だけ畳む（§35）', () => {
     const p = panel(
       {},
       {
@@ -56,11 +56,22 @@ describe('触ったファイル', () => {
     )
     const { container } = render(<Files panel={p} />)
     const text = container.textContent ?? ''
-    expect(text).toContain('書き換えた 2 件')
+    expect(text).toContain('書き換えた 1 件')
     expect(text).toContain('読んだだけ 1 件')
     expect(text.indexOf('src/b.ts')).toBeLessThan(text.indexOf('src/a.ts'))
-    expect(text).toContain('/etc/hosts')
+    // 外は一覧に出さない。数だけ
+    expect(text).not.toContain('/etc/hosts')
+    expect(text).toContain('このリポジトリの外 1 件')
     expect(text).not.toContain('../')
+  })
+
+  it('**外も捨てない。** 開けば見える', () => {
+    const p = panel({}, { items: [tool('Edit', '/etc/hosts')] })
+    render(<Files panel={p} />)
+    expect(screen.queryByText(/hosts/)).toBeNull()
+    expect(screen.getByText('このリポジトリの中は、まだ読み書きしていません')).toBeTruthy()
+    fireEvent.click(screen.getByText('▸ このリポジトリの外 1 件'))
+    expect(screen.getByText(/hosts/)).toBeTruthy()
   })
 
   it('実行役が触った分は誰かを札で出す', () => {

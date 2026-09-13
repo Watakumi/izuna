@@ -21,6 +21,22 @@ export interface Touched {
   by: string[]
 }
 
+/**
+ * 実行役の名札。**依頼文をそのまま名札にしない。**
+ *
+ * `subagentType` が無いとき `description` に依頼文が丸ごと入ることがある（2026-09-13 に画面で見た。
+ * 名札が行の幅を全部取り、パスも回数も釦も押し出されていた）。役の名があればそれ、無ければ
+ * 依頼文の 1 行目を切る。それも無ければ「実行役」 —— 誰かは分かる。
+ */
+export const BY_MAX = 16
+
+export function byLabel(subagentType: string | null, description: string): string {
+  if (subagentType !== null && subagentType.trim() !== '') return subagentType.trim()
+  const head = description.split('\n')[0].trim()
+  if (head === '') return '実行役'
+  return head.length > BY_MAX ? `${head.slice(0, BY_MAX)}…` : head
+}
+
 /** ファイルを読むツール。名前は Claude Code の実測 */
 const READERS = new Set(['Read', 'NotebookRead'])
 /** ファイルを書き換えるツール */
@@ -66,7 +82,7 @@ export function touchedFiles(t: Transcript, tasks: TaskRun[] = []): Touched[] {
   for (const item of t.items) {
     if (item.kind === 'assistant') collect(item.blocks, null, into)
   }
-  for (const task of tasks) collect(task.blocks, task.subagentType ?? task.description, into)
+  for (const task of tasks) collect(task.blocks, byLabel(task.subagentType, task.description), into)
 
   return [...into.values()].sort((a, b) =>
     a.wrote > 0 !== b.wrote > 0
