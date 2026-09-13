@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Panel } from '../useSessions'
 import { until, WAKEUP_STATE_LABEL, type Wakeup } from '../../../shared/wakeup'
 import { C, ellipsis, F, MONO, R, S } from '../theme'
-import { Button, Faint, Input, Loading, Meter, NumberInput, Reload } from './ui'
+import { Button, Faint, Input, Loading, Meter, NumberInput, Reload, Section } from './ui'
 
 /**
  * 自律ループ（§23）。
@@ -35,7 +35,7 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.lg, padding: S.lg }}>
       {!running && (
-        <>
+        <Section label="自律ループ">
           <Faint>
             共有フォルダの brief.md と tasks/ を読んで、終わったと宣言するまで繰り返します。
             文脈は毎回捨てるので、引き継ぐのは進捗に書いたものだけです
@@ -54,7 +54,7 @@ export function Loop({ panel }: { panel: Panel }): React.JSX.Element {
           >
             {busy ? '始めています…' : '始める'}
           </Button>
-        </>
+        </Section>
       )}
 
       {loop && (
@@ -183,14 +183,9 @@ function Wakeups({ panel }: { panel: Panel }): React.JSX.Element {
         paddingTop: S.lg
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span
-          style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}
-        >
-          時刻を決めて送る
-        </span>
-        <Reload onClick={load} busy={busy} />
-      </div>
+      <Section label="時刻を決めて送る" action={<Reload onClick={load} busy={busy} />}>
+        <div />
+      </Section>
       <div style={{ display: 'flex', alignItems: 'center', gap: S.sm, fontSize: F.body }}>
         <NumberInput
           value={minutes}

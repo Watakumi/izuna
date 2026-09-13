@@ -498,7 +498,8 @@ function App(): React.JSX.Element {
             </div>
             <div
               style={{
-                width: tab === 'status' ? 288 : 360,
+                // 幅はタブで変えない。押すたびに柱が動くと、読んでいた場所を見失う（2026-09-14）
+                width: 360,
                 flexShrink: 0,
                 background: C.panel,
                 borderLeft: `1px solid ${C.line}`,

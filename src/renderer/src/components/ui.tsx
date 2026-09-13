@@ -423,3 +423,34 @@ export function Meter({ label, value }: { label: string; value: number }): React
     </div>
   )
 }
+
+/**
+ * 節の見出し。**節に名前が無いと、何を見ているのか分からない**（§35。2026-09-14 に
+ * `Run` の中で自律ループの説明が見出しなしに出ていて、利用者が「何かわからない」と言った）。
+ *
+ * 同じ形が `Board.tsx` にもあったので、ここ 1 つにした（§17 と同じ理由）。
+ */
+export function Section({
+  label,
+  action,
+  children
+}: {
+  label: string
+  /** 右端に置くもの（取り直しの釦など） */
+  action?: React.ReactNode
+  children: React.ReactNode
+}): React.JSX.Element {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span
+          style={{ fontSize: F.small, color: C.dim2, letterSpacing: '0.08em', fontWeight: 600 }}
+        >
+          {label}
+        </span>
+        {action}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>{children}</div>
+    </div>
+  )
+}
