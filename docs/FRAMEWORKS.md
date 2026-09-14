@@ -24,7 +24,7 @@ Forgejo の頁で PdM が読んでコメントできる（二段の流れに資�
 | Issue が 0 件 | `gh issue list` は **`[]` を返して成功する** | **止まる判断**を手順 2 に置いた。止めないと空の表か作り話が出る |
 | GitHub の remote が無い | `no git remotes found` で失敗する | 人に貼ってもらう |
 | 日付を聞く | エージェントは知っていた（2026-09-11 と答えた） | それでも `date +%F` で確かめる。間違えても止まらない箇所なので |
-| `doc-shared/` を置く | skill として走査されない（4 本だけが出る） | 参照ファイルの置き場にできる |
+| `doc-shared/` を置く | skill として走査されない（`SKILL.md` を持つものだけが出る） | 参照ファイルの置き場にできる |
 
 不採用にしたもの: 「Now は次の 1〜2 週間で終わるもの」（期間の根拠が無い。観測できる条件に書き直した）、
 「Issue が 100 件を超えたら絞る」（上限の根拠が無い）。
@@ -39,6 +39,7 @@ Forgejo の頁で PdM が読んでコメントできる（二段の流れに資�
 | `doc-impact-map` | Impact Mapping | 目標、Issue | mermaid の mindmap と表、「繋がらない」Issue |
 | `doc-example-map` | Example Mapping | Issue 1 つ | 規則・具体例・疑問。具体例は検査に落とす |
 | `doc-working-backwards` | Working Backwards（PR / FAQ） | GOAL、Issue、PR | プレスリリースと FAQ、「未定」 |
+| `doc-story-map` | ユーザーストーリーマッピング | GOAL、Issue、既にあるもの | 背骨・物語（`S-nn`）・切り口、噛み合っていないところ |
 
 **版は資料ごとに個別に追える。** 置き場は `docs/plans/<資料名>/` で、skill は上書きせず日付つきの版を足し、
 冒頭に前の版からの変更を書き、`README.md` に版の索引を置く（利用者の指示、2026-09-11）。歴史は
@@ -48,7 +49,9 @@ Forgejo の頁で PdM が読んでコメントできる（二段の流れに資�
 Issue は `gh` で読み、通らなければ人に貼ってもらう（Forgejo の Issue は Izuna の画面には出るが、skill からは
 ボットのトークンに触れないので、貼ってもらう。Issue #52）。
 
-4 本が共有する参照ファイルは `resources/izuna-docs/skills/doc-shared/` にある。
+5 本が共有する参照ファイルは `resources/izuna-docs/skills/doc-shared/` にある。
+**`trace.md` は 2 本だけが使う**（`doc-story-map` と `doc-now-next-later`）——
+ロードマップと物語の地図が対応していることを、両方向で数える規則（利用者の指示、2026-09-14）。
 
 | ファイル | 中身 |
 | --- | --- |
@@ -87,7 +90,8 @@ Issue は `gh` で読み、通らなければ人に貼ってもらう（Forgejo 
 仕組みは SDK の `plugins`（`--plugin-dir` として渡る。`shared/plugin.ts` が場所を出し、
 `ipc/register.ts` が `SessionHub` に渡す）。skill の名前は `izuna-docs:doc-…` の形になり、
 `/` パレットにもその名前で出る。2026-09-11 に、`.claude/` を持たないよそのリポジトリで
-4 本が出ることを測った。
+4 本が出ることを測った（**そのときは 4 本**。2026-09-14 に `doc-story-map` を足して 5 本になったが、
+よそのリポジトリで数え直してはいない。**未検証**）。
 
 Izuna を使わずに同じ skill を使いたいなら、`resources/izuna-docs` を `--plugin-dir` に渡すか、
 `skills/` の中身をそのリポジトリの `.claude/skills/` にコピーする。
