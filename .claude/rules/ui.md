@@ -825,7 +825,7 @@ Izuna の口に無い（ボットのトークンに権限を持たせない。§
 ## 33. 資料タブ（2026-09-11）
 
 PdM との会話や PJ の今後を決める資料を、Izuna から作れるようにした（docs/FRAMEWORKS.md）。**製品の機能ではなく skill**
-（`resources/izuna-docs/skills/doc-now-next-later/SKILL.md` ほか 4 本）で、claude が実行し、出来た資料は `docs/plans/<資料名>/` に
+（`resources/izuna-docs/skills/doc-now-next-later/SKILL.md` ほか。2026-09-14 に `doc-story-map` を足して 5 本）で、claude が実行し、出来た資料は `docs/plans/<資料名>/` に
 日付つきの版として置かれ、いつもどおり承認と差分と PR を通る。
 
 右パネルの「資料」タブ（`components/Docs.tsx`、`shared/docs.ts`）は**入口を見えるようにするだけ**。`/` パレットでも
@@ -843,7 +843,12 @@ SDK の `plugins` に渡すので、**開いたリポジトリの `.claude/` を
 `app.asar.unpacked/` 側を指す。asar の中を渡すと claude が読めない）、`ipc/register.ts` が
 `SessionHub.setPluginPath()` に渡す。**駆動部は Electron を知らない**ので、hub では解かない（§4）。
 名前は `izuna-docs:doc-…` になり、`docSkills` は前置きを落として札に出し、送るのは全体の名前。
-`.claude/` を持たないよそのリポジトリで 4 本が出ることを実測した。
+`.claude/` を持たないよそのリポジトリで 4 本が出ることを実測した（そのときは 4 本。5 本目は数え直していない）。
+
+**ロードマップと物語の地図は対応させる**（2026-09-14、利用者の指示）。`doc-shared/trace.md` が規則で、
+物語に `S-nn` を振り、ロードマップの各行が運ぶ番号を書く。**両方向を数える** ——
+どの物語にも紐づかない Issue と、どの Issue にも運ばれていない物語の 2 つは、
+どちらも「無い」という形で現れるので、突き合わせないと気づけない。
 
 **タブに出すのは説明の 1 文だけ**（同日に直した）。skill の description は後半に「〜したい、といった依頼で使う」という
 **起動の言葉**を持つ —— エージェントが skill を選ぶためのもので、人が読むものではない。`docSkills` は
