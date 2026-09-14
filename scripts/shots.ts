@@ -168,6 +168,10 @@ async function main(): Promise<void> {
     (await page.getByText('同時に走らせてはいけない組があります').count()) > 0,
     'paths の重なりが出ていない'
   )
+  // 外に出た操作（§38）。畳んであるので開いてから撮る
+  await page.getByText(/外に出た操作/).click()
+  await page.waitForTimeout(200)
+  check((await page.getByText('拒否した').count()) > 0, '外に出た操作が開かない')
   await shoot(page, '8-board')
 
   // 自律ループ（§23）。「依頼」の下半分にある

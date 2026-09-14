@@ -23,9 +23,11 @@ const panel = (over: Partial<Panel>, transcript: Partial<Transcript> = {}): Pane
 })
 
 let calls: string[] = []
+let actions: Array<{ at: string; kind: string; target: string; ok: boolean; note: string }> = []
 
 beforeEach(() => {
   calls = []
+  actions = []
   ;(window as unknown as { izuna: unknown }).izuna = {
     worktreeStatus: async () => ({
       changed: 2,
@@ -36,6 +38,7 @@ beforeEach(() => {
       branch: 'feat'
     }),
     teamPath: async (team: string) => `/teams/${team}`,
+    actions: async () => actions,
     // 落とした事実は聞きもしない。呼んだら記録されて落ちる
     remotes: async () => {
       calls.push('remotes')
@@ -105,5 +108,34 @@ describe('Inspector', () => {
     expect(screen.queryByText('/teams/alpha')).toBeNull()
     fireEvent.click(screen.getByText('共有フォルダ'))
     expect(screen.getByText('/teams/alpha')).toBeTruthy()
+  })
+})
+
+/** 外に出た操作（§38）。**畳んである。1 件も無ければ節ごと出さない** */
+describe('外に出た操作', () => {
+  const one = (over: Partial<{ kind: string; ok: boolean }> = {}): (typeof actions)[number] => ({
+    at: '2026-09-14T08:30:00.000Z',
+    kind: 'push',
+    target: 'forgejo/feat-x',
+    ok: true,
+    note: '',
+    ...over
+  })
+
+  it('1 件も無ければ節ごと出さない', async () => {
+    render(<Inspector panel={panel({ cwd: '/p5' })} />)
+    await waitFor(() => expect(screen.getByText('/p5')).toBeTruthy())
+    expect(screen.queryByText(/外に出た操作/)).toBeNull()
+  })
+
+  it('畳んであり、開けば新しいものから出る。失敗は赤', async () => {
+    actions = [one(), one({ kind: 'deny', ok: true }), one({ kind: 'delete-branch', ok: false })]
+    render(<Inspector panel={panel({ cwd: '/p6' })} />)
+    await waitFor(() => expect(screen.getByText('外に出た操作 3 件')).toBeTruthy())
+    expect(screen.queryByText('push')).toBeNull()
+    fireEvent.click(screen.getByText('外に出た操作 3 件'))
+    expect(screen.getByText('push')).toBeTruthy()
+    expect(screen.getByText('拒否した')).toBeTruthy()
+    expect((screen.getByText('ブランチを消す') as HTMLElement).style.color).not.toBe('')
   })
 })

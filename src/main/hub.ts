@@ -20,6 +20,7 @@ import type { SessionEvent, SessionId, StartSessionInput } from '../shared/ipc'
 import { ClaudeSession } from './claude/session'
 import { gateProjectHooks } from './claude/trust'
 import { loadConfig } from './config'
+import { appendAction } from './actions'
 import {
   appendLog,
   ensureTeam,
@@ -103,6 +104,9 @@ export class SessionHub {
     return r
   }
 
+  /** 承認を求められた道具の名前。答えたら消す（§38） */
+  readonly #asked = new Map<string, string>()
+
   async start(input: StartSessionInput): Promise<SessionId> {
     const id = randomUUID()
     // **開く前に、そのリポジトリが持ち込む hook を見る**（§26）。
@@ -135,7 +139,11 @@ export class SessionHub {
     })
 
     session.on('message', (message) => this.#emit({ kind: 'message', id, message }))
-    session.on('permission', (request) => this.#emit({ kind: 'permission', id, request }))
+    session.on('permission', (request) => {
+      // 答えるときに「何に対する許可だったか」を言えるように覚える（§38）
+      this.#asked.set(request.id, request.toolName)
+      this.#emit({ kind: 'permission', id, request })
+    })
     session.on('permissionExpired', (requestId) =>
       this.#emit({ kind: 'permissionExpired', id, requestId })
     )
@@ -215,8 +223,24 @@ export class SessionHub {
     return this.#must(id).session.setModel(model)
   }
 
+  /**
+   * 人の判断を claude に返し、**外に出た操作として記録する**（§38）。
+   *
+   * 承認は会話にも残るが、**拒否は「拒否しました」としか残らない**。
+   * 何を拒否したのか・いつだったのかは、ここでしか分からない。
+   */
   respondPermission(id: SessionId, requestId: string, result: PermissionResult): void {
     this.#must(id).session.respondToPermission(requestId, result)
+    const tool = this.#asked.get(requestId)
+    this.#asked.delete(requestId)
+    if (tool === undefined) return
+    void appendAction({
+      at: new Date().toISOString(),
+      kind: result.behavior === 'allow' ? 'allow' : 'deny',
+      target: tool,
+      ok: true,
+      note: this.labelOf(id)
+    })
   }
 
   async stop(id: SessionId): Promise<void> {
