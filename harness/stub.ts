@@ -141,6 +141,30 @@ export function installStub(): void {
     }),
     // 実機の Ghostty の代わり。**ハーネス側から差し替えられる**ようにしておく
     ghosttySkin: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
+    // 外に出た操作（§38）。3 件だけ出す
+    actions: async () => [
+      {
+        at: new Date(Date.now() - 3 * 60_000).toISOString(),
+        kind: 'push' as const,
+        target: 'forgejo/feat-board',
+        ok: true,
+        note: '2 コミット'
+      },
+      {
+        at: new Date(Date.now() - 9 * 60_000).toISOString(),
+        kind: 'deny' as const,
+        target: 'Bash',
+        ok: true,
+        note: 'izuna'
+      },
+      {
+        at: new Date(Date.now() - 20 * 60_000).toISOString(),
+        kind: 'delete-branch' as const,
+        target: 'forgejo/old',
+        ok: false,
+        note: 'remote が無い'
+      }
+    ],
     // 配色の選び方（§37）。実機の一覧の代わりに、名前だけ何件か出す
     themes: async () => ({
       current: { kind: 'ghostty' as const },

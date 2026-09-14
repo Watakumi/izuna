@@ -25,6 +25,7 @@ import type { Progress, Stop } from './loop'
 import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
 import type { ThemeChoice } from './ghostty'
+import type { Action } from './actions'
 import type { Transcript } from './transcript'
 import type { Attachment } from './image'
 import type { FileDiff } from './diff'
@@ -185,6 +186,12 @@ export interface IzunaApi {
    * 利用者の Ghostty のテーマ。**無ければ null**（既定の色で出る）。
    * ターミナルが既に ghostty なのに、アプリの色だけ別なのは筋が通らない。
    */
+  /**
+   * 外に出た操作の記録（§38）。新しいものから 20 件。**読むだけ。**
+   * 会話に残るものは複製しない —— ここにしか無いものだけを持つ。
+   */
+  actions(): Promise<Action[]>
+
   ghosttySkin(): Promise<GhosttySkin | null>
 
   /**
@@ -299,6 +306,7 @@ export const CH = {
   closeTerminal: 'izuna:term:close',
   terminalEvent: 'izuna:term:event',
   configInfo: 'izuna:config:info',
+  actions: 'izuna:actions:list',
   ghosttySkin: 'izuna:ghostty:skin',
   themes: 'izuna:theme:list',
   setTheme: 'izuna:theme:set',

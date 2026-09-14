@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import type { WorktreeStatus } from '../../../main/git/worktree'
 import type { Panel } from '../useSessions'
 import { makeCache } from '../remember'
+import { ACTION_LABEL, type Action } from '../../../shared/actions'
 import { limitLabel, stale } from '../../../shared/transcript'
-import { F, C, MONO } from '../theme'
+import { C, ellipsis, F, MONO } from '../theme'
 import { Meter } from './ui'
 
 /**
@@ -23,6 +24,7 @@ import { Meter } from './ui'
 interface Snapshot {
   status: WorktreeStatus | null
   team: string | null
+  actions: Action[]
 }
 const remembered = makeCache<Snapshot>()
 
@@ -31,6 +33,8 @@ export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
   const seed = remembered.get(panel.cwd)
   const [status, setStatus] = useState<WorktreeStatus | null>(seed?.status ?? null)
   const [team, setTeam] = useState<string | null>(seed?.team ?? null)
+  const [actions, setActions] = useState<Action[]>(seed?.actions ?? [])
+  const [showActions, setShowActions] = useState(false)
   const [showTeam, setShowTeam] = useState(false)
   /**
    * いまの時刻。**描く途中で `Date.now()` を呼ばない**（描画は純粋に保つ）。
@@ -45,14 +49,20 @@ export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
   useEffect(() => {
     let alive = true
     void (async () => {
-      const [st, tp] = await Promise.all([
+      const [st, tp, ac] = await Promise.all([
         window.izuna.worktreeStatus(panel.cwd).catch(() => null),
-        window.izuna.teamPath(panel.team).catch(() => null)
+        window.izuna.teamPath(panel.team).catch(() => null),
+        // **黙って空にしない。** 読めなかったことは main のログに出す（握りつぶさない）
+        window.izuna.actions().catch((e: Error) => {
+          console.error('[izuna] 操作の記録を読めませんでした:', e.message)
+          return []
+        })
       ])
       if (!alive) return
       setStatus(st)
       setTeam(tp)
-      remembered.set(panel.cwd, { status: st, team: tp })
+      setActions(ac)
+      remembered.set(panel.cwd, { status: st, team: tp, actions: ac })
     })()
     return () => {
       alive = false
@@ -107,6 +117,53 @@ export function Inspector({ panel }: { panel: Panel }): React.JSX.Element {
           <span style={{ fontSize: F.small, color: C.faint }}>まだ届いていません</span>
         )}
       </Block>
+
+      {/*
+        外に出た操作（§38）。**畳んでおく。** 見るのは「見ていない間に何をしたか」を
+        知りたいときだけで、常に開いていると場所を取る。1 件も無ければ節ごと出さない（§35）
+      */}
+      {actions.length > 0 && (
+        <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.line}` }}>
+          <div
+            onClick={() => setShowActions((v) => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+          >
+            <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, width: 8 }}>
+              {showActions ? '▾' : '▸'}
+            </span>
+            <span
+              style={{ fontSize: F.small, letterSpacing: '0.08em', color: C.dim2, fontWeight: 600 }}
+            >
+              外に出た操作 {actions.length} 件
+            </span>
+          </div>
+          {showActions && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingTop: 8 }}>
+              {actions.map((a, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                  <span style={{ font: `${F.micro}px ${MONO}`, color: C.faint, flexShrink: 0 }}>
+                    {a.at.slice(5, 16).replace('T', ' ')}
+                  </span>
+                  <span style={{ fontSize: F.micro, color: a.ok ? C.dim2 : C.red, flexShrink: 0 }}>
+                    {ACTION_LABEL[a.kind]}
+                  </span>
+                  <span
+                    title={a.note}
+                    style={{
+                      font: `${F.micro}px ${MONO}`,
+                      color: C.faint,
+                      flexGrow: 1,
+                      ...ellipsis
+                    }}
+                  >
+                    {a.target}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 共有フォルダは畳んでおく。実行役を使わないセッションには無関係 */}
       <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.line}` }}>

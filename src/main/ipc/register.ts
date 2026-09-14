@@ -26,6 +26,7 @@ import * as term from '../terminal'
 import { findRepos, pickDirectory } from '../repos'
 import { scanSessions, replaySession } from '../sessions'
 import { listThemes, loadSkin } from '../ghostty'
+import { noting, readActions } from '../actions'
 import { CONFIG_PATH, loadConfig, saveConfigValue } from '../config'
 import { listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus } from '../git/worktree'
 import { SessionHub } from '../hub'
@@ -107,6 +108,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   const handlers: Handlers = {
     // 過去のセッション（§18）。走査するだけで、保存層は持たない
     // 選ばれた配色で組む（§37）。読めなければ既定の色で出る
+    actions: () => readActions(),
     ghosttySkin: async () => loadSkin((await loadConfig()).config.theme).catch(() => null),
     // `listThemes` は読めないディレクトリを自分で飛ばすので、ここで握らない
     themes: async () => ({
@@ -142,14 +144,24 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     forgePullDiff: async (owner, repo, index) =>
       parseUnifiedDiff(await pullDiff(await forgeRoot(), owner, repo, index)),
     forgeCreatePull: async (owner, repo, input) =>
-      createPull(await forgeRoot(), owner, repo, input),
+      noting(
+        'create-pull',
+        `${owner}/${repo}`,
+        async () => createPull(await forgeRoot(), owner, repo, input),
+        (pr) => `!${pr.number} ${pr.title}`
+      ),
     forgeRuns: async (owner, repo, ref) => listRuns(await forgeRoot(), owner, repo, ref),
-    forgeClosePull: async (owner, repo, index) => closePull(await forgeRoot(), owner, repo, index),
-    forgeDeleteRepo: async (owner, repo) => {
-      await deleteRepo(await forgeRoot(), owner, repo)
-      return `${owner}/${repo} を消しました`
-    },
-    forgeEnsureRepo: async (name) => ensureRepo(await forgeRoot(), name),
+    forgeClosePull: async (owner, repo, index) =>
+      noting('close-pull', `${owner}/${repo}!${index}`, async () =>
+        closePull(await forgeRoot(), owner, repo, index)
+      ),
+    forgeDeleteRepo: async (owner, repo) =>
+      noting('delete-repo', `${owner}/${repo}`, async () => {
+        await deleteRepo(await forgeRoot(), owner, repo)
+        return `${owner}/${repo} を消しました`
+      }),
+    forgeEnsureRepo: async (name) =>
+      noting('create-repo', name, async () => ensureRepo(await forgeRoot(), name)),
     forgeSetToken: async (token) => adoptToken(await forgeRoot(), token),
     forgeProvisionBot: async (admin) => provisionBot(await forgeRoot(), admin),
     forgeTokens: async () => {
@@ -168,19 +180,32 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     // 読む口だけ。書く口は作らない（§34）。根は作業ディレクトリ 1 つ
     readFile: (cwd, path) => readRepoFile([cwd], path),
     ghPulls: (cwd) => gh.listPulls(cwd),
-    ghCreatePull: (cwd, input) => gh.createPull(cwd, input),
+    ghCreatePull: (cwd, input) =>
+      noting(
+        'create-pull',
+        `upstream:${input.head}`,
+        () => gh.createPull(cwd, input),
+        (url) => url
+      ),
 
     remotes: async (cwd) => remote.listRemotes(cwd, (await gatherFacts()).config?.rootUrl ?? null),
     ensureSandboxRemote: async (cwd, owner, repo) =>
-      remote.ensureSandboxRemote(cwd, await forgeRoot(), owner, repo),
+      noting('add-remote', `${owner}/${repo}`, async () =>
+        remote.ensureSandboxRemote(cwd, await forgeRoot(), owner, repo)
+      ),
     currentBranch: (cwd) => remote.currentBranch(cwd),
     defaultBranch: (cwd, r) => remote.defaultBranch(cwd, r),
     // sandbox は private なので資格情報が要る。**その根の URL を渡す**
     isPushed: async (cwd, r, b) => remote.isPushed(cwd, r, b, await forgeRoot().catch(() => null)),
-    push: async (cwd, r, b) => remote.push(cwd, r, b, await forgeRoot().catch(() => null)),
+    push: async (cwd, r, b) =>
+      noting('push', `${r}/${b}`, async () =>
+        remote.push(cwd, r, b, await forgeRoot().catch(() => null))
+      ),
     remoteHeads: async (cwd, r) => remote.remoteHeads(cwd, r, await forgeRoot().catch(() => null)),
     deleteRemoteBranch: async (cwd, r, b) =>
-      remote.deleteRemoteBranch(cwd, r, b, await forgeRoot().catch(() => null)),
+      noting('delete-branch', `${r}/${b}`, async () =>
+        remote.deleteRemoteBranch(cwd, r, b, await forgeRoot().catch(() => null))
+      ),
     commitsSince: (cwd, base) => remote.commitsSince(cwd, base),
 
     openTerminal: (input) => term.openTerminal(getWindow, CH.terminalEvent, input),
@@ -208,7 +233,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
       ])
       return { root, name, worktrees }
     },
-    removeWorktree: (cwd, path, force) => removeWorktree(cwd, path, force),
+    removeWorktree: (cwd, path, force) =>
+      noting('remove-worktree', path, () => removeWorktree(cwd, path, force)),
     worktreeStatus: (path) => worktreeStatus(path),
 
     // ── セッションに紐づくもの。判断は hub ──────────────────

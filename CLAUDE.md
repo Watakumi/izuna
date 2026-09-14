@@ -102,8 +102,10 @@ src/shared/app-protocol.ts  app:// の URL → 出力ディレクトリの中の
 src/shared/plugin.ts        同梱プラグイン（資料の skill）の置き場（純粋関数。§33）
 src/shared/readfile.ts      中で読むファイルの関所と上限（純粋関数。§34）
 src/shared/mask.ts          鍵を API に出さない覆い。替えて戻す（純粋関数。§36）
+src/shared/actions.ts       外に出た操作の 1 件 1 行（純粋関数。§38）
 src/shared/mention.ts       対象を指して会話を始める文（純粋関数。§34）
 src/main/readfile.ts        読む口だけ。書く口は作らない（§34）
+src/main/actions.ts         ~/.izuna/actions.log に追記だけ。noting() が操作を包む（§38）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
@@ -179,7 +181,7 @@ Windows / Linux、複数エージェント対応。
 | `.claude/rules/team.md` | ブレインと実行役 | §12 |
 | `.claude/rules/config.md` | 設定 | §15 |
 | `.claude/rules/ui.md` | 画面 | §16, §17, §17.4, §17.5, §21, §22, §25, §29, §32, §35, §37 |
-| `.claude/rules/sessions.md` | セッションの保存と復元 | §18 |
+| `.claude/rules/sessions.md` | セッションの保存と復元、外に出た操作の記録 | §18, §38 |
 | `.claude/rules/loop.md` | 自律ループと起床 | §23 |
 | `.claude/rules/security.md` | セキュリティ | §26, §36 |
 | `.claude/rules/supply-chain.md` | 重複の整理とサプライチェーン | §27 |
@@ -208,7 +210,7 @@ pnpm walk       # v1 の 7 手を本物で通して撮る（§31）。実 API �
 1. **変えたい挙動を検査で先に書く。** 不変条件に触る変更では、守るものを明示してから直す（§11）。
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
-   新しい節を足すなら番号は続きから（いまの最後は §37）。既存の番号は変えない。
+   新しい節を足すなら番号は続きから（いまの最後は §38）。既存の番号は変えない。
 4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
    `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
 5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。
