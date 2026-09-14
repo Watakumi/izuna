@@ -16,6 +16,7 @@ import { Card, Faint, Loading, Reload, Section, Tag } from './ui'
  */
 export function Board({ panel }: { panel: Panel }): React.JSX.Element {
   const [board, setBoard] = useState<TeamBoard | null | undefined>(undefined)
+  const [showLog, setShowLog] = useState(false)
 
   const load = (): void => {
     void window.izuna
@@ -27,6 +28,31 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
 
   if (board === undefined) return <Loading style={{ padding: S.lg }} />
   if (board === null) return <Faint style={{ padding: S.lg }}>共有フォルダがありません</Faint>
+
+  /**
+   * **`log.md` は「中身がある」に数えない**（§35 の順番 4）。
+   *
+   * 実行役を使わないセッションでは、共有フォルダに入っているのは Izuna 自身が書いた
+   * 起動の 1 行だけである。それを数えると「作業 0 件 / 記録 1 行 / start …」という、
+   * 見出しだけの節が常に出る（利用者の「作業もよくわからない」）。
+   * 何も無いときは節を出さず、**何が起きたらここに出るか**を 1 行で言う。
+   */
+  const nothing =
+    board.tasks.length === 0 &&
+    board.ready.length === 0 &&
+    board.summaries.length === 0 &&
+    board.decisions.length === 0 &&
+    board.collisions.length === 0 &&
+    board.errors.length === 0
+
+  if (nothing)
+    return (
+      <div style={{ padding: S.lg }}>
+        <Section label="実行役" action={<Reload onClick={load} />}>
+          <Faint>ブレインが共有フォルダに作業を書くと、ここに出ます</Faint>
+        </Section>
+      </div>
+    )
 
   // 人の判断を待っているものだけ目立たせる（`attention` の定義）
   const needsHuman = (s: string): 'plain' | 'attention' =>
@@ -59,7 +85,6 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
       )}
 
       <Section label={`作業 ${board.tasks.length} 件`} action={<Reload onClick={load} />}>
-        {board.tasks.length === 0 && <Faint>まだ作業がありません</Faint>}
         {board.tasks.map((t) => (
           <div
             key={t.id}
@@ -126,17 +151,25 @@ export function Board({ panel }: { panel: Panel }): React.JSX.Element {
         </Section>
       )}
 
+      {/* 記録は畳んで置く（§35）。Izuna 自身の起動も入るので、常に開いていると場所を取る */}
       {board.log.length > 0 && (
-        <Section label={`記録 ${board.log.length} 行`}>
-          {board.log
-            .slice(-6)
-            .reverse()
-            .map((l, i) => (
-              <div key={i} style={{ font: `${F.micro}px ${MONO}`, color: C.faint, ...ellipsis }}>
-                {l.kind} {l.target} {l.note}
-              </div>
-            ))}
-        </Section>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
+          <span
+            onClick={() => setShowLog((v) => !v)}
+            style={{ fontSize: F.small, color: C.dim2, cursor: 'pointer' }}
+          >
+            {showLog ? '▾' : '▸'} 記録 {board.log.length} 行
+          </span>
+          {showLog &&
+            board.log
+              .slice(-6)
+              .reverse()
+              .map((l, i) => (
+                <div key={i} style={{ font: `${F.micro}px ${MONO}`, color: C.faint, ...ellipsis }}>
+                  {l.kind} {l.target} {l.note}
+                </div>
+              ))}
+        </div>
       )}
     </div>
   )

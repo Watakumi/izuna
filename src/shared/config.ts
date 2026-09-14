@@ -7,6 +7,7 @@
  * 既定は作者の環境（macOS + Homebrew）に寄せてあるが、
  * ここを上書きすれば他の環境でも動く。
  */
+import { parseThemeChoice, type ThemeChoice } from './ghostty'
 
 export interface IzunaConfig {
   /** Forgejo の作業ディレクトリ候補。Docker で建てているなら空にして forgejoUrl を使う */
@@ -28,6 +29,18 @@ export interface IzunaConfig {
    * 既定は空 —— **信頼は書いた人だけが足す**（§26）
    */
   trustedRepos: string[]
+  /**
+   * 鍵を API に出さない覆い（security.md §36）。**既定は掛ける。**
+   *
+   * 切ると、ツールが読んだ `.env` や `gcloud` のトークンがそのまま API へ行く。
+   * 切るのは、覆いが邪魔をして仕事にならないと**人が判断したとき**だけ。
+   */
+  maskSecrets: boolean
+  /**
+   * どの配色で描くか（§37）。既定は Ghostty に合わせる —— 利用者が自分で決めた配色が
+   * あるなら、それに合わせるほうが筋が通る（§21）。
+   */
+  theme: ThemeChoice
 }
 
 /** `~` は main 側で homedir に展開する。ここでは文字列のまま扱う */
@@ -39,7 +52,9 @@ export const DEFAULTS: IzunaConfig = {
   repoDepth: 3,
   claudePath: null,
   settingSources: ['project', 'local'],
-  trustedRepos: []
+  trustedRepos: [],
+  maskSecrets: true,
+  theme: { kind: 'ghostty' }
 }
 
 export interface MergeResult {
@@ -82,6 +97,8 @@ export function mergeConfig(raw: unknown): MergeResult {
   take('forgejoWorkPaths', strings)
   take('repoRoots', strings)
   take('trustedRepos', (v) => (Array.isArray(v) && v.length === 0 ? [] : strings(v)))
+  take('maskSecrets', (v) => (typeof v === 'boolean' ? v : null))
+  take('theme', parseThemeChoice)
   take('forgejoUrl', (v) =>
     v === null ? null : typeof v === 'string' && v.trim() !== '' ? v.trim() : null
   )

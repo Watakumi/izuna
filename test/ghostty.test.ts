@@ -12,7 +12,10 @@ import {
   readableOn,
   readingFrom,
   skinFrom,
-  type GhosttyColors
+  type GhosttyColors,
+  colorsOf,
+  DEFAULT_CUSTOM,
+  parseThemeChoice
 } from '../src/shared/ghostty'
 
 /**
@@ -245,5 +248,55 @@ describe('トークンへの割り当て', () => {
       palette: Array(16).fill(null)
     })
     expect(s?.amber).toMatch(/^#/)
+  })
+})
+
+/**
+ * 配色の選び方の読み取り（§37）。**形が違えば null**（呼び手が既定に倒す）。
+ */
+describe('配色の選び方', () => {
+  it('4 通りを読む', () => {
+    expect(parseThemeChoice({ kind: 'ghostty' })).toEqual({ kind: 'ghostty' })
+    expect(parseThemeChoice({ kind: 'builtin' })).toEqual({ kind: 'builtin' })
+    expect(parseThemeChoice({ kind: 'named', name: ' nord ' })).toEqual({
+      kind: 'named',
+      name: 'nord'
+    })
+    expect(parseThemeChoice({ kind: 'custom', colors: DEFAULT_CUSTOM })).toEqual({
+      kind: 'custom',
+      colors: DEFAULT_CUSTOM
+    })
+  })
+
+  it('形が違えば null。**半端に当てない**', () => {
+    for (const bad of [
+      null,
+      'ghostty',
+      { kind: 'いない' },
+      { kind: 'named' },
+      { kind: 'named', name: '  ' },
+      { kind: 'custom' },
+      { kind: 'custom', colors: null },
+      // 色が 1 つでも読めなければ、カスタムごと落とす
+      { kind: 'custom', colors: { ...DEFAULT_CUSTOM, amber: 'いろ' } },
+      { kind: 'custom', colors: { background: '#000000' } }
+    ])
+      expect(parseThemeChoice(bad), JSON.stringify(bad)).toBeNull()
+  })
+
+  it('`#` 無しでも読む（Ghostty と同じ）', () => {
+    const got = parseThemeChoice({ kind: 'custom', colors: { ...DEFAULT_CUSTOM, red: 'ff0000' } })
+    expect(got).toMatchObject({ kind: 'custom', colors: { red: '#ff0000' } })
+  })
+
+  it('5 色を skinFrom が読む番号に置く', () => {
+    const c = colorsOf(DEFAULT_CUSTOM)
+    expect(c.background).toBe(DEFAULT_CUSTOM.background)
+    expect(c.foreground).toBe(DEFAULT_CUSTOM.foreground)
+    expect(c.palette[11]).toBe(DEFAULT_CUSTOM.amber)
+    expect(c.palette[14]).toBe(DEFAULT_CUSTOM.teal)
+    expect(c.palette[9]).toBe(DEFAULT_CUSTOM.red)
+    // 触らせていない番号は空のまま（skinFrom が既定を当てる）
+    expect(c.palette[0]).toBeNull()
   })
 })

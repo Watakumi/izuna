@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PermissionMode, PermissionResult, SlashCommand } from '@anthropic-ai/claude-agent-sdk'
 import { applyCompletion, filterCommands, parseSlashInput } from '../../shared/palette'
-import { appendUserText, markDenied, setPermissionMode } from '../../shared/transcript'
+import {
+  appendUserText,
+  limitLabel,
+  markDenied,
+  setPermissionMode,
+  type RateWindow
+} from '../../shared/transcript'
 import { F, applySkin, C, MONO, READ, SANS } from './theme'
 import { Conversation } from './components/Conversation'
 import { ModeSwitch } from './components/ModeSwitch'
@@ -11,6 +17,7 @@ import { PermissionBar } from './components/PermissionBar'
 import { Sidebar } from './components/Sidebar'
 import { TaskPanel } from './components/TaskPanel'
 import { ForgeSetup } from './components/ForgeSetup'
+import { Settings } from './components/Settings'
 import { Forge } from './components/Forge'
 import { Board } from './components/Board'
 import { Files } from './components/Files'
@@ -41,6 +48,7 @@ function App(): React.JSX.Element {
   const { active } = sessions
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
   // 中で見ている頁（§32）。無ければ null
   const [preview, setPreview] = useState<string | null>(null)
@@ -65,7 +73,7 @@ function App(): React.JSX.Element {
   }, [sessions.waiting.length])
 
   /**
-   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 準備 の順に、いちばん上のものだけ。
+   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 設定 → 準備 の順に、いちばん上のものだけ。
    * 入力欄の中でも効く —— 覆いを閉じたいときに入力欄から出る手間を要らなくする（docs/ORCA.md §7 の 9）
    */
   useEffect(() => {
@@ -73,13 +81,14 @@ function App(): React.JSX.Element {
       if (e.key !== 'Escape' || e.isComposing) return
       if (preview) setPreview(null)
       else if (showNew) setShowNew(false)
+      else if (showSettings) setShowSettings(false)
       else if (showSetup) setShowSetup(false)
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [preview, showNew, showSetup])
+  }, [preview, showNew, showSetup, showSettings])
 
   useEffect(() => {
     void window.izuna
@@ -139,6 +148,14 @@ function App(): React.JSX.Element {
     })
   }
 
+  /**
+   * 帯に出す窓は**一番詰まっているもの**（§14）。
+   * 5 時間だけを出していたので、週の窓が尽きていても余裕があるように見えた。
+   */
+  const tightest = (active?.transcript.limits ?? []).reduce<RateWindow | null>(
+    (best, w) => (best === null || w.utilization > best.utilization ? w : best),
+    null
+  )
   const slash = active ? parseSlashInput(active.prompt) : null
   const results = active && slash && !dismissed ? filterCommands(slash.name, active.commands) : []
   const paletteOpen = !!active && slash !== null && !dismissed && active.commands.length > 0
@@ -265,20 +282,24 @@ function App(): React.JSX.Element {
                 承認待ち {sessions.waiting.length}
               </span>
             )}
-            {active.transcript.limits && (
+            {tightest && (
               // 金額は出さない。課金されない額を出すと誤解される（CLAUDE.md §14）。
               // 実際の制約はサブスクリプションの上限のほう。
               //
               // **「使用量」とも書かない。** 「使用料」と一字しか違わず、金額を
               // 出していると読める。金額は §14 で消したのに、言葉のほうで
               // 戻してしまっていた。
+              //
+              // **出すのは一番詰まっている窓**（2026-09-14）。以前は 5 時間だけを
+              // 出していたので、週の窓が尽きていても帯は余裕があるように見えた。
+              // 全部は `Status` に出る
               <span
                 style={S.note}
-                title="5 時間ごとの上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
+                title="いま一番詰まっている上限に対する割合。ターミナルの Claude Code と同じ上限を共有します"
               >
-                5時間{' '}
-                <span style={{ color: C.ink2 }}>
-                  {Math.round(active.transcript.limits.fiveHour * 100)}%
+                {limitLabel(tightest.key)}{' '}
+                <span style={{ color: tightest.utilization >= 1 ? C.red : C.ink2 }}>
+                  {Math.round(tightest.utilization * 100)}%
                 </span>
               </span>
             )}
@@ -309,6 +330,13 @@ function App(): React.JSX.Element {
             </button>
             <button
               style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+              onClick={() => setShowSettings(true)}
+              title="配色を選ぶ"
+            >
+              設定
+            </button>
+            <button
+              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
               onClick={() => setShowSetup(true)}
               title="Forgejo と設定の準備"
             >
@@ -328,13 +356,22 @@ function App(): React.JSX.Element {
             <button style={S.btn} onClick={() => setShowNew(true)}>
               新しいセッションを開く
             </button>
-            <button
-              style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
-              onClick={() => setShowSetup(true)}
-              title="Forgejo と設定の準備"
-            >
-              準備
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+                onClick={() => setShowSetup(true)}
+                title="Forgejo と設定の準備"
+              >
+                準備
+              </button>
+              <button
+                style={{ ...S.ghostSmall, borderColor: 'transparent', color: C.dim2 }}
+                onClick={() => setShowSettings(true)}
+                title="配色を選ぶ"
+              >
+                設定
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{ flexGrow: 1, minHeight: 0, display: 'flex' }}>
@@ -550,7 +587,7 @@ function App(): React.JSX.Element {
                 {/* Status: どこで、何が動いていて、あと何回頼めるか。読むだけ */}
                 {tab === 'status' && (
                   <div style={{ height: '100%', overflowY: 'auto' }}>
-                    <Inspector panel={active} onOpenForge={() => setTab('pr')} />
+                    <Inspector panel={active} />
                     <Board panel={active} />
                   </div>
                 )}
@@ -608,6 +645,8 @@ function App(): React.JSX.Element {
           </div>
         )}
       </div>
+
+      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
 
       {showSetup && (
         <ForgeSetup

@@ -54,6 +54,7 @@ export function ToolBlock({
           {open ? '▾' : '▸'}
         </span>
         <span style={{ fontWeight: 500, fontSize: F.body }}>{block.name}</span>
+        {/* 入力を一言で言えないときは欄ごと出さない。名前は左に出ている（§35 の重複） */}
         <span style={{ font: `${F.small}px ${MONO}`, color: C.dim2, flexGrow: 1, ...ellipsis }}>
           {describeToolInput(block.name, block.input)}
         </span>

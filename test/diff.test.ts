@@ -61,6 +61,24 @@ describe('承認バーの一行', () => {
   })
 
   it('手がかりが無ければツール名', () => {
-    expect(describeToolInput('Unknown', {})).toBe('Unknown')
+    // **名前は返さない。** 呼び手が名前の隣に置くので、2 度出る（2026-09-14）
+    expect(describeToolInput('Unknown', {})).toBe('')
+    expect(describeToolInput('AskUserQuestion', {})).toBe('')
+  })
+})
+
+describe('人に問うツール', () => {
+  it('問いそのものを一言にする（名前を 2 度出さない）', () => {
+    expect(
+      describeToolInput('AskUserQuestion', {
+        questions: [
+          {
+            question: '右パネルはどう分けますか',
+            header: '構造',
+            options: [{ label: 'A' }, { label: 'B' }]
+          }
+        ]
+      })
+    ).toBe('右パネルはどう分けますか')
   })
 })

@@ -25,8 +25,8 @@ import * as remote from '../git/remote'
 import * as term from '../terminal'
 import { findRepos, pickDirectory } from '../repos'
 import { scanSessions, replaySession } from '../sessions'
-import { loadGhosttySkin } from '../ghostty'
-import { CONFIG_PATH, loadConfig } from '../config'
+import { listThemes, loadSkin } from '../ghostty'
+import { CONFIG_PATH, loadConfig, saveConfigValue } from '../config'
 import { listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus } from '../git/worktree'
 import { SessionHub } from '../hub'
 import { notify } from '../notify'
@@ -106,7 +106,19 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 
   const handlers: Handlers = {
     // 過去のセッション（§18）。走査するだけで、保存層は持たない
-    ghosttySkin: () => loadGhosttySkin().catch(() => null),
+    // 選ばれた配色で組む（§37）。読めなければ既定の色で出る
+    ghosttySkin: async () => loadSkin((await loadConfig()).config.theme).catch(() => null),
+    // `listThemes` は読めないディレクトリを自分で飛ばすので、ここで握らない
+    themes: async () => ({
+      current: (await loadConfig()).config.theme,
+      available: await listThemes()
+    }),
+    // **失敗を握らない。** 設定に書けなかったことを黙って飲むと、
+    // 選んだのに次に開くと戻っている理由が分からなくなる
+    setTheme: async (choice) => {
+      await saveConfigValue('theme', choice)
+      return loadSkin(choice)
+    },
     listSessions: () => scanSessions(),
     replaySession: (sessionId) => replaySession(sessionId),
 

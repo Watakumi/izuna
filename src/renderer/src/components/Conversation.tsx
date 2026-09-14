@@ -36,7 +36,7 @@ function Thinking({ text }: { text: string }): React.JSX.Element {
             whiteSpace: 'pre-wrap'
           }}
         >
-          {text || '（要約は返っていません）'}
+          {text}
         </div>
       )}
     </div>
@@ -104,7 +104,15 @@ function ItemView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {item.blocks.map((b, i) => {
-        if (b.kind === 'thinking') return <Thinking key={i} text={b.text} />
+        /**
+         * **中身の無い思考は出さない**（2026-09-14、利用者の指摘）。
+         *
+         * 要約が返らない思考ブロック（`redacted_thinking` や、途中で切れたもの）に
+         * 「思考 ▸」を出していた。開いても「（要約は返っていません）」が出るだけで、
+         * **押した場所に何も起きない**（§35 の規律）。言うことが無いなら畳む札も出さない。
+         */
+        if (b.kind === 'thinking')
+          return b.text.trim() === '' ? null : <Thinking key={i} text={b.text} />
         if (b.kind === 'tool') return <ToolBlock key={i} block={b} onAsk={onAsk} />
         return (
           // **確定した本文だけ markdown にする。** 途中の draft は下で素のまま出す

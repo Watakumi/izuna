@@ -65,16 +65,30 @@ describe('会話', () => {
     void container
   })
 
-  it('思考は畳んであり、開ける。空なら「返っていない」と言う', () => {
+  it('思考は畳んであり、開ける', () => {
     render(
       <Conversation
-        items={[{ kind: 'assistant', id: 'm1', blocks: [{ kind: 'thinking', text: '' }] }]}
+        items={[{ kind: 'assistant', id: 'm1', blocks: [{ kind: 'thinking', text: '考えた' }] }]}
         draft={null}
       />
     )
-    expect(screen.queryByText('（要約は返っていません）')).toBeNull()
+    expect(screen.queryByText('考えた')).toBeNull()
     fireEvent.click(screen.getByText('思考'))
-    expect(screen.getByText('（要約は返っていません）')).toBeTruthy()
+    expect(screen.getByText('考えた')).toBeTruthy()
+  })
+
+  it('**中身の無い思考は札ごと出さない**（開いても何も起きないため。2026-09-14）', () => {
+    const { container } = render(
+      <Conversation
+        items={[
+          { kind: 'assistant', id: 'm1', blocks: [{ kind: 'thinking', text: '  ' }] },
+          { kind: 'assistant', id: 'm2', blocks: [{ kind: 'text', text: '本文' }] }
+        ]}
+        draft={null}
+      />
+    )
+    expect(screen.queryByText('思考')).toBeNull()
+    expect(container.textContent).toContain('本文')
   })
 
   it('流れている途中は種類を言葉で出す', () => {

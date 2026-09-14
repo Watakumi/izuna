@@ -19,6 +19,7 @@ import { TEAMMATE_HOOKS, logEntryOf, teammateEventOf, type TeammateHooks } from 
 import type { SessionEvent, SessionId, StartSessionInput } from '../shared/ipc'
 import { ClaudeSession } from './claude/session'
 import { gateProjectHooks } from './claude/trust'
+import { loadConfig } from './config'
 import {
   appendLog,
   ensureTeam,
@@ -107,6 +108,8 @@ export class SessionHub {
     // **開く前に、そのリポジトリが持ち込む hook を見る**（§26）。
     // 信頼していない場所に hook があれば、ここで止まる
     const settingSources = await gateProjectHooks(input.cwd)
+    // 鍵の覆い（§36）。既定は掛ける —— 切るのは利用者が設定に書いたときだけ
+    const { config } = await loadConfig()
     // 共有フォルダを先に用意する。場所を教えるだけでは使われないので、
     // 規律ごと申し送りに書いて渡す（§12）
     const team = await ensureTeam(input.team ?? 'default')
@@ -125,6 +128,7 @@ export class SessionHub {
       // （呼ばれなければ何も起きない）
       mcpServers: { izuna: progressServer(team) },
       hooks: this.#teammateHooks(id, team),
+      mask: config.maskSecrets,
       // Izuna が持つ資料の skill（§33）。相手のリポジトリには何も置かない。
       // 無ければ渡さない（配布物の組み方を変えたときに、黙って落ちるのを防ぐ）
       ...(this.#plugin ? { plugins: [{ type: 'local' as const, path: this.#plugin }] } : {})

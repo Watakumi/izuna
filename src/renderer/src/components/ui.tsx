@@ -402,13 +402,26 @@ export function Tag({
 
 /** 一行に収まらない文字を切る。UI 全体で同じ切り方にする */
 /** 使用率のメーター。7 割を超えたら注意の色に変わる */
-export function Meter({ label, value }: { label: string; value: number }): React.JSX.Element {
+export function Meter({
+  label,
+  value,
+  note
+}: {
+  label: string
+  value: number
+  /** 数字だけでは読めないこと（いつ空くか、前の窓のものか）。無ければ出さない */
+  note?: string
+}): React.JSX.Element {
   const pct = Math.round(value * 100)
+  // 尽きた窓は赤。**そこが効いている制約**なので、7 割と同じ色では読み落とす
+  const color = pct >= 100 ? C.red : pct > 70 ? C.amber : C.teal
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: S.sm }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: F.small }}>
         <span style={{ color: C.dim }}>{label}</span>
-        <span style={{ font: `${F.small}px ${MONO}`, color: C.ink2 }}>{pct}%</span>
+        <span style={{ font: `${F.small}px ${MONO}`, color: pct >= 100 ? C.red : C.ink2 }}>
+          {pct}%
+        </span>
       </div>
       <div style={{ height: 3, background: C.raised, borderRadius: R.sm }}>
         <div
@@ -416,10 +429,11 @@ export function Meter({ label, value }: { label: string; value: number }): React
             width: `${Math.min(pct, 100)}%`,
             height: 3,
             borderRadius: R.sm,
-            background: pct > 70 ? C.amber : C.teal
+            background: color
           }}
         />
       </div>
+      {note && <span style={{ fontSize: F.micro, color: C.faint }}>{note}</span>}
     </div>
   )
 }
@@ -452,5 +466,74 @@ export function Section({
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: S.xs }}>{children}</div>
     </div>
+  )
+}
+
+/**
+ * 色を選ぶ（§37）。**生の `<input type="color">` を画面に書かない**（§17）——
+ * 素で書くと、塗り忘れがそのまま既定（＝明るい）になる。
+ */
+export function ColorInput({
+  value,
+  onChange
+}: {
+  value: string
+  onChange: (hex: string) => void
+}): React.JSX.Element {
+  return (
+    <input
+      type="color"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label="色"
+      style={{
+        width: 32,
+        height: 22,
+        padding: 0,
+        border: `1px solid ${C.line2}`,
+        borderRadius: R.sm,
+        background: 'transparent',
+        cursor: 'pointer'
+      }}
+    />
+  )
+}
+
+/** 一覧から 1 つ選ぶ。同じ理由で `ui.tsx` に置く（§17） */
+export function Select({
+  value,
+  onChange,
+  options,
+  placeholder,
+  label
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: string[]
+  /** 何も選んでいないときの行 */
+  placeholder: string
+  label: string
+}): React.JSX.Element {
+  return (
+    <select
+      value={value}
+      aria-label={label}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        padding: `${S.sm}px ${S.md}px`,
+        borderRadius: R.md,
+        border: `1px solid ${C.line2}`,
+        background: C.raised,
+        color: C.ink2,
+        fontSize: F.small
+      }}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o} value={o}>
+          {o}
+        </option>
+      ))}
+    </select>
   )
 }

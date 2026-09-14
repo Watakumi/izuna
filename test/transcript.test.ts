@@ -10,6 +10,8 @@ import {
   markDenied,
   stripAnsi,
   setPermissionMode,
+  limitLabel,
+  stale,
   type Block,
   type Item,
   type Transcript
@@ -218,18 +220,46 @@ describe('枠の使用率', () => {
     // 金額（costBasis: "list"）は請求額ではないので画面に出さない。
     // 実際の制約はこちらで、ターミナルの Claude Code と同じ窓を共有する
     expect(t.limits).not.toBeNull()
-    expect(t.limits!.fiveHour).toBeGreaterThanOrEqual(0)
-    expect(t.limits!.fiveHour).toBeLessThanOrEqual(1)
-    expect(t.limits!.sevenDay).toBeGreaterThanOrEqual(0)
+    expect(t.limits!.map((w) => w.key)).toContain('five_hour')
+    expect(t.limits!.map((w) => w.key)).toContain('seven_day')
+    for (const w of t.limits!) {
+      expect(w.utilization).toBeGreaterThanOrEqual(0)
+      expect(w.utilization).toBeLessThanOrEqual(1)
+      expect(w.resetsAt).toBeGreaterThan(0)
+    }
   })
 
-  it('片方しか来なくても前の値を保つ', () => {
-    const seeded = { ...emptyTranscript(), limits: { fiveHour: 0.3, sevenDay: 0.5 } }
+  it('**上流が増やした窓もそのまま持つ**（2 つに決め打たない。2026-09-14）', () => {
+    const next = applyMessage(emptyTranscript(), {
+      type: 'rate_limit_event',
+      rate_limit_info: {
+        unifiedWindows: {
+          five_hour: { utilization: 0.01 },
+          seven_day: { utilization: 0.63 },
+          seven_day_fable: { utilization: 1 }
+        }
+      }
+    } as unknown as SDKMessage)
+    expect(next.limits).toHaveLength(3)
+    expect(next.limits!.find((w) => w.key === 'seven_day_fable')!.utilization).toBe(1)
+  })
+
+  it('片方しか来なくても前の値を保つ（鍵ごとに重ねる）', () => {
+    const seeded = {
+      ...emptyTranscript(),
+      limits: [
+        { key: 'five_hour', utilization: 0.3, resetsAt: null },
+        { key: 'seven_day', utilization: 0.5, resetsAt: null }
+      ]
+    }
     const next = applyMessage(seeded, {
       type: 'rate_limit_event',
       rate_limit_info: { unifiedWindows: { five_hour: { utilization: 0.4 } } }
     } as unknown as SDKMessage)
-    expect(next.limits).toEqual({ fiveHour: 0.4, sevenDay: 0.5 })
+    expect(next.limits).toEqual([
+      { key: 'five_hour', utilization: 0.4, resetsAt: null },
+      { key: 'seven_day', utilization: 0.5, resetsAt: null }
+    ])
   })
 })
 
@@ -298,5 +328,21 @@ describe('未知のものを落とさない', () => {
     const before = build(messages)
     const after = applyMessage(before, { type: 'brand_new_event' } as unknown as SDKMessage)
     expect(after).toEqual(before)
+  })
+})
+
+describe('枠の窓', () => {
+  it('知らない鍵は上流の字のまま出す（§17.4）', () => {
+    expect(limitLabel('five_hour')).toBe('5時間')
+    expect(limitLabel('seven_day')).toBe('7日')
+    expect(limitLabel('seven_day_fable')).toBe('seven_day_fable')
+  })
+
+  it('**空く時刻を過ぎていれば、前の窓の数字である**', () => {
+    const now = 1_700_000_000_000
+    expect(stale({ key: 'five_hour', utilization: 0.21, resetsAt: now - 1 }, now)).toBe(true)
+    expect(stale({ key: 'five_hour', utilization: 0.21, resetsAt: now + 1 }, now)).toBe(false)
+    // 時刻が無ければ古びているとは言えない。**分からないことを断定しない**
+    expect(stale({ key: 'five_hour', utilization: 0.21, resetsAt: null }, now)).toBe(false)
   })
 })

@@ -7,6 +7,7 @@
  *
  * 純粋関数（プロセスを知らない。§4 の原則）。
  */
+import { questionsOf } from './question'
 
 export type DiffKind = 'add' | 'del' | 'same'
 export interface DiffLine {
@@ -121,6 +122,9 @@ export function diffFromToolInput(name: string, rawInput: unknown): FileDiff | n
 export function describeToolInput(name: string, rawInput: unknown): string {
   const d = diffFromToolInput(name, rawInput)
   if (d) return `${d.path}  +${d.added} −${d.removed}`
+  // 人に問うツールは、問いそのものが一番短い説明になる
+  const questions = questionsOf(name, rawInput)
+  if (questions) return cut(questions[0].question)
   if (rawInput && typeof rawInput === 'object') {
     const input = rawInput as Input
     const first =
@@ -129,7 +133,14 @@ export function describeToolInput(name: string, rawInput: unknown): string {
       str(input.path) ??
       str(input.file_path) ??
       str(input.url)
-    if (first) return first.length > 160 ? first.slice(0, 160) + '…' : first
+    if (first) return cut(first)
   }
-  return name
+  /**
+   * **名前を返さない**（2026-09-14、利用者の指摘）。呼び手は名前の隣にこれを置くので、
+   * 言うことが無いときに名前を返すと「AskUserQuestion AskUserQuestion」と 2 度出る。
+   * 同じ事実を 2 か所に出さないのと同じ話で、空なら何も出さない。
+   */
+  return ''
 }
+
+const cut = (s: string): string => (s.length > 160 ? s.slice(0, 160) + '…' : s)

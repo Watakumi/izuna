@@ -141,6 +141,12 @@ export function installStub(): void {
     }),
     // 実機の Ghostty の代わり。**ハーネス側から差し替えられる**ようにしておく
     ghosttySkin: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
+    // 配色の選び方（§37）。実機の一覧の代わりに、名前だけ何件か出す
+    themes: async () => ({
+      current: { kind: 'ghostty' as const },
+      available: ['notion', 'catppuccin-mocha', 'nord']
+    }),
+    setTheme: async () => (window as unknown as { __skin?: GhosttySkin }).__skin ?? null,
     listSessions: async () => [
       {
         id: 'aaaaaaaa-1111-2222-3333-444444444444',
@@ -193,11 +199,11 @@ export function installStub(): void {
     teamPath: async () => '/Users/x/.izuna/teams/izuna',
     teamBoard: async () => ({
       dir: '/Users/x/.izuna/teams/izuna',
-      brief: { issue: '12', created: '2026-09-08T00:00:00Z', body: '盤面を出す' },
+      brief: { issue: '12', created: '2026-09-08T00:00:00Z', body: '共有フォルダを読む' },
       tasks: [
         {
           id: 'A-01',
-          title: '盤面を読む',
+          title: '共有フォルダを読む',
           assignee: 'exec-1',
           branch: 'feat/board',
           status: 'doing' as const,

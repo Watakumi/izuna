@@ -262,19 +262,28 @@ describe('共有フォルダ', () => {
 })
 
 describe('自律ループ（§23）', () => {
+  /**
+   * **固定の待ちにしない**（2026-09-14 に踏んだ）。30ms 固定で待っていたので、
+   * 85 個の worker が走る `pnpm verify` の中でだけ落ちることがあった
+   * （「送った数が 2 のはずが 1」）。条件が満たされるまで待ち、上限で諦める。
+   */
+  const until = async (cond: () => boolean, ms = 3000): Promise<void> => {
+    const end = Date.now() + ms
+    while (!cond() && Date.now() < end) await new Promise((r) => setTimeout(r, 5))
+  }
   const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 30))
 
   it('**反復の依頼は人の打鍵として送らない**。結果が返ると次へ進み、上限で止まる', async () => {
     const { hub, id, s, events } = await started()
     hub.startLoop(id, 2)
-    await tick()
+    await until(() => s.sent.length >= 1)
     expect(s.sent).toHaveLength(1)
     expect(s.sent[0].origin).toEqual({ kind: 'auto-continuation' })
     s.emit('message', { type: 'result' })
-    await tick()
+    await until(() => s.sent.length >= 2)
     expect(s.sent).toHaveLength(2)
     s.emit('message', { type: 'result' })
-    await tick()
+    await until(() => events.some((e) => e.kind === 'loopStopped'))
     const stopped = events.find((e) => e.kind === 'loopStopped')
     expect(stopped).toMatchObject({ kind: 'loopStopped', id, stop: { reason: 'maxIterations' } })
     expect(events.filter((e) => e.kind === 'loopProgress')).toHaveLength(2)
@@ -291,10 +300,10 @@ describe('自律ループ（§23）', () => {
   it('人が止めれば、次の反復に入らずに止まる', async () => {
     const { hub, id, s, events } = await started()
     hub.startLoop(id, 5)
-    await tick()
+    await until(() => s.sent.length >= 1)
     hub.stopLoop(id)
     s.emit('message', { type: 'result' })
-    await tick()
+    await until(() => events.some((e) => e.kind === 'loopStopped'))
     expect(events.find((e) => e.kind === 'loopStopped')).toMatchObject({
       stop: { reason: 'stopped' }
     })
@@ -304,7 +313,7 @@ describe('自律ループ（§23）', () => {
   it('claude が壊れたら反復は失敗として数える（黙って待ち続けない）', async () => {
     const { hub, id, s } = await started()
     hub.startLoop(id, 5)
-    await tick()
+    await until(() => s.sent.length >= 1)
     s.emit('error', new Error('落ちた'))
     await tick()
     // 失敗しても即座には諦めない（shared/loop.ts）。ここでは待ち続けていないことだけ見る

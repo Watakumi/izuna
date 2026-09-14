@@ -24,6 +24,7 @@ import type { SessionSummary } from './sessions'
 import type { Progress, Stop } from './loop'
 import type { Wakeup } from './wakeup'
 import type { GhosttySkin } from '../main/ghostty'
+import type { ThemeChoice } from './ghostty'
 import type { Transcript } from './transcript'
 import type { Attachment } from './image'
 import type { FileDiff } from './diff'
@@ -187,6 +188,17 @@ export interface IzunaApi {
   ghosttySkin(): Promise<GhosttySkin | null>
 
   /**
+   * 配色の選び方（§37）。いま選んでいるものと、実機にある Ghostty のテーマの名前。
+   */
+  themes(): Promise<{ current: ThemeChoice; available: string[] }>
+
+  /**
+   * 配色を選ぶ（§37）。設定に書いて、**組み直した配色をその場で返す** ——
+   * 押した場所で結果が見えるようにするため（§35）。
+   */
+  setTheme(choice: ThemeChoice): Promise<GhosttySkin | null>
+
+  /**
    * 自律ループ。**文脈を毎回捨てて回す**（§23）。
    * 承認は迂回しない —— 権限モードは人が選んだままである。
    */
@@ -288,6 +300,8 @@ export const CH = {
   terminalEvent: 'izuna:term:event',
   configInfo: 'izuna:config:info',
   ghosttySkin: 'izuna:ghostty:skin',
+  themes: 'izuna:theme:list',
+  setTheme: 'izuna:theme:set',
   startLoop: 'izuna:loop:start',
   stopLoop: 'izuna:loop:stop',
   loopProgress: 'izuna:loop:progress',
