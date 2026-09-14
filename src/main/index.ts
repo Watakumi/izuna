@@ -17,6 +17,7 @@ function createWindow(): void {
   // Create the browser window.
   const win = new BrowserWindow({
     title: 'Izuna',
+    // 最大化を解いたときに戻る大きさ。**開くときは最大化する**（下）
     width: 1280,
     height: 860,
     show: false,
@@ -33,7 +34,17 @@ function createWindow(): void {
   })
 
   mainWindow = win
-  win.on('ready-to-show', () => win.show())
+  /**
+   * **最大化してから見せる**（2026-09-14、利用者の指摘）。
+   *
+   * 1280×860 で開いていたが、この画面は柱が 3 本（一覧・会話・右パネル）あり、
+   * 狭いと会話の柱が先に潰れる。`show()` の前に最大化するので、
+   * 開いたあとに大きくなる動きは見えない。
+   */
+  win.on('ready-to-show', () => {
+    win.maximize()
+    win.show()
+  })
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
   })
