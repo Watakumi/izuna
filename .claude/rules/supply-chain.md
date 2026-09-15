@@ -47,6 +47,8 @@ postinstall を electron / esbuild / node-pty に限定、更新機構は無い�
   それまで CI の `corepack prepare` だけが固定していた
 - **CI の固定。** `actions/checkout` はコミット、`node:24` はダイジェスト。
   `pnpm audit` を `continue-on-error` で足した —— 直せないもの（§26 の extract-zip）があるので門にはしない。
+  **2026-09-15 に extract-zip は消えた**（electron 39.8.10 → 41.10.7。§26）が、`continue-on-error` は
+  そのまま残す。直る版の無い advisory は上流の都合で生えるので、門にすると CI が人質になる。
   **runner で動くかは未確認**（Forgejo への push が §7 の 401→404 で通らなかった）
 
 ### registry（2026-09-09 に見直した）

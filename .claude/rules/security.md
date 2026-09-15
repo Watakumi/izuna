@@ -73,12 +73,23 @@ gh-radar と同じく、**作業場を触るのはボット、承認するのは
 **既にある sandbox はボットから見えない。** `ensureRepo` は次に使うとき
 ボットの下に作り直す。古いものは Forgejo の画面で消すか、ボットを協力者に足す。
 
-### 直せなかったもの
+### 直せなかったもの（2026-09-15 に直った）
 
-`pnpm audit` の high 1 件（`extract-zip` <=2.0.1、GHSA-jmr9-qjv8-65gv）。
-advisory は `>=2.0.2` で直ると言うが、**2.0.2 は npmjs に無い**（最新は 2020-06 の 2.0.1。
-2026-09-08 に確認）。override は `ERR_PNPM_NO_MATCHING_VERSION` で入らない。
-使うのは `electron` のインストーラだけで、製品には入らない。
+~~`pnpm audit` の high 1 件（`extract-zip` <=2.0.1、GHSA-jmr9-qjv8-65gv）。~~
+`extract-zip` にはいまも直った版が無い（最新は 2020-06 の 2.0.1）。直ったのは上流の側で、
+**Electron が 40.10.3 から自前のフォーク `@electron-internal/extract-zip` に差し替えた。**
+`electron` を 39.8.10 → **41.10.7** に上げて消した。`pnpm audit --audit-level low` が
+「No known vulnerabilities found」になり、`osv-scanner.toml` の除外 2 件も消した。
+
+**41 まで上げた理由。** 最小の修正は 40.10.3 に見えるが、それでは別の high に落ちる。
+GHSA-9f4c-93c8-jc8g（sandbox した iframe が `allow-popups` の制限を OpenURL 経路で回避する）は
+対象の範囲が 3 本あり、`< 39.8.10`・`>= 40.0.0-alpha.1, < 41.10.3`・`>= 42.0.0-alpha.1, < 42.0.1`。
+**39.8.10 はこの advisory が直った版そのもの**なので、40.x に上げると逆戻りする。
+両方が消える最小は 41.10.3 で、その系列の最新が 41.10.7（2026-08-25 公開。熟成の線 3 日を満たす）。
+頁を窓の中に埋める（§32）アプリなので、iframe と popup の穴は他人事ではない。
+
+副作用: `@electron/get` が 2.x → 5.x、`@types/node` の要求が 22 → 24 になった。
+`node-pty` は postinstall の `electron-builder install-app-deps` が 41.10.7 向けに焼き直した。
 
 ### 確かめていないこと
 
@@ -113,7 +124,7 @@ Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこ
 | Electron の fuses | `build/fuses.mjs`（`afterPack`） | RunAsNode / NODE_OPTIONS / --inspect を切り、asar の改竄検証と asar からしか読まないを入れ、Cookie を暗号化する |
 | 署名と公証 | `electron-builder.yml`、`.github/workflows/release.yml` | 証明書（`MAC_CERT_P12`）と Apple ID が secrets にあるときだけ。無ければ署名無しの DMG。**証明書は人が用意する** |
 | 秘密の走査 | `scripts/prepush.mjs`、`.github/workflows/security.yml` | gitleaks。pre-push は届けるコミットだけ、CI は履歴ごと。**gitleaks が無ければ push を止める**（無いことを緑で通さない） |
-| 依存の脆弱性 | `osv-scanner.toml`、`security.yml` | osv-scanner。除外は理由付きで toml に（extract-zip の 2 件だけ） |
+| 依存の脆弱性 | `osv-scanner.toml`、`security.yml` | osv-scanner。除外は理由付きで toml に。**2026-09-15 現在 0 件**（extract-zip の 2 件は electron 41.10.7 で消えた） |
 | Electron の設定の診断 | `security.yml` | Doyensec の electronegativity。指摘は artifact。門にはしない（誤検出が多い） |
 | Claude Code の関所 | `shared/prereq.ts`、`main/claude/status.ts` | 入っているか・ログイン済みかを準備画面の先頭に出す。`claude auth status --json` の email / orgId は画面に持ち出さない |
 | 貼られたトークン | `main/forge/setup.ts` の `adoptToken` | 通るか・ボット `izuna` のものかを聞いてから保管する。人の鍵は断る |
@@ -126,6 +137,7 @@ Izuna で Izuna を開くには `~/.izuna/config.json` の `trustedRepos` にこ
 | 公開リポジトリの備え | `SECURITY.md`、`.github/dependabot.yml`、`LICENSE` | 報告先は Security Advisories。Dependabot は 7 日の cooldown（熟成の線より長く）。SDK と mermaid は人が上げる。MIT |
 
 2026-09-09 の走査結果: gitleaks は 135 コミットで 0 件、osv-scanner は extract-zip の 2 件（既知・直せない）だけ。
+2026-09-15: その 2 件は electron 41.10.7 で消えた。`pnpm audit --audit-level low` が 0 件。
 
 ### Forgejo を LAN に開き、測って閉じた（2026-09-10）
 
