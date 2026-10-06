@@ -58,7 +58,7 @@ Nimbalyst は `ghostty-vt.wasm` を同梱し `node-pty` と組み合わせてい
 
 ## 3. 技術スタック
 
-electron-vite 5 / Electron 39 / React 19 / TypeScript 5.9 / Vite 7 / pnpm / vitest 5。
+electron-vite 5 / Electron 41 / React 19 / TypeScript 5.9 / Vite 7 / pnpm / vitest 5。
 `npm create @quick-start/electron` の react-ts テンプレートが出発点。
 
 **`@anthropic-ai/claude-agent-sdk` を使う（0.3.263 に固定）。** 生の NDJSON を

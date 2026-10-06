@@ -38,7 +38,8 @@ jobs:
         run: pnpm verify
 
       - name: 既知の脆弱性
-        # 落とさない。直せないもの（CLAUDE.md §26 の extract-zip）があるので、
+        # 落とさない。2026-09-15 に除外は 0 件になった（extract-zip は electron 41.10.7 で
+        # 消えた。§26）が、直る版の無い advisory は上流の都合でいつでも生える。
         # ここは「気づく経路」であって門ではない
         continue-on-error: true
         run: pnpm audit --audit-level high
