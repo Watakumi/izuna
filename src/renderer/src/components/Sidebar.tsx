@@ -42,13 +42,16 @@ export function Sidebar({
   activeId,
   onSelect,
   onClose,
-  onNew
+  onNew,
+  onMeeting
 }: {
   panels: Panel[]
   activeId: string | null
   onSelect: (id: string) => void
   onClose: (id: string) => void
   onNew: () => void
+  /** 会議（§39）を開く。無ければ釦を出さない */
+  onMeeting?: () => void
 }): React.JSX.Element {
   return (
     <div
@@ -187,7 +190,15 @@ export function Sidebar({
         ))}
       </div>
 
-      <div style={{ padding: 12, borderTop: `1px solid ${C.line}` }}>
+      <div
+        style={{
+          padding: 12,
+          borderTop: `1px solid ${C.line}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6
+        }}
+      >
         <div
           onClick={onNew}
           style={{
@@ -216,6 +227,24 @@ export function Sidebar({
           </svg>
           新しいセッション
         </div>
+        {onMeeting && (
+          <div
+            onClick={onMeeting}
+            title="役を決めたエージェントと議題を話し、議事録を残す"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '6px 12px',
+              borderRadius: 7,
+              color: C.dim2,
+              fontSize: F.body,
+              cursor: 'pointer'
+            }}
+          >
+            会議
+          </div>
+        )}
       </div>
     </div>
   )

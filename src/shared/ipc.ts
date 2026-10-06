@@ -32,6 +32,7 @@ import type { FileDiff } from './diff'
 import type { TeamBoard } from '../main/team'
 import type { TaskStatus } from './team'
 import type { TeammateEvent } from './teammate'
+import type { MeetingEvent, MeetingSummary, MeetingView, Role } from './meeting'
 
 /**
  * renderer と main のあいだの唯一の口。
@@ -245,6 +246,21 @@ export interface IzunaApi {
   previewBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<void>
   previewClose(): Promise<void>
 
+  // ── 会議（§39）。話すだけで、手は動かさない ──────────────────
+  /** 参加者の役。`~/.izuna/roles/` が無ければ同梱の役を書き出してから読む */
+  meetingRoles(): Promise<Role[]>
+  /** 会議の一覧。新しいものから */
+  meetings(): Promise<MeetingSummary[]>
+  meetingRead(id: string): Promise<MeetingView>
+  /** 開いて、司会が話し始める。返すのは会議の識別子 */
+  meetingStart(input: { cwd: string; agenda: string; roles: string[] }): Promise<string>
+  /** 人が話す。話している最中なら割り込み、止まっていれば続きを話す */
+  meetingSay(id: string, text: string): Promise<void>
+  /** 締めるよう司会に頼む。司会が議事録を書いて閉じる */
+  meetingClose(id: string): Promise<void>
+  /** すぐ止める。議事録は書かれない。続きは話せる */
+  meetingStop(id: string): Promise<void>
+
   /** main からの通知を受ける。返り値を呼ぶと購読をやめる */
   onEvent(handler: (event: SessionEvent) => void): () => void
 }
@@ -265,6 +281,8 @@ export type SessionEvent =
   | { kind: 'permission'; id: SessionId; request: PermissionRequest }
   | { kind: 'error'; id: SessionId; message: string }
   | { kind: 'exit'; id: SessionId }
+  /** 会議の出来事（§39）。`id` は会議の識別子で、セッションのものではない */
+  | { kind: 'meeting'; id: string; event: MeetingEvent }
 
 export type TerminalEvent =
   { id: string; kind: 'data'; data: string } | { id: string; kind: 'exit'; code: number }
@@ -342,6 +360,13 @@ export const CH = {
   interrupt: 'izuna:session:interrupt',
   setBadge: 'izuna:app:badge',
   stop: 'izuna:session:stop',
+  meetingRoles: 'izuna:meeting:roles',
+  meetings: 'izuna:meeting:list',
+  meetingRead: 'izuna:meeting:read',
+  meetingStart: 'izuna:meeting:start',
+  meetingSay: 'izuna:meeting:say',
+  meetingClose: 'izuna:meeting:close',
+  meetingStop: 'izuna:meeting:stop',
   event: 'izuna:session:event'
 } as const
 

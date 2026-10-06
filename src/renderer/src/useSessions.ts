@@ -69,6 +69,9 @@ export function useSessions(): Sessions {
   useEffect(
     () =>
       window.izuna.onEvent((event) => {
+        // 会議の出来事（§39）はセッションのものではない。ここで捨てないと、発言のたびに
+        // 全部の柱を描き直す
+        if (event.kind === 'meeting') return
         // 宛先は必ず event.id で決める。active に流し込むと取り違える
         setPanels((prev) =>
           prev.map((p) => {

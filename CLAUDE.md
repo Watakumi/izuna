@@ -85,10 +85,12 @@ src/main/claude/trust.ts    開く前の関所。hook と .mcp.json を数え、
 src/main/hub.ts             セッションの駆動部。1 件 1 record（session・共有フォルダ・cwd・ループ）。§28
 src/main/ipc/register.ts    口を関数に繋ぐ表だけ。Handlers の型が口の数だけ手があることを見る
 src/main/exec.ts            外の道具（git / gh / forgejo / brew）を呼ぶ唯一の包み（§27）
+src/main/fsx.ts             ファイルがあるか・壊さずに書く（一時ファイルの名前は毎回変える）。§27 の重複の整理
 src/main/team.ts            共有フォルダと作業の一覧（作る・読む・log.md を書く）
 src/main/terminal.ts        PTY を持つだけ。バイト列を解釈も加工もしない
 src/main/loop.ts            自律ループの駆動と、進捗を申告する MCP ツール（§23）
 src/main/wakeup.ts          起床の予約。覚えのある id だけ起こす（§26）
+src/main/meeting.ts         会議の駆動。司会の指名を参加者の発言で返す。書くのは Izuna だけ（§39）
 src/main/preview.ts         頁を窓の中に埋める WebContentsView を 1 枚持つ（§32）
 src/main/protocol.ts        renderer を app:// で配る。出力ディレクトリの外は 404（§26）
 src/main/sessions.ts        ~/.claude/projects の走査と復元（§18）
@@ -107,6 +109,7 @@ src/shared/mention.ts       対象を指して会話を始める文（純粋関�
 src/main/readfile.ts        読む口だけ。書く口は作らない（§34）
 src/main/actions.ts         ~/.izuna/actions.log に追記だけ。noting() が操作を包む（§38）
 src/shared/team.ts          札・要約・決定・記録のパース、重なりの判定（純粋関数）
+src/shared/meeting.ts       役・発言録・議事録・控えの形と、司会と参加者の申し送り（純粋関数。§39）
 src/shared/sessions.ts      要約・見出し・絞り込み・復元（純粋関数）
 src/shared/transcript.ts    会話の状態モデル。SDKMessage を畳んで積む
 src/shared/teammate.ts      実行役の節目（SubagentStart / Stop …）を hook から読む（純粋関数。§12）
@@ -124,6 +127,8 @@ scripts/e2e.ts              本物の Electron を起動して口を叩く（§3
 scripts/walk.ts             v1 の 7 手を本物で通し、docs/v1-walk/ に撮る（§31）。実 API を呼ぶ
 scripts/probe-team.ts       実行役 2 つを並走させて hook と worktree を測る（§12）。実 API を呼ぶ
 scripts/probe-mask.ts       ツールの結果を差し替えられるかを測る（§36）。実 API を呼ぶ
+scripts/probe-meeting.ts    会議を開き、指名・差分・resume・人数・圧縮・同時指名を測る（§39）。実 API を呼ぶ
+scripts/meeting-live.ts     本物の Izuna の中で会議を 1 回通し、議事録と後片付けを見る（§39）。実 API を呼ぶ
 scripts/catchup.mjs         claude が上がったら SDK・fixture・版を揃える（pnpm run catchup。§10）
 scripts/upstream.mjs        claude と Forgejo の最新と測った版の差、CHANGELOG を出す（pnpm run upstream。§10）。読むだけ
 
@@ -184,6 +189,7 @@ Windows / Linux、複数エージェント対応。
 | `.claude/rules/sessions.md` | セッションの保存と復元、外に出た操作の記録 | §18, §38 |
 | `.claude/rules/loop.md` | 自律ループと起床 | §23 |
 | `.claude/rules/security.md` | セキュリティ | §26, §36 |
+| `.claude/rules/meeting.md` | 会議（役を決めたエージェントと話し、議事録を残す） | §39 |
 | `.claude/rules/supply-chain.md` | 重複の整理とサプライチェーン | §27 |
 | `docs/DECISIONS.md` | 設計の背景。なぜこの構成か、技術スタック、未決事項、公開範囲 | §2, §3, §9, §19, §20 |
 
@@ -210,7 +216,7 @@ pnpm walk       # v1 の 7 手を本物で通して撮る（§31）。実 API �
 1. **変えたい挙動を検査で先に書く。** 不変条件に触る変更では、守るものを明示してから直す（§11）。
 2. **判断を伴う変更は測ってから決める。** この基盤の設計はほぼすべて実測に基づいている。
 3. **該当する `.claude/rules/*.md` に追記する。** 決定、根拠になった数値、覆る条件。数値には日付。
-   新しい節を足すなら番号は続きから（いまの最後は §38）。既存の番号は変えない。
+   新しい節を足すなら番号は続きから（いまの最後は §39）。既存の番号は変えない。
 4. **`pnpm verify` を通す。** push の前には `.githooks/pre-push` が、作者・lockfile・verify を見る。
    `.claude/settings.json` に `PreToolUse` を置けば、コミットの前にも `scripts/commit-gate.mjs` が回す。
 5. **失敗したら `.claude/agent-mistakes.md` に書く。** 日付、何が起きたか、根本原因、教訓。

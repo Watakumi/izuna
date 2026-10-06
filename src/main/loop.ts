@@ -1,4 +1,5 @@
-import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
+import { readFile, mkdir } from 'node:fs/promises'
+import { writeAtomic } from './fsx'
 import { join } from 'node:path'
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
@@ -36,14 +37,10 @@ export async function readProgress(teamDir: string): Promise<Progress> {
  */
 export async function writeProgress(teamDir: string, progress: Progress): Promise<void> {
   await mkdir(teamDir, { recursive: true })
-  const at = join(teamDir, PROGRESS_FILE)
-  const tmp = `${at}.tmp`
-  await writeFile(
-    tmp,
-    JSON.stringify({ ...progress, learnings: trimLearnings(progress.learnings) }, null, 2),
-    'utf8'
+  await writeAtomic(
+    join(teamDir, PROGRESS_FILE),
+    JSON.stringify({ ...progress, learnings: trimLearnings(progress.learnings) }, null, 2)
   )
-  await rename(tmp, at)
 }
 
 /**

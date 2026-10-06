@@ -30,6 +30,7 @@ import { noting, readActions } from '../actions'
 import { CONFIG_PATH, loadConfig, saveConfigValue } from '../config'
 import { listWorktrees, removeWorktree, repoName, repoRoot, worktreeStatus } from '../git/worktree'
 import { SessionHub } from '../hub'
+import { Meetings } from '../meeting'
 import { notify } from '../notify'
 import { noticeFor } from '../../shared/notice'
 import { parseUnifiedDiff } from '../../shared/patch'
@@ -53,6 +54,7 @@ type Handlers = {
 }
 
 let hub: SessionHub | null = null
+let meetings: Meetings | null = null
 
 /** WebContentsView は整数の px しか受けない。renderer の実測は小数で来る */
 const roundRect = (r: {
@@ -77,7 +79,7 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
      * 押されたら窓を前に出す。
      */
     if (win && !win.isDestroyed() && !win.isFocused()) {
-      const notice = noticeFor(event, h.labelOf(event.id))
+      const notice = noticeFor(event, event.kind === 'meeting' ? '会議' : h.labelOf(event.id))
       if (notice)
         notify(notice, () => {
           if (!win.isDestroyed()) {
@@ -97,6 +99,8 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
   }
   hub = h
   void h.open()
+  const m = new Meetings(emit)
+  meetings = m
 
   /** rootUrl は main 側で解決する。renderer に持たせない */
   const forgeRoot = async (): Promise<string> => {
@@ -258,7 +262,16 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
     removeWakeup: (wakeupId) => h.removeWakeup(wakeupId),
     fireWakeup: (wakeupId) => h.fireWakeup(wakeupId),
     draftCommitMessage: (id) => h.draftCommitMessage(id),
-    requestReview: (id, input) => h.requestReview(id, input.base, input.pull)
+    requestReview: (id, input) => h.requestReview(id, input.base, input.pull),
+
+    // ── 会議（§39）。判断は main/meeting.ts ──────────────────
+    meetingRoles: () => m.roles(),
+    meetings: () => m.list(),
+    meetingRead: (id) => m.read(id),
+    meetingStart: (input) => m.start(input),
+    meetingSay: (id, text) => m.say(id, text),
+    meetingClose: (id) => m.requestClose(id),
+    meetingStop: (id) => m.stop(id)
   }
 
   for (const [name, fn] of Object.entries(handlers)) {
@@ -271,5 +284,5 @@ export function registerSessionIpc(getWindow: () => BrowserWindow | null): void 
 /** アプリ終了時。シェルも取り残さない。PTY は同期で閉じられるので待ちに含めない */
 export async function stopAllSessions(timeoutMs = 3000): Promise<void> {
   term.closeAllTerminals()
-  await hub?.stopAll(timeoutMs)
+  await Promise.all([hub?.stopAll(timeoutMs), meetings?.stopAll(timeoutMs)])
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -39,7 +39,9 @@ describe('進捗の読み書き', () => {
 
   it('**書き換え中に落ちても壊さない**（一時ファイルに書いてから置き換える）', async () => {
     await writeProgress(dir, EMPTY_PROGRESS)
-    expect(existsSync(join(dir, `${PROGRESS_FILE}.tmp`))).toBe(false)
+    // 一時ファイルの名前は毎回変わる（`main/fsx.ts`）。どの名前でも残っていないこと
+    expect(readdirSync(dir).filter((f) => f.endsWith('.tmp'))).toEqual([])
+    expect(existsSync(join(dir, PROGRESS_FILE))).toBe(true)
   })
 
   it('壊れたファイルは既定に倒す（1 回の書き損じでループを殺さない）', async () => {

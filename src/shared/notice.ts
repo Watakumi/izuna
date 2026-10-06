@@ -27,6 +27,12 @@ export function noticeFor(event: SessionEvent, label: string): Notice | null {
       return { title: `ループが止まった · ${label}`, body: event.stop.detail.slice(0, 120) }
     case 'wokeUp':
       return { title: `予約を送った · ${label}`, body: event.prompt.slice(0, 120) }
+    // 会議は閉じたときと壊れたときだけ。発言のたびに鳴らさない
+    case 'meeting':
+      if (event.event.kind === 'closed') return { title: label, body: '議事録を書きました' }
+      if (event.event.kind === 'error')
+        return { title: `壊れた · ${label}`, body: event.event.message.slice(0, 120) }
+      return null
     default:
       return null
   }

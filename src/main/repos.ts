@@ -1,4 +1,5 @@
-import { readdir, access } from 'node:fs/promises'
+import { readdir } from 'node:fs/promises'
+import { exists } from './fsx'
 import type { Dirent } from 'node:fs'
 import { basename, join } from 'node:path'
 import { resolved } from './config'
@@ -19,15 +20,6 @@ export interface FoundRepo {
   name: string
   /** 一覧での見出し。`work/personal` のような相対の親 */
   group: string
-}
-
-const exists = async (p: string): Promise<boolean> => {
-  try {
-    await access(p)
-    return true
-  } catch {
-    return false
-  }
 }
 
 const SKIP = new Set([

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
+import { readFile, mkdir } from 'node:fs/promises'
+import { writeAtomic } from './fsx'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { due, next, parseWakeups, reconcile, split, type Wakeup } from '../shared/wakeup'
@@ -23,9 +24,7 @@ async function load(): Promise<Wakeup[]> {
 
 async function save(wakeups: Wakeup[]): Promise<void> {
   await mkdir(dirname(WAKEUPS_PATH), { recursive: true })
-  const tmp = `${WAKEUPS_PATH}.tmp`
-  await writeFile(tmp, JSON.stringify(wakeups, null, 2), 'utf8')
-  await rename(tmp, WAKEUPS_PATH)
+  await writeAtomic(WAKEUPS_PATH, JSON.stringify(wakeups, null, 2))
 }
 
 /**
