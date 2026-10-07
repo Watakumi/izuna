@@ -123,6 +123,18 @@ describe('起動時に渡すもの', () => {
     })
   })
 
+  it('**権限モードを渡されなければ default を詰める**（規則 1。開いたリポジトリの設定に任せない）', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w' }).start()
+    expect(passed?.permissionMode).toBe('default')
+  })
+
+  it('人が選んだ権限モードは、そのまま渡す', async () => {
+    const { ClaudeSession } = await load()
+    await new ClaudeSession({ cwd: '/w', permissionMode: 'acceptEdits' }).start()
+    expect(passed?.permissionMode).toBe('acceptEdits')
+  })
+
   it('読み込む設定の範囲をそのまま渡す（§13）', async () => {
     const { ClaudeSession } = await load()
     await new ClaudeSession({ cwd: '/w', settingSources: ['project', 'local'] }).start()
