@@ -193,6 +193,24 @@ async function main(): Promise<void> {
   await page.keyboard.press('Escape')
   await page.waitForTimeout(200)
 
+  // 会議（§39）。開いた会議の議事録と発言録、新しい会議の入力
+  await page.getByText('会議', { exact: true }).first().click()
+  await page.waitForTimeout(300)
+  await page.getByText('議事録あり').click()
+  await page.waitForTimeout(400)
+  check((await page.getByText('決まったこと').count()) > 0, '会議の議事録が出ていない')
+  check(
+    (await page.getByText('Android は当面対象外でいい').count()) > 0,
+    '会議の発言録が出ていない'
+  )
+  await shoot(page, '11-meeting')
+  await page.getByText('新しい会議').click()
+  await page.waitForTimeout(300)
+  check((await page.getByText('参加者').count()) > 0, '新しい会議の参加者が出ていない')
+  await shoot(page, '12-meeting-new')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(200)
+
   // ターミナル
   await page.getByText('ターミナル', { exact: true }).first().click()
   await page.waitForSelector('canvas', { timeout: 20_000 })

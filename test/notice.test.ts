@@ -21,6 +21,17 @@ describe('通知の文', () => {
     expect(noticeFor({ kind: 'wokeUp', id: 's', prompt: '続きを' }, 'x')?.body).toBe('続きを')
   })
 
+  it('会議は閉じたときと壊れたときだけ鳴らす。発言のたびには鳴らさない（§39）', () => {
+    const m = (event: never): ReturnType<typeof noticeFor> =>
+      noticeFor({ kind: 'meeting', id: 'm', event }, '会議')
+    expect(m({ kind: 'closed', minutes: '' } as never)).toEqual({
+      title: '会議',
+      body: '議事録を書きました'
+    })
+    expect(m({ kind: 'error', message: '落ちた' } as never)?.body).toBe('落ちた')
+    expect(m({ kind: 'said', entry: { at: '', who: 'human', text: '' } } as never)).toBeNull()
+  })
+
   it('**進捗のたびには鳴らさない**（いずれ全部無視される）', () => {
     expect(
       noticeFor({ kind: 'message', id: 's', message: { type: 'assistant' } as never }, 'x')

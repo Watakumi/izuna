@@ -80,6 +80,21 @@ export interface SessionOptions {
   /** 既定のシステムプロンプトに足す申し送り */
   appendSystemPrompt?: string
   /**
+   * 使える組み込みの道具を絞る。省略すると全部。会議の参加者（§39）は読むだけにする ——
+   * 話し合いの場で手を動かさせない。MCP の道具はここに関わらず `mcpServers` から来る。
+   */
+  tools?: string[]
+  /**
+   * 聞かずに通す道具。**Izuna 自身の MCP の口だけに使う**（会議の司会の `izuna_next` /
+   * `izuna_close`。§39）。外に効果が出る道具をここに入れない —— 承認は人が持つ（規則 1）。
+   */
+  allowedTools?: string[]
+  /**
+   * `mcpServers` で渡したものだけを使う。リポジトリの `.mcp.json`・設定・プラグインの MCP を読まない。
+   * 会議（§39）で使う —— 参加者が開いたリポジトリの MCP の口で外に効く操作をしないように
+   */
+  strictMcpConfig?: boolean
+  /**
    * Izuna が持ち込むプラグイン。資料の skill（`.claude/skills/doc-*`）をここから渡す。
    *
    * **開いたリポジトリの `.claude/` を書き換えない。** skill を使わせるために利用者のリポジトリに
@@ -226,6 +241,9 @@ export class ClaudeSession extends EventEmitter<Events> {
           ...(this.options.appendSystemPrompt ? { append: this.options.appendSystemPrompt } : {})
         },
         additionalDirectories: this.options.additionalDirectories,
+        ...(this.options.tools ? { tools: this.options.tools } : {}),
+        ...(this.options.allowedTools ? { allowedTools: this.options.allowedTools } : {}),
+        ...(this.options.strictMcpConfig ? { strictMcpConfig: true } : {}),
         includePartialMessages: true,
         // 実行役の発話も流す。既定では tool_use / tool_result しか来ないので、
         // 何を考えて何をしたのかが見えない（段4）

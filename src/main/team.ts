@@ -1,4 +1,5 @@
-import { mkdir, writeFile, access, readFile, readdir, appendFile } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, readdir, appendFile } from 'node:fs/promises'
+import { exists } from './fsx'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { slugifyBranch } from '../shared/worktree'
@@ -33,15 +34,6 @@ export const TEAMS_BASE = join(homedir(), '.izuna', 'teams')
 
 export function teamPathFor(name: string): string {
   return join(TEAMS_BASE, slugifyBranch(name) || 'team')
-}
-
-const exists = async (path: string): Promise<boolean> => {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
 }
 
 /**

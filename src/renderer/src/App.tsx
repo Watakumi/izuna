@@ -29,6 +29,7 @@ import { Loop } from './components/Loop'
 import { Button, TextArea } from './components/ui'
 import { TerminalPane } from './components/TerminalPane'
 import { Preview } from './components/Preview'
+import { Meeting } from './components/Meeting'
 import { Docs } from './components/Docs'
 import { FileView } from './components/FileView'
 import { appendMention, mentionDiff } from '../../shared/mention'
@@ -49,6 +50,7 @@ function App(): React.JSX.Element {
   const [showNew, setShowNew] = useState(false)
   const [showSetup, setShowSetup] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [showMeeting, setShowMeeting] = useState(false)
   const [showTerm, setShowTerm] = useState(false)
   // 中で見ている頁（§32）。無ければ null
   const [preview, setPreview] = useState<string | null>(null)
@@ -73,7 +75,7 @@ function App(): React.JSX.Element {
   }, [sessions.waiting.length])
 
   /**
-   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 設定 → 準備 の順に、いちばん上のものだけ。
+   * Esc で覆いを閉じる。枠（頁）→ 新しいセッション → 設定 → 会議 → 準備 の順に、いちばん上のものだけ。
    * 入力欄の中でも効く —— 覆いを閉じたいときに入力欄から出る手間を要らなくする（docs/ORCA.md §7 の 9）
    */
   useEffect(() => {
@@ -82,13 +84,14 @@ function App(): React.JSX.Element {
       if (preview) setPreview(null)
       else if (showNew) setShowNew(false)
       else if (showSettings) setShowSettings(false)
+      else if (showMeeting) setShowMeeting(false)
       else if (showSetup) setShowSetup(false)
       else return
       e.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [preview, showNew, showSetup, showSettings])
+  }, [preview, showNew, showSetup, showSettings, showMeeting])
 
   useEffect(() => {
     void window.izuna
@@ -248,6 +251,11 @@ function App(): React.JSX.Element {
         onSelect={sessions.setActive}
         onClose={(id) => void sessions.close(id)}
         onNew={() => setShowNew(true)}
+        onMeeting={() => {
+          // 頁の枠（§32）は renderer の上に重なるので、覆いの下を隠す。先に閉じる（準備と同じ）
+          setPreview(null)
+          setShowMeeting(true)
+        }}
       />
 
       <div style={S.main}>
@@ -647,6 +655,7 @@ function App(): React.JSX.Element {
       </div>
 
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+      {showMeeting && <Meeting cwd={active?.cwd ?? null} onClose={() => setShowMeeting(false)} />}
 
       {showSetup && (
         <ForgeSetup
