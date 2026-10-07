@@ -12,6 +12,12 @@
  * 4. `pnpm verify`
  *
  * `IZUNA_SKIP_VERIFY=1 git push` で 4 だけ飛ばせる。1–3 は飛ばせない。
+ *
+ * **verify には git の環境変数を渡さない**（`withoutGitEnv`）。別の作業ツリーから push すると、git は
+ * hook に `GIT_DIR=<本体>/.git/worktrees/<名前>` を絶対パスで渡す（本体の作業ツリーからだと渡さない。
+ * 2026-10-07 に測った）。そのまま検査を回すと、検査が一時ディレクトリで起こすつもりの git がそれを
+ * 引き継ぎ、本物のリポジトリを書き換える —— `core.bare=true`、作者 `t`、一時の `origin`、
+ * 作業ツリーのブランチへの「最初のコミット」（実際に起きた。`.claude/agent-mistakes.md`）。
  */
 import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -63,6 +69,14 @@ export function manifestChanged(files) {
 
 function git(...args) {
   return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] })
+}
+
+/**
+ * `GIT_` で始まる環境変数を落とした写し。hook の中で検査を起こすときに使う（冒頭の註）。
+ * `test/setup.ts` も検査の始まりで同じものを落とす —— 門以外の経路で検査が回っても本物を触らない
+ */
+export function withoutGitEnv(env) {
+  return Object.fromEntries(Object.entries(env).filter(([k]) => !k.startsWith('GIT_')))
 }
 
 function main() {
@@ -127,7 +141,7 @@ function main() {
     return 0
   }
   console.log('[pre-push] pnpm verify')
-  const v = spawnSync('pnpm', ['verify'], { stdio: 'inherit' })
+  const v = spawnSync('pnpm', ['verify'], { stdio: 'inherit', env: withoutGitEnv(process.env) })
   return v.status === 0 ? 0 : 1
 }
 

@@ -353,6 +353,13 @@ props の描き分けではなく、**口に渡している引数と、返りを
 （`test/main-git.test.ts`）ので、逃げ出したコミットが public に乗る穴は Izuna にもあった。
 門の検査は `test/scripts-gates.test.ts`。**実行ビットが無いと git は黙って飛ばす。**
 
+**verify に git の環境変数を渡さない**（2026-10-07 に踏んだ）。別の作業ツリーから push すると、git は hook に
+`GIT_DIR` を絶対パスで渡す。そのまま検査を回すと、`main-git.test.ts` の `git init --bare` や `git config user.*` が
+本物の `.git/config` を書き換えた（`core.bare=true`、作者 `t`、一時の `origin`）。門は `withoutGitEnv` で外して渡し、
+検査は `test/setup.ts`（`setupFiles`）で始まりに外す。2 段にしてあるのは、門以外の経路から検査が回っても止めるため。
+**確かめ方**: 使い捨てのリポジトリに作業ツリーを作り、`GIT_DIR=<それ>/.git/worktrees/<名前> npx vitest run test/main-git.test.ts`。
+直す前は被害役の設定が書き換わり、直したあとは何も変わらない（21 件が通る）。
+
 ### 固定の待ちで検査しない（2026-09-14）
 
 `pnpm verify` が**たまにだけ**落ちた（`main-hub` のループ。「送った数が 2 のはずが 1」「止まった出来事が無い」）。
