@@ -51,6 +51,26 @@ postinstall を electron / esbuild / node-pty に限定、更新機構は無い�
   そのまま残す。直る版の無い advisory は上流の都合で生えるので、門にすると CI が人質になる。
   **runner で動くかは未確認**（Forgejo への push が §7 の 401→404 で通らなかった）
 
+### 公表された脆弱性を overrides で直す（2026-10-07）
+
+10-05 の週次の走査から CI の `dependencies`（osv-scanner）が赤になり、必須の検査なので**どの PR もマージできなくなった**。
+走査は約 25 件。どれも間接の依存で、引き込んでいたのは claude-agent-sdk（MCP SDK・express の系統）、electron-builder、
+eslint / typescript-eslint（`brace-expansion`）、mermaid（`dompurify`・`katex`）、vite（`source-map-js`）だった。
+
+| 扱い | 件 | どうしたか |
+| --- | --- | --- |
+| 範囲の中で上がった | `brace-expansion` 1.x・`dompurify`・`source-map-js`・`undici` 7.x / 8.x | `pnpm update --depth Infinity` |
+| 範囲は許すのに上がらなかった | `proxy-addr`（critical）・MCP SDK・`fast-uri`・`hono`・`ip-address`・`brace-expansion` 2.x / 5.x・`undici` 6.x・`http-cache-semantics` | **`pnpm-workspace.yaml` の `overrides` で、脆弱な範囲だけを直る版へ**（`proxy-addr@<2.0.8: ^2.0.8` の形）。直る版は全部、熟成の線を越えていた |
+| 直る版が無い | `sprintf-js`（moderate。組むときだけ使われる） | `osv-scanner.toml` に理由と外す条件を付けて除外 |
+| 直る版が親の範囲の外 | `katex`（low。mermaid が ^0.16 を求める） | 同上。mermaid は手で上げる決まり（上）なので、katex だけを差し替えない |
+
+`pnpm update --depth Infinity proxy-addr` は「もう最新」と言って上げなかった。**原因は追っていない**（範囲は `^2.0.7`、
+2.0.8 は `latest` で 3 週間前の公開）。`overrides` は確実に効くが、**残ると腐る** —— 親が直る版を求めるようになっても
+消さなければ、ずっと上書きし続ける。だから行ごとに引き込む親を書き、外す条件（「親が直る版以上を求めたら消す」）を冒頭に置いた。
+
+MCP SDK は 1.30.0 → 1.32.0 になった。Izuna の MCP の口（`izuna_progress`、会議の司会）もこれで動くので、
+**本物の claude から MCP の口を 1 回呼ばせて往復を確かめた**（2026-10-07。`pong` が返った）。
+
 ### registry（2026-09-09 に見直した）
 
 以前 `.npmrc` の registry が `https://npm.flatt.tech/` を向いていると書いたが、**いまの `.npmrc` は
