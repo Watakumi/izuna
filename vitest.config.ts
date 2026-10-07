@@ -14,6 +14,8 @@ export default defineConfig({
   // 検査の tsx は React の自動 JSX で読む（renderer と同じ）
   esbuild: { jsx: 'automatic' },
   test: {
+    // 検査の始まりで git の環境変数を落とす（`test/setup.ts`）。hook の中から回っても本物を触らない
+    setupFiles: ['test/setup.ts'],
     coverage: {
       provider: 'v8',
       include: ['src/shared/**/*.ts', 'src/main/**/*.ts', 'src/renderer/src/components/**/*.tsx'],

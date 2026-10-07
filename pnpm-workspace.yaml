@@ -26,3 +26,23 @@ minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-agent-sdk-win32-arm64@0.3.266'
   - '@anthropic-ai/claude-agent-sdk-win32-x64@0.3.266'
   - '@anthropic-ai/claude-agent-sdk@0.3.266'
+# **公表された脆弱性の直る版へ、脆弱な範囲だけを置き換える**（2026-10-07。§27）。
+# どれも間接の依存で、`pnpm update --depth Infinity` は範囲が許していても上げなかった（`proxy-addr` を
+# 「もう最新」と言った。原因は追っていない）。直る版は全部、熟成の線（3 日）を越えている。
+# **外す条件**: 引き込んでいる親が直る版以上を求めるようになったら、その行を消す（`pnpm why <名前>`）。
+# 直る版の無いもの（`sprintf-js`）と、親が互換の無い版しか求めないもの（`katex`）は osv-scanner.toml に理由付きで置く。
+overrides:
+  # critical。@anthropic-ai/claude-agent-sdk → @modelcontextprotocol/sdk → express
+  proxy-addr@<2.0.8: ^2.0.8
+  # high。claude-agent-sdk が直接引く。Izuna の MCP の口（izuna_progress、会議の司会）もこれで動く
+  '@modelcontextprotocol/sdk@<1.31.0': ^1.31.0
+  fast-uri@<3.1.8: ^3.1.8
+  hono@<4.13.7: ^4.13.7
+  ip-address@<10.7.1: ^10.7.1
+  # high。eslint / typescript-eslint と electron-builder が引く minimatch の下
+  brace-expansion@>=2.0.0 <2.1.7: ^2.1.7
+  brace-expansion@>=5.0.0 <5.0.12: ^5.0.12
+  # high。electron-builder → @electron/rebuild → node-gyp。7.x と 8.x は範囲の中で上がった
+  undici@>=6.0.0 <6.28.1: ^6.28.1
+  # high。electron-builder → @electron/get → got → cacheable-request。4.2.1 は出ておらず 4.3.0 が直る版
+  http-cache-semantics@<4.2.1: ^4.3.0

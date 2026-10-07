@@ -6,7 +6,8 @@ import {
   forbiddenAuthors,
   localShas,
   manifestChanged,
-  secretScanArgs
+  secretScanArgs,
+  withoutGitEnv
 } from '../scripts/prepush.mjs'
 import { needsGate } from '../scripts/commit-gate.mjs'
 import { agedEnough, cliVersionOf, readReleagePolicy, sdkVersionFor } from '../scripts/catchup.mjs'
@@ -62,6 +63,23 @@ describe('秘密の走査（gitleaks）', () => {
     expect(args[args.indexOf('--exit-code') + 1]).toBe('1')
     expect(args).toContain('--log-opts=abc def --not --remotes=upstream')
     expect(secretScanArgs([], 'origin')).toContain('--log-opts=HEAD --not --remotes=origin')
+  })
+
+  it('verify には git の環境変数を渡さない（別の作業ツリーからの push で本物を書き換えた）', () => {
+    const env = { GIT_DIR: '/r/.git/worktrees/wt', GIT_EDITOR: 'true', PATH: '/bin', HOME: '/h' }
+    expect(withoutGitEnv(env)).toEqual({ PATH: '/bin', HOME: '/h' })
+    const src = readFileSync(join(__dirname, '..', 'scripts', 'prepush.mjs'), 'utf8')
+    expect(src).toContain(
+      "spawnSync('pnpm', ['verify'], { stdio: 'inherit', env: withoutGitEnv(process.env) })"
+    )
+  })
+
+  it('検査の中では git の環境変数が落ちている（test/setup.ts）', () => {
+    // hook の中から回っても、検査が起こす git は一時ディレクトリを相手にする
+    expect(Object.keys(process.env).filter((k) => k.startsWith('GIT_'))).toEqual([])
+    expect(readFileSync(join(__dirname, '..', 'vitest.config.ts'), 'utf8')).toContain(
+      "setupFiles: ['test/setup.ts']"
+    )
   })
 
   it('pre-push の本文が gitleaks を呼び、無ければ止める', () => {
