@@ -188,7 +188,11 @@ describe('覚えの無い予約', () => {
       createdAt: Date.now()
     })
     writeFileSync(WAKEUPS_PATH, JSON.stringify(all))
-    await until(async () => (await w.list()).every((x) => x.state !== 'pending'))
+    // **通知が届くまで待つ。** 起床は「送った」をファイルに書いてから通知を呼ぶ（二重に送らないため）。
+    // ファイルだけを見て待つと、書き終わった直後・通知の前に数えてしまう（CI で 0 件になった。2026-10-06）
+    await until(
+      async () => fired.length >= 1 && (await w.list()).every((x) => x.state !== 'pending')
+    )
     w.stop()
     expect(fired).toHaveLength(1)
     expect(fired[0]).not.toBe('planted')
