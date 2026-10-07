@@ -165,6 +165,20 @@ type PermissionResult =
 ここを「握手に失敗したら acceptEdits に落とす」と書き換えると
 **fail-open に反転する**ので、変更するときは意図してやること。
 
+### 権限モードは Izuna が必ず渡す（2026-10-07）
+
+新しいセッションの画面（`NewSession`）も worktree から開く経路も、`permissionMode` を渡していなかった。
+**いまの版では無害だった** —— claude 2.1.283 / SDK 0.3.266 で、リポジトリの `.claude/settings.json` に
+`defaultMode: acceptEdits` や `bypassPermissions` を置いても、渡さなければ `system:init` は `default` だった（測った）。
+
+ところが SDK 0.3.286 で既定が変わる（外部の調査より。リリースノートの趣旨）: 渡さないと Claude Code の設定に任され、
+設定の `defaultMode` が効き、テレメトリが切れていると `auto` で始まる。Izuna は `settingSources` に `project` を含むので、
+**開いたリポジトリが `bypassPermissions` を書いていれば、上げた瞬間に承認が飛ばされる**。§26 の関所は hook と `.mcp.json` を
+数えるが、`defaultMode` は見ていない。
+
+**`ClaudeSession` で、渡されなければ `default` を詰める**（`test/main-session.test.ts` が門）。人が選んだモードは
+そのまま渡す。版によらず、承認の既定を Izuna の側で決める（規則 1）。
+
 ---
 
 ## 13. 設定の読み込み範囲（2026-09-07 に決定）

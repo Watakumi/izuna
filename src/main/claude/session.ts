@@ -228,7 +228,14 @@ export class ClaudeSession extends EventEmitter<Events> {
       options: {
         cwd: this.options.cwd,
         model: this.options.model,
-        permissionMode: this.options.permissionMode,
+        /**
+         * **渡されなければ `default` を詰める**（規則 1）。新しいセッションの画面も worktree から開く経路も
+         * 権限モードを渡していない。いまの版（SDK 0.3.266）は渡さなくても `default` で始まるが
+         * （2026-10-07 に測った。リポジトリの `defaultMode: bypassPermissions` でも `default`）、SDK 0.3.286 から
+         * 渡さないと Claude Code の設定に任され、開いたリポジトリの `defaultMode` が効く。上げた瞬間に
+         * 承認が飛ばされないよう、版によらず Izuna の側で決める
+         */
+        permissionMode: this.options.permissionMode ?? 'default',
         resume: this.options.resume,
         forkSession: this.options.forkSession,
         // **省略すると Claude Code の既定プロンプトが一切入らない。**
