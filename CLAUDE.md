@@ -14,6 +14,7 @@ Claude Code を自分の Forgejo と一緒にデスクトップから使う macO
   実体は `resources/izuna-docs/`（Izuna が同梱して持ち込む。開いたリポジトリは触らない）
 - Nimbalyst と何が違い、何を取り何を取らないかは [docs/NIMBALYST.md](docs/NIMBALYST.md)（2026-09-08）
 - Orca と何が違い、何を取り何を取らないかは [docs/ORCA.md](docs/ORCA.md)（2026-09-11。5 つの観点）
+- 公式のデスクトップアプリ（Code タブ、`claude --desktop`）と何が同じで何が残るかは [docs/DESKTOP.md](docs/DESKTOP.md)（2026-10-07。同じく Agent SDK の上に立つ。差の芯は柱 2）
 - 設計の決定: https://claude.ai/code/artifact/873094d6-cdf6-46b4-b488-a69ab9e3641e （元は `design/`）
   **画面そのものは描かない。実装が正。** 理由は §16
 - 現状: **MVP は完了**（会話・パレット・承認・差分・worktree・Forge・ターミナル・
