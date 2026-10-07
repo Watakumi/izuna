@@ -294,3 +294,7 @@ paths:
   起動したままの Claude Code のセッション（`ps -o lstart`）が 09-11 の朝に更新し、verify の版の門が落ちた。
   rc に書いたら、動いている claude を全部起動し直すこと。戻すのは今までどおり
   `ln -sfn ~/.local/share/claude/versions/2.1.266 ~/.local/bin/claude`。
+- **別の作業ツリーから push すると、hook に `GIT_DIR` が絶対パスで渡る**（2026-10-07 に踏んで測った）。本体の作業ツリーから
+  だと渡らない。hook の中で起こした子プロセスがこれを引き継ぐと、`git init` や `git config` が一時ディレクトリではなく
+  hook を呼んだリポジトリに効く。push の門の verify で、本物の `.git/config` が `core.bare=true` と作者 `t` に書き換わった。
+  hook から何かを起こすときは `GIT_` の環境変数を外す（`scripts/prepush.mjs` の `withoutGitEnv`、testing.md §28）。
